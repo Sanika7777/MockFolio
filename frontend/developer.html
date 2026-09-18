@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Developer Dashboard | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body data-page="developer">
+    <div id="app">
+      <main class="page" id="developer-content">
+        <section class="page-intro compact-intro">
+          <span class="eyebrow">DEVELOPER ACCESS</span>
+          <h1>Developer Dashboard</h1>
+          <p>System overview and user activity.</p>
+        </section>
+        <section class="stats" id="developer-stats">
+          <div class="loading"><span class="spinner"></span>Loading...</div>
+        </section>
+        <section class="toolbar">
+          <div>
+            <span class="eyebrow">REGISTERED USERS</span>
+            <h2>All users</h2>
+          </div>
+          <input
+            id="user-search"
+            class="search"
+            placeholder="Search username or email"
+            aria-label="Search users"
+          />
+        </section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th>Cash balance</th>
+                <th>Portfolio</th>
+                <th>P&L</th>
+                <th>Trades</th>
+              </tr>
+            </thead>
+            <tbody id="users-table"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <div id="toast-region" class="toast-region"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Create account | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-layout">
+      <section class="auth-story">
+        <a class="brand" href="index.html"
+          ><span class="brand-mark">M</span><span>mockfolio</span></a
+        >
+        <div>
+          <span class="eyebrow">START WITH VIRTUAL CASH</span>
+          <h1>A calmer way<br /><em>to learn markets.</em></h1>
+          <p>
+            Get ₹1,00,000 virtual cash. No real money, no live orders, just a
+            clear place to understand price movement.
+          </p>
+        </div>
+        <span class="auth-note"
+          >Your account is local to this classroom simulation.</span
+        >
+      </section>
+      <section class="auth-panel">
+        <span class="eyebrow">CREATE ACCOUNT</span>
+        <h2>Open your desk</h2>
+        <p class="muted">₹1,00,000 virtual cash is credited instantly.</p>
+        <form id="register">
+          <label
+            >Username<input
+              name="username"
+              autocomplete="username"
+              placeholder="Choose a username"
+              minlength="3"
+              required /></label
+          ><label
+            >Email<input
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required /></label
+          ><label
+            >Password<input
+              name="password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="At least 6 characters"
+              minlength="6"
+              required /></label
+          ><label
+            >Confirm password<input
+              name="confirm_password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Repeat your password"
+              required /></label
+          ><button class="primary-button full">Start with ₹1,00,000</button>
+        </form>
+        <p id="error" class="error"></p>
+        <p class="auth-switch">
+          Already registered? <a href="login.html">Sign in</a>
+        </p>
+      </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+  </body>
+</html>

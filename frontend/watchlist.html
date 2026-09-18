@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Watchlist | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body data-page="watchlist">
+    <div id="app">
+      <main class="page">
+        <section class="page-intro compact-intro">
+          <span class="eyebrow">KEEP AN EYE ON IT</span>
+          <h1>Watchlist</h1>
+          <p>
+            Save the stocks you want to compare as the simulated market moves.
+          </p>
+        </section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>Reference</th>
+                <th>Simulated</th>
+                <th>Deviation</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="watchlist-table"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <div id="toast-region" class="toast-region"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

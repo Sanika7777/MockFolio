@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Portfolio | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body data-page="portfolio">
+    <div id="app">
+      <main class="page">
+        <section class="page-intro compact-intro">
+          <span class="eyebrow">YOUR BOOK</span>
+          <h1>Portfolio</h1>
+          <p>
+            Track what you own, what it is worth, and how the simulated market
+            is treating you.
+          </p>
+        </section>
+        <section class="stats" id="stats"></section>
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">HOLDINGS</span>
+            <h2>Your positions</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>Quantity</th>
+                <th>Average buy</th>
+                <th>Current price</th>
+                <th>Invested</th>
+                <th>Current value</th>
+                <th>P&L</th>
+              </tr>
+            </thead>
+            <tbody id="portfolio-table"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <div id="toast-region" class="toast-region"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sign in | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-layout">
+      <section class="auth-story">
+        <a class="brand" href="index.html"
+          ><span class="brand-mark">M</span><span>mockfolio</span></a
+        >
+        <div>
+          <span class="eyebrow">PAPER TRADING / SIMULATION</span>
+          <h1>Paper trade.<br /><em>Move the market.</em></h1>
+          <p>
+            Practice conviction with ₹1,00,000 virtual cash and see your trades
+            shape a shared simulated market.
+          </p>
+        </div>
+        <span class="auth-note"
+          >Built for learning markets, transactions, and the data behind
+          them.</span
+        >
+      </section>
+      <section class="auth-panel">
+        <span class="eyebrow">WELCOME BACK</span>
+        <h2>Sign in</h2>
+        <p class="muted">Your market desk is waiting.</p>
+        <form id="login">
+          <label
+            >Username<input
+              name="username"
+              autocomplete="username"
+              placeholder="e.g. ananya"
+              required /></label
+          ><label
+            >Password<input
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Your password"
+              required /></label
+          ><button class="primary-button full">Sign in</button>
+        </form>
+        <p id="error" class="error"></p>
+        <p class="auth-switch">
+          New to MockFolio? <a href="register.html">Create an account</a>
+        </p>
+      </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+  </body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Market | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body data-page="market">
+    <div id="app">
+      <main class="page">
+        <section class="page-intro market-intro">
+          <span class="eyebrow">SIMULATED MARKET</span>
+          <h1>Explore stocks.</h1>
+          <p>
+            Trade in a paper market where user activity changes the MockFolio
+            price.
+          </p>
+          <div class="market-status">
+            <strong>MockFolio Market</strong
+            ><span id="market-status-detail">Loading market...</span>
+          </div>
+        </section>
+        <section class="stats" id="stats"></section>
+        <section class="toolbar">
+          <div>
+            <span class="eyebrow">MARKET</span>
+            <h2>All stocks</h2>
+          </div>
+          <div class="toolbar-actions">
+            <input
+              id="stock-search"
+              class="search"
+              placeholder="Search symbol or company"
+              aria-label="Search stocks"
+            /><select id="market-filter" aria-label="Market filter">
+              <option value="all">All stocks</option>
+              <option value="watchlist">Watchlist</option>
+            </select>
+          </div>
+        </section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>MockFolio price</th>
+                <th>Reference price</th>
+                <th>Deviation</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="market-table"></tbody>
+          </table>
+        </div>
+        <section class="price-explainer">
+          <div>
+            <strong>Reference price</strong
+            ><span>Baseline price used by the simulation.</span>
+          </div>
+          <div>
+            <strong>MockFolio price</strong
+            ><span>Simulated price affected by trading activity.</span>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div id="toast-region" class="toast-region"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

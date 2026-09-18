@@ -1,0 +1,6 @@
+USE mockfolio;
+INSERT INTO stocks(symbol, company_name, sector, reference_price, simulated_price, previous_simulated_price, average_daily_volume) VALUES
+('RELIANCE','Reliance Industries','Energy',1400,1400,1400,1000000),('TCS','Tata Consultancy Services','IT',3900,3900,3900,500000),('INFY','Infosys','IT',1900,1900,1900,700000),('HDFCBANK','HDFC Bank','Banking',1650,1650,1650,900000),('ICICIBANK','ICICI Bank','Banking',1200,1200,1200,1100000),('SBIN','State Bank of India','Banking',780,780,780,1300000),('ITC','ITC Limited','FMCG',470,470,470,1500000),('LT','Larsen & Toubro','Construction',3600,3600,3600,350000),('HINDUNILVR','Hindustan Unilever','FMCG',2500,2500,2500,250000),('MARUTI','Maruti Suzuki','Automobile',12500,12500,12500,120000),('SUNPHARMA','Sun Pharmaceutical','Pharma',1800,1800,1800,450000),('AXISBANK','Axis Bank','Banking',1150,1150,1150,800000),('WIPRO','Wipro','IT',540,540,540,900000),('TATAMOTORS','Tata Motors','Automobile',980,980,980,1000000),('BHARTIARTL','Bharti Airtel','Telecom',1600,1600,1600,650000)
+ON DUPLICATE KEY UPDATE symbol=symbol;
+INSERT INTO price_history(stock_id, reference_price, simulated_price, deviation, deviation_percentage)
+SELECT id, reference_price, simulated_price, 0, 0 FROM stocks;
