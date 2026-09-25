@@ -1,0 +1,348 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "primary-fixed": "#9bf2e8", "secondary": "#506168", "on-tertiary-fixed-variant": "#663e00", "on-surface-variant": "#3e4947", "on-primary-fixed": "#00201d", "surface-container-low": "#f2f4f4", "secondary-fixed-dim": "#b8c9d1", "on-error-container": "#93000a", "background": "#f8fafa", "on-primary": "#ffffff", "surface-tint": "#006a63", "on-primary-fixed-variant": "#00504a", "on-error": "#ffffff", "surface": "#FFFFFF", "border": "#E2E8E8", "surface-variant": "#e1e3e3", "primary-fixed-dim": "#7fd5cb", "inverse-primary": "#7fd5cb", "on-surface": "#191c1d", "tertiary-fixed": "#ffddb9", "surface-container-highest": "#e1e3e3", "on-surface-muted": "#5F6E75", "on-primary-container": "#a1f8ee", "primary-container": "#0b756d", "tertiary-fixed-dim": "#fcba6a", "secondary-container": "#d1e3ea", "tertiary": "#724600", "error-container": "#ffdad6", "surface-dim": "#d8dada", "on-secondary-fixed": "#0d1e23", "on-tertiary": "#ffffff", "on-tertiary-fixed": "#2b1700", "positive": "#0B756D", "on-secondary-fixed-variant": "#394950", "surface-soft": "#F9FBFB", "primary-dark": "#075B55", "inverse-on-surface": "#eff1f1", "on-secondary-container": "#54656c", "surface-container": "#eceeee", "on-secondary": "#ffffff", "secondary-fixed": "#d4e5ed", "surface-container-high": "#e6e8e8", "outline-variant": "#bdc9c6", "surface-container-lowest": "#ffffff", "surface-bright": "#f8fafa", "inverse-surface": "#2e3131", "on-background": "#191c1d", "outline": "#6e7977", "tertiary-container": "#905d15", "error": "#ba1a1a", "primary": "#005b54", "negative": "#C04E4E", "on-tertiary-container": "#ffe3c8" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-md": "1rem", "margin": "1rem", "gutter-desktop": "1.5rem", "space-lg": "1.5rem", "gutter": "1rem", "space-xl": "2rem", "space-xs": "0.25rem", "margin-desktop": "2rem", "space-sm": "0.5rem" }, "fontFamily": { "body-sm": ["Inter"], "label-sm": ["Inter"], "headline-md": ["Inter"], "body-md": ["Inter"], "headline-lg": ["Inter"], "title": ["Inter"], "display": ["Inter"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "500" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "body-md": ["15px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "600" }], "title": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "display": ["32px", { "lineHeight": "40px", "fontWeight": "600" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;background-color:#f8fafa;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-background font-body-md text-body-md text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-surface-container-low flex items-center justify-center"><span class="material-symbols-outlined text-primary text-[20px]">trending_up</span></div><div><h1 class="font-headline-md text-headline-md text-on-surface leading-tight">Market</h1><p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">MockFolio IN</p></div></div><div class="flex items-center gap-space-xs"><button class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">notifications</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-20 bg-background"><div class="flex flex-col w-full px-gutter pb-space-xl">
+<!-- Interactive View State Switcher & Header Context -->
+<div class="flex items-center justify-between pt-space-sm pb-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-muted">Keep an eye on it</span>
+<!-- Interactive State Toggle Affordance -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all text-label-sm font-label-sm active:scale-95" id="stateToggleBtn" onclick="toggleWatchlistState()">
+<span class="material-symbols-outlined text-[16px] text-primary" id="toggleIcon">visibility_off</span>
+<span id="toggleLabel">Preview Empty State</span>
+</button>
+</div>
+<div class="flex items-baseline justify-between mb-space-md">
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Watchlist</h2>
+<span class="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-full font-medium" id="badgeCount">3 Tracked</span>
+</div>
+<!-- POPULATED STATE CONTAINER -->
+<div class="flex flex-col w-full space-y-space-md transition-all duration-300" id="populatedState">
+<!-- Macro Educational Banner / Drift Card -->
+<div class="w-full bg-surface rounded-xl p-space-md shadow-sm border border-border">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Avg Drift from Reference</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-low text-primary font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+          +0.28%
+        </span>
+</div>
+<div class="text-[22px] font-semibold text-on-surface leading-tight [font-variant-numeric:tabular-nums] mb-1.5">
+        ₹13.50 <span class="font-body-sm text-body-sm text-on-surface-muted font-normal">avg mock premium</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted leading-snug">
+        MockFolio price reflects simulated learner order pressure relative to Dalal Street reference quotes.
+      </p>
+</div>
+<!-- Filter Pills Row -->
+<div class="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+<button class="px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm whitespace-nowrap shadow-sm">
+        All (3)
+      </button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface text-on-surface-variant font-label-sm text-label-sm border border-border hover:bg-surface-container-low whitespace-nowrap transition-colors">
+        Gainers (2)
+      </button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface text-on-surface-variant font-label-sm text-label-sm border border-border hover:bg-surface-container-low whitespace-nowrap transition-colors">
+        Lagging (1)
+      </button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface text-on-surface-variant font-label-sm text-label-sm border border-border hover:bg-surface-container-low whitespace-nowrap transition-colors">
+        Large Cap
+      </button>
+</div>
+<!-- Stock Cards Stack -->
+<div class="flex flex-col space-y-space-md">
+<!-- STOCK 1: RELIANCE -->
+<div class="w-full bg-surface rounded-xl p-space-md shadow-sm border border-border flex flex-col gap-3 transition-shadow hover:shadow-md">
+<!-- Top Row: Ticker info & Favorite toggle -->
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title text-title font-semibold text-on-surface">RELIANCE</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-secondary tracking-wide">NSE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted truncate">Reliance Industries Ltd.</p>
+</div>
+<button aria-label="Toggle favorite" class="w-9 h-9 -mr-1 flex items-center justify-center rounded-full hover:bg-surface-container-low text-amber-500 transition-colors" onclick="toggleStar(this)">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+</div>
+<!-- Metric Grid -->
+<div class="flex items-end justify-between pt-1">
+<div>
+<div class="flex items-center gap-1.5 mb-0.5">
+<span class="text-[20px] font-bold text-on-surface [font-variant-numeric:tabular-nums] tracking-tight">₹2,944.80</span>
+<span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary-fixed-dim/40 text-on-primary-fixed-variant">Simulated</span>
+</div>
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-muted [font-variant-numeric:tabular-nums]">
+<span>Ref: ₹2,930.60</span>
+</div>
+</div>
+<!-- Deviation Delta Indicator -->
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-0.5 px-2 py-1 rounded-full bg-primary/10 text-positive font-label-sm text-label-sm font-semibold [font-variant-numeric:tabular-nums]">
+<span class="material-symbols-outlined text-[13px]">arrow_upward</span>
+              +₹14.20 (+0.48%)
+            </span>
+<span class="text-[10px] text-on-surface-muted mt-0.5">Deviation</span>
+</div>
+</div>
+<!-- Sparkline Dual Line Chart -->
+<div class="w-full h-14 relative my-1">
+<svg aria-hidden="true" class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 340 56">
+<!-- Faint Guideline -->
+<line stroke="#E2E8E8" stroke-dasharray="2 4" stroke-width="1" x1="0" x2="340" y1="28" y2="28"></line>
+<!-- Benchmark Reference Line (Dashed Slate) -->
+<path d="M0,38 Q50,34 90,32 T180,26 T260,24 T340,20" fill="none" opacity="0.85" stroke="#6E7F86" stroke-dasharray="4 3" stroke-width="1.5"></path>
+<!-- Simulated MockFolio Line (Solid Teal) -->
+<path d="M0,44 Q45,36 90,28 T180,18 T260,16 T340,8" fill="none" stroke="#0B756D" stroke-linecap="round" stroke-width="2.2"></path>
+<!-- Current Pulse dot -->
+<circle cx="340" cy="8" fill="#0B756D" r="3.5"></circle>
+</svg>
+</div>
+<!-- Action Row -->
+<div class="flex items-center justify-between pt-1 border-t border-surface-container-low">
+<div class="flex items-center gap-3 text-on-surface-muted text-label-sm font-label-sm">
+<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-primary rounded-full"></span> Mock</span>
+<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-b border-dashed border-secondary"></span> Dalal St</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="min-h-[44px] min-w-[76px] px-3 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface font-title text-title rounded-lg text-center transition-colors">
+              Sell
+            </button>
+<button class="min-h-[44px] min-w-[76px] px-3.5 py-2 bg-primary hover:bg-primary-dark text-on-primary font-title text-title rounded-lg text-center transition-colors shadow-sm">
+              Buy
+            </button>
+</div>
+</div>
+</div>
+<!-- STOCK 2: TCS -->
+<div class="w-full bg-surface rounded-xl p-space-md shadow-sm border border-border flex flex-col gap-3 transition-shadow hover:shadow-md">
+<!-- Top Row -->
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title text-title font-semibold text-on-surface">TCS</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-secondary tracking-wide">NSE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted truncate">Tata Consultancy Services</p>
+</div>
+<button aria-label="Toggle favorite" class="w-9 h-9 -mr-1 flex items-center justify-center rounded-full hover:bg-surface-container-low text-amber-500 transition-colors" onclick="toggleStar(this)">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+</div>
+<!-- Metric Grid -->
+<div class="flex items-end justify-between pt-1">
+<div>
+<div class="flex items-center gap-1.5 mb-0.5">
+<span class="text-[20px] font-bold text-on-surface [font-variant-numeric:tabular-nums] tracking-tight">₹3,892.00</span>
+<span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary-fixed-dim/40 text-on-primary-fixed-variant">Simulated</span>
+</div>
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-muted [font-variant-numeric:tabular-nums]">
+<span>Ref: ₹3,870.00</span>
+</div>
+</div>
+<!-- Deviation Delta Indicator -->
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-0.5 px-2 py-1 rounded-full bg-primary/10 text-positive font-label-sm text-label-sm font-semibold [font-variant-numeric:tabular-nums]">
+<span class="material-symbols-outlined text-[13px]">arrow_upward</span>
+              +₹22.00 (+0.57%)
+            </span>
+<span class="text-[10px] text-on-surface-muted mt-0.5">Deviation</span>
+</div>
+</div>
+<!-- Sparkline Dual Line Chart -->
+<div class="w-full h-14 relative my-1">
+<svg aria-hidden="true" class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 340 56">
+<line stroke="#E2E8E8" stroke-dasharray="2 4" stroke-width="1" x1="0" x2="340" y1="28" y2="28"></line>
+<path d="M0,32 Q60,36 120,30 T220,24 T300,22 T340,16" fill="none" opacity="0.85" stroke="#6E7F86" stroke-dasharray="4 3" stroke-width="1.5"></path>
+<path d="M0,36 Q60,40 120,28 T220,18 T300,14 T340,8" fill="none" stroke="#0B756D" stroke-linecap="round" stroke-width="2.2"></path>
+<circle cx="340" cy="8" fill="#0B756D" r="3.5"></circle>
+</svg>
+</div>
+<!-- Action Row -->
+<div class="flex items-center justify-between pt-1 border-t border-surface-container-low">
+<div class="flex items-center gap-3 text-on-surface-muted text-label-sm font-label-sm">
+<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-primary rounded-full"></span> Mock</span>
+<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-b border-dashed border-secondary"></span> Dalal St</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="min-h-[44px] min-w-[76px] px-3 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface font-title text-title rounded-lg text-center transition-colors">
+              Sell
+            </button>
+<button class="min-h-[44px] min-w-[76px] px-3.5 py-2 bg-primary hover:bg-primary-dark text-on-primary font-title text-title rounded-lg text-center transition-colors shadow-sm">
+              Buy
+            </button>
+</div>
+</div>
+</div>
+<!-- STOCK 3: INFY (Negative Deviation) -->
+<div class="w-full bg-surface rounded-xl p-space-md shadow-sm border border-border flex flex-col gap-3 transition-shadow hover:shadow-md">
+<!-- Top Row -->
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title text-title font-semibold text-on-surface">INFY</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-secondary tracking-wide">NSE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted truncate">Infosys Ltd.</p>
+</div>
+<button aria-label="Toggle favorite" class="w-9 h-9 -mr-1 flex items-center justify-center rounded-full hover:bg-surface-container-low text-amber-500 transition-colors" onclick="toggleStar(this)">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+</div>
+<!-- Metric Grid -->
+<div class="flex items-end justify-between pt-1">
+<div>
+<div class="flex items-center gap-1.5 mb-0.5">
+<span class="text-[20px] font-bold text-on-surface [font-variant-numeric:tabular-nums] tracking-tight">₹1,524.30</span>
+<span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary-fixed-dim/40 text-on-primary-fixed-variant">Simulated</span>
+</div>
+<div class="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-muted [font-variant-numeric:tabular-nums]">
+<span>Ref: ₹1,530.00</span>
+</div>
+</div>
+<!-- Negative Deviation Delta Indicator -->
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-0.5 px-2 py-1 rounded-full bg-error-container text-negative font-label-sm text-label-sm font-semibold [font-variant-numeric:tabular-nums]">
+<span class="material-symbols-outlined text-[13px]">arrow_downward</span>
+              -₹5.70 (-0.37%)
+            </span>
+<span class="text-[10px] text-on-surface-muted mt-0.5">Deviation</span>
+</div>
+</div>
+<!-- Sparkline Dual Line Chart -->
+<div class="w-full h-14 relative my-1">
+<svg aria-hidden="true" class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 340 56">
+<line stroke="#E2E8E8" stroke-dasharray="2 4" stroke-width="1" x1="0" x2="340" y1="28" y2="28"></line>
+<!-- Benchmark Reference Line -->
+<path d="M0,18 Q55,20 110,24 T210,25 T280,26 T340,24" fill="none" opacity="0.85" stroke="#6E7F86" stroke-dasharray="4 3" stroke-width="1.5"></path>
+<!-- Simulated Line Dipping Below Reference -->
+<path d="M0,20 Q55,22 110,30 T210,38 T280,44 T340,46" fill="none" stroke="#C04E4E" stroke-linecap="round" stroke-width="2.2"></path>
+<circle cx="340" cy="46" fill="#C04E4E" r="3.5"></circle>
+</svg>
+</div>
+<!-- Action Row -->
+<div class="flex items-center justify-between pt-1 border-t border-surface-container-low">
+<div class="flex items-center gap-3 text-on-surface-muted text-label-sm font-label-sm">
+<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-negative rounded-full"></span> Mock</span>
+<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-b border-dashed border-secondary"></span> Dalal St</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="min-h-[44px] min-w-[76px] px-3 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface font-title text-title rounded-lg text-center transition-colors">
+              Sell
+            </button>
+<button class="min-h-[44px] min-w-[76px] px-3.5 py-2 bg-primary hover:bg-primary-dark text-on-primary font-title text-title rounded-lg text-center transition-colors shadow-sm">
+              Buy
+            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- EMPTY STATE CONTAINER (Toggleable) -->
+<div class="hidden flex-col items-center justify-center text-center py-space-xl px-gutter bg-surface rounded-2xl border border-border shadow-sm my-space-sm animate-fade-in" id="emptyState">
+<!-- Minimalist Serene Line Art Illustration -->
+<div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-space-md text-primary">
+<svg class="w-10 h-10 stroke-primary stroke-[1.5] fill-none" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke-dasharray="2 2"></polygon>
+<circle cx="12" cy="12" r="3" stroke="#0B756D" stroke-width="1.5"></circle>
+</svg>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 font-semibold">
+      Star a stock to track it here
+    </h3>
+<p class="font-body-md text-body-md text-on-surface-muted max-w-[270px] mb-space-lg leading-relaxed">
+      Keep tabs on simulated price divergence before placing your risk-free orders.
+    </p>
+<!-- Primary Action Affordance -->
+<a class="min-h-[44px] w-full max-w-[220px] inline-flex items-center justify-center px-space-md bg-primary hover:bg-primary-dark text-on-primary font-title text-title rounded-xl transition-all shadow-sm active:scale-98" href="#" onclick="switchTabToMarket(event)">
+      Browse Market
+    </a>
+</div>
+<!-- Educational Footer Tooltip -->
+<div class="mt-space-lg px-space-sm py-space-sm rounded-xl bg-surface-container-low/60 flex items-start gap-2.5">
+<span class="material-symbols-outlined text-primary text-[20px] mt-0.5">lightbulb</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+<strong>Pro Tip:</strong> Deviations widen during peak trading simulation hours when student batch orders clear simultaneously.
+    </p>
+</div>
+</div>
+<script>
+  // Ensure the bottom navigation updates active item strictly to 'Watchlist'
+  (function initActiveNav() {
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+      if (link.getAttribute('data-path') === 'watchlist') {
+        link.classList.remove('text-on-surface-variant');
+        link.classList.add('text-primary', 'font-title', 'font-semibold');
+        const icon = link.querySelector('.material-symbols-outlined');
+        if (icon) {
+          icon.textContent = 'bookmark';
+          icon.style.fontVariationSettings = "'FILL' 1";
+        }
+      } else {
+        link.classList.remove('text-primary', 'font-title', 'font-semibold');
+        link.classList.add('text-on-surface-variant');
+        const icon = link.querySelector('.material-symbols-outlined');
+        if (icon) {
+          icon.style.fontVariationSettings = "'FILL' 0";
+        }
+      }
+    });
+  })();
+
+  // Toggle between populated and empty states for review & delight
+  function toggleWatchlistState() {
+    const populated = document.getElementById('populatedState');
+    const empty = document.getElementById('emptyState');
+    const toggleLabel = document.getElementById('toggleLabel');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const badgeCount = document.getElementById('badgeCount');
+
+    const isPopulatedHidden = populated.classList.contains('hidden');
+
+    if (isPopulatedHidden) {
+      populated.classList.remove('hidden');
+      empty.classList.add('hidden');
+      toggleLabel.textContent = 'Preview Empty State';
+      toggleIcon.textContent = 'visibility_off';
+      badgeCount.textContent = '3 Tracked';
+      badgeCount.classList.remove('bg-surface-container', 'text-on-surface-muted');
+      badgeCount.classList.add('bg-secondary-container', 'text-on-secondary-container');
+    } else {
+      populated.classList.add('hidden');
+      empty.classList.remove('hidden');
+      toggleLabel.textContent = 'Preview Populated';
+      toggleIcon.textContent = 'list_alt';
+      badgeCount.textContent = '0 Tracked';
+      badgeCount.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+      badgeCount.classList.add('bg-surface-container', 'text-on-surface-muted');
+    }
+  }
+
+  // Interactive toggle for card star state
+  function toggleStar(btn) {
+    const icon = btn.querySelector('.material-symbols-outlined');
+    const isFilled = icon.style.fontVariationSettings && icon.style.fontVariationSettings.includes("'FILL' 1");
+    if (isFilled) {
+      icon.style.fontVariationSettings = "'FILL' 0";
+      icon.classList.remove('text-amber-500');
+      icon.classList.add('text-on-surface-muted');
+    } else {
+      icon.style.fontVariationSettings = "'FILL' 1";
+      icon.classList.remove('text-on-surface-muted');
+      icon.classList.add('text-amber-500');
+    }
+  }
+
+  function switchTabToMarket(e) {
+    e.preventDefault();
+    const marketNav = document.querySelector('nav a[data-path="market"]');
+    if (marketNav) {
+      marketNav.click();
+    }
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/85 backdrop-blur-xl shadow-[0_-2px_12px_rgba(22,38,43,0.05)]" data-active-classes="text-primary font-title font-semibold"><div class="h-16 px-space-xs flex items-center justify-around"><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="market" href="#"><span class="material-symbols-outlined text-[22px]">candlestick_chart</span><span class="font-label-sm text-label-sm">Market</span></a><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="watchlist" href="#"><span class="material-symbols-outlined text-[22px]">bookmark_border</span><span class="font-label-sm text-label-sm">Watchlist</span></a><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="portfolio" href="#"><span class="material-symbols-outlined text-[22px]">pie_chart</span><span class="font-label-sm text-label-sm">Portfolio</span></a><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="orders" href="#"><span class="material-symbols-outlined text-[22px]">receipt_long</span><span class="font-label-sm text-label-sm">Orders</span></a><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="profile" href="#"><span class="material-symbols-outlined text-[22px]">account_balance_wallet</span><span class="font-label-sm text-label-sm">Profile</span></a></div></nav></body></html>

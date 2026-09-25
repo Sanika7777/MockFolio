@@ -32,9 +32,8 @@ frontend/
 │   ├── auth.js            login/register form submission
 │   ├── auth-motion.js     decorative motion for the auth pages only (password
 │   │                      toggles, strength meter, count-up, hero chart)
-│   ├── theme.js            theme switching; sets documentElement[data-theme]
-│   │                      before first paint to avoid a flash
-│   └── dashboard.js, portfolio.js, stock.js   empty stubs, left as-is
+│   └── theme.js           theme switching; sets documentElement[data-theme]
+│                          before first paint to avoid a flash
 └── assets/fonts/           self-hosted Inter (latin + latin-ext, for ₹)
 ```
 

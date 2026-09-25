@@ -244,7 +244,10 @@
     const href = `stock.html?id=${stock.id}`;
     const arrow = deviation > 0 ? "▲" : deviation < 0 ? "▼" : "–";
     const actionLabel = currentUser?.is_admin ? "View" : "Trade";
-    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><strong>${escapeHTML(stock.symbol)}</strong><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="MockFolio price"><strong class="market-price">${money(stock.simulated_price)}</strong><small>MockFolio price</small></td><td data-label="Reference price">${money(stock.reference_price)}</td><td data-label="Deviation"><span class="deviation-chip ${tone(deviation)}">${arrow} ${signed(deviation)}</span><small class="${tone(deviation)}">${percent(stock.deviation_percentage)}</small></td><td data-label="Action" class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></td></tr>`;
+    const sectorTag = stock.sector
+      ? `<span class="sector-tag">${escapeHTML(stock.sector)}</span>`
+      : "";
+    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="MockFolio price"><strong class="market-price">${money(stock.simulated_price)}</strong><small>MockFolio price</small></td><td data-label="Reference price">${money(stock.reference_price)}</td><td data-label="Deviation"><div class="deviation-cell"><div class="deviation-text"><span class="deviation-chip ${tone(deviation)}">${arrow} ${signed(deviation)}</span><small class="${tone(deviation)}">${percent(stock.deviation_percentage)}</small></div><canvas class="sparkline" data-sparkline="${stock.id}" width="72" height="28" aria-hidden="true"></canvas></div></td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
   }
 
   function bindWatchButtons() {
@@ -309,6 +312,7 @@
               .join("")
           : `<tr><td colspan="5"><div class="empty-state compact"><strong>${query ? "No stocks match your search." : mode === "watchlist" ? "No stocks in your watchlist." : "No stocks available."}</strong><span>${query ? "Try a different symbol or company name." : "The simulated market has no active stocks right now."}</span></div></td></tr>`;
         bindWatchButtons();
+        initSparklines();
         if (animate) staggerRows("#market-table");
       };
       render(true);
@@ -436,6 +440,7 @@
           ? filtered.map((stock) => stockRow(stock, true)).join("")
           : `<tr><td colspan="5"><div class="empty-state compact"><strong>No stocks match.</strong><span>Try a different search or filter.</span></div></td></tr>`;
         bindWatchButtons();
+        initSparklines();
         if (animate) staggerRows("#watchlist-table");
       };
       render(true);
@@ -639,6 +644,14 @@
       },
       options: {
         cutout: "68%",
+        // Without these, Chart.js falls back to its default aspect-ratio
+        // sizing, which can size the canvas's internal drawing buffer
+        // differently from the CSS box it's actually rendered at — the
+        // ring is still drawn, but hover hit-testing lands in the wrong
+        // place (or nowhere), so the tooltip never appears. Locking to the
+        // CSS-defined container fixes both hover and the visual size.
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -781,6 +794,132 @@
         animation: reducedMotion() ? false : { duration: 700 },
       },
     });
+  }
+
+  // Per-row sparklines on Market/Watchlist (§8: "lazily fetch history(id)
+  // only for rows scrolled into view, with a small in-memory cache" — the
+  // default in the integration guide is to omit these rather than fire a
+  // history() request per row on load; this is that lazy alternative).
+  //
+  // These plot the stock's *actual market* life, not the MockFolio
+  // simulated price — i.e. reference_price, the anchor MockFolio's price
+  // drifts around (see DESIGN.md). history() only gets a row when a trade
+  // or decay tick runs, so a stock nobody has traded yet can have little
+  // or no reference-price history; for those, fetchMarketLifeSeries()
+  // below fills in a placeholder so every row still gets a chart.
+  //
+  // TODO(real market data): fetchMarketLifeSeries() is the one place to
+  // change when a real market-data API is available. Replace its body
+  // with something like:
+  //   const res = await fetch(`https://<provider>/v1/quotes/${stock.symbol}/history?range=1mo`);
+  //   const data = await res.json();
+  //   return data.prices; // closing prices, oldest first
+  // and the fallback branch (and its "fabricated" note) can be deleted.
+  const sparklineCache = new Map();
+  const sparklineCharts = new Map();
+  let sparklineObserver;
+  function initSparklines() {
+    if (typeof Chart === "undefined") return;
+    if (sparklineObserver) sparklineObserver.disconnect();
+    sparklineObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          sparklineObserver.unobserve(entry.target);
+          loadSparkline(entry.target);
+        });
+      },
+      { rootMargin: "200px" },
+    );
+    $$("canvas.sparkline").forEach((canvas) => {
+      const existing = sparklineCharts.get(canvas.dataset.sparkline);
+      if (existing) existing.destroy();
+      sparklineObserver.observe(canvas);
+    });
+  }
+  // A small deterministic PRNG (mulberry-ish LCG) seeded from the symbol,
+  // so the fabricated walk is stable across re-renders/theme toggles
+  // instead of jumping around every time it's redrawn.
+  function seededRandom(seedText) {
+    let state = [...String(seedText)].reduce(
+      (sum, ch) => sum + ch.charCodeAt(0),
+      7,
+    );
+    return () => {
+      state = (state * 9301 + 49297) % 233280;
+      return state / 233280;
+    };
+  }
+  function fabricateMarketSeries(stock, count = 20) {
+    const end =
+      Number(stock.reference_price) || Number(stock.simulated_price) || 100;
+    const next = seededRandom(stock.symbol || stock.id);
+    const series = [end];
+    let value = end;
+    for (let i = 1; i < count; i++) {
+      const step = (next() - 0.5) * value * 0.012;
+      value = Math.max(value * 0.85, value - step);
+      series.push(value);
+    }
+    return series.reverse();
+  }
+  async function fetchMarketLifeSeries(stock) {
+    try {
+      const history = await api.history(stock.id);
+      const real = history
+        .slice()
+        .reverse()
+        .map((item) => Number(item.reference_price))
+        .filter((value) => Number.isFinite(value));
+      if (real.length >= 6) return real;
+    } catch {
+      // fall through to the placeholder below
+    }
+    return fabricateMarketSeries(stock);
+  }
+  async function loadSparkline(canvas) {
+    const id = canvas.dataset.sparkline;
+    try {
+      let points = sparklineCache.get(id);
+      if (!points) {
+        const stock =
+          stocks.find((item) => String(item.id) === id) ||
+          watchlist.find((item) => String(item.id) === id);
+        if (!stock) return;
+        points = await fetchMarketLifeSeries(stock);
+        sparklineCache.set(id, points);
+      }
+      if (points.length < 2 || !canvas.isConnected) return;
+      const up = points[points.length - 1] >= points[0];
+      const styles = getComputedStyle(document.documentElement);
+      const chart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: points.map((_, i) => i),
+          datasets: [
+            {
+              data: points,
+              borderColor: styles
+                .getPropertyValue(up ? "--positive" : "--negative")
+                .trim(),
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.3,
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: false,
+          animation: false,
+          scales: { x: { display: false }, y: { display: false } },
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        },
+      });
+      sparklineCharts.set(id, chart);
+    } catch {
+      // No sparkline for this row is a cosmetic miss, not worth a toast.
+    }
   }
 
   async function loadStock() {

@@ -59,6 +59,7 @@ class Order(Base):
     status: Mapped[str] = mapped_column(String(20), default="FILLED")
     client_order_key: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (Index("ix_orders_user_created", "user_id", "created_at"),)
 
 class Trade(Base):
     __tablename__ = "trades"
@@ -75,6 +76,7 @@ class Trade(Base):
     price_impact: Mapped[Decimal] = mapped_column(Numeric(16, 2))
     deviation_after_trade: Mapped[Decimal] = mapped_column(Numeric(16, 2))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (Index("ix_trades_user_created", "user_id", "created_at"),)
 
 class PriceHistory(Base):
     __tablename__ = "price_history"

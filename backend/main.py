@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from decimal import Decimal
 import os
 from pathlib import Path
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer
@@ -11,9 +11,10 @@ from sqlalchemy.orm import Session
 from .auth import create_access_token, get_user_id, hash_password, verify_password
 from .database import Base, SessionLocal, engine, get_db
 from .models import Account, Holding, Order, PriceHistory, Stock, Trade, User, Watchlist
-from .price_engine import decay_price
 from .schemas import LoginRequest, RegisterRequest, TokenResponse, TradeRequest, TradeResponse
-from .trading import TradingError, execute_trade
+from .simulation import run_decay_tx
+from .trading import IdempotencyConflict, TradingError, execute_trade_tx
+from .transactions import get_metrics, is_retryable
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,7 +23,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="MockFolio API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+CORS_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://127.0.0.1:5500,http://localhost:5500").split(",") if origin.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def current_user(token: str = Depends(oauth2), db: Session = Depends(get_db)):
@@ -97,21 +99,25 @@ def stock_detail(stock_id: int, db: Session = Depends(get_db)):
     return {"id": s.id, "symbol": s.symbol, "company_name": s.company_name, "sector": s.sector, "reference_price": s.reference_price, "simulated_price": s.simulated_price, "deviation": s.simulated_price - s.reference_price, "deviation_percentage": (s.simulated_price - s.reference_price) / s.reference_price * 100}
 
 @app.get("/stocks/{stock_id}/history")
-def history(stock_id: int, db: Session = Depends(get_db)):
-    rows = db.scalars(select(PriceHistory).where(PriceHistory.stock_id == stock_id).order_by(PriceHistory.recorded_at.desc()).limit(100)).all()
+def history(stock_id: int, db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+    rows = db.scalars(select(PriceHistory).where(PriceHistory.stock_id == stock_id).order_by(PriceHistory.recorded_at.desc()).limit(limit).offset(offset)).all()
     return [{"reference_price": row.reference_price, "simulated_price": row.simulated_price, "deviation": row.deviation, "deviation_percentage": row.deviation_percentage, "recorded_at": row.recorded_at} for row in rows]
 
 @app.post("/trades/{side}", response_model=TradeResponse)
-def trade(side: str, data: TradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def trade(side: str, data: TradeRequest, user: User = Depends(current_user)):
     if user.is_admin:
         raise HTTPException(status_code=403, detail="Developer accounts cannot place trades.")
     try:
-        result = execute_trade(db, user.id, data.stock_id, data.quantity, side.upper(), data.client_order_key)
+        result = execute_trade_tx(user.id, data.stock_id, data.quantity, side.upper(), data.client_order_key)
         return trade_json(result)
     except TradingError as exc:
-        db.rollback(); raise HTTPException(400, str(exc)) from exc
+        raise HTTPException(400, str(exc)) from exc
+    except IdempotencyConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
     except Exception as exc:
-        db.rollback(); raise HTTPException(500, "Trade could not be completed") from exc
+        if is_retryable(exc):
+            raise HTTPException(503, "Market is busy, please retry") from exc
+        raise HTTPException(500, "Trade could not be completed") from exc
 
 @app.get("/portfolio")
 def portfolio(user: User = Depends(current_user), db: Session = Depends(get_db)):
@@ -125,13 +131,13 @@ def portfolio_summary(user: User = Depends(current_user), db: Session = Depends(
     return {"cash_balance": account.cash_balance, "holdings_value": holdings_value, "total_account_value": account.cash_balance + holdings_value, "total_pnl": holdings_value - invested}
 
 @app.get("/orders")
-def orders(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    rows = db.execute(select(Order, Stock).join(Stock, Order.stock_id == Stock.id).where(Order.user_id == user.id).order_by(Order.created_at.desc())).all()
+def orders(user: User = Depends(current_user), db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+    rows = db.execute(select(Order, Stock).join(Stock, Order.stock_id == Stock.id).where(Order.user_id == user.id).order_by(Order.created_at.desc()).limit(limit).offset(offset)).all()
     return [{"id": order.id, "symbol": stock.symbol, "order_type": order.order_type, "quantity": order.quantity, "requested_price": order.requested_price, "status": order.status, "created_at": order.created_at} for order, stock in rows]
 
 @app.get("/trades")
-def trades(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    rows = db.execute(select(Trade, Stock).join(Stock, Trade.stock_id == Stock.id).where(Trade.user_id == user.id).order_by(Trade.created_at.desc())).all()
+def trades(user: User = Depends(current_user), db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+    rows = db.execute(select(Trade, Stock).join(Stock, Trade.stock_id == Stock.id).where(Trade.user_id == user.id).order_by(Trade.created_at.desc()).limit(limit).offset(offset)).all()
     return [{"id": trade.id, "symbol": stock.symbol, "side": trade.side, "quantity": trade.quantity, "fill_price": trade.fill_price, "brokerage": trade.brokerage, "price_impact": trade.price_impact, "created_at": trade.created_at} for trade, stock in rows]
 
 @app.post("/watchlist/{stock_id}")
@@ -175,8 +181,8 @@ def admin_trade_json(trade: Trade, stock: Stock):
     return {"id": trade.id, "symbol": stock.symbol, "side": trade.side, "quantity": trade.quantity, "fill_price": trade.fill_price, "brokerage": trade.brokerage, "price_impact": trade.price_impact, "price_before": trade.price_before, "price_after": trade.price_after, "created_at": trade.created_at}
 
 @app.get("/admin/users")
-def admin_users(user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    users = db.scalars(select(User).order_by(User.created_at.desc())).all()
+def admin_users(user: User = Depends(require_admin), db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+    users = db.scalars(select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)).all()
     return [{"id": item.id, "username": item.username, "email": item.email, "is_admin": item.is_admin, "created_at": item.created_at, **admin_user_summary(db, item)} for item in users]
 
 @app.get("/admin/summary")
@@ -193,25 +199,27 @@ def admin_user(user_id: int, user: User = Depends(require_admin), db: Session = 
     return {"user": {"id": target.id, "username": target.username, "email": target.email, "is_admin": target.is_admin, "created_at": target.created_at}, "account": admin_user_summary(db, target), "holdings": [admin_holding_json(holding, stock) for holding, stock in holdings]}
 
 @app.get("/admin/users/{user_id}/trades")
-def admin_user_trades(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def admin_user_trades(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
     if not db.get(User, user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    rows = db.execute(select(Trade, Stock).join(Stock, Trade.stock_id == Stock.id).where(Trade.user_id == user_id).order_by(Trade.created_at.desc())).all()
+    rows = db.execute(select(Trade, Stock).join(Stock, Trade.stock_id == Stock.id).where(Trade.user_id == user_id).order_by(Trade.created_at.desc()).limit(limit).offset(offset)).all()
     return [admin_trade_json(trade, stock) for trade, stock in rows]
 
 @app.get("/admin/users/{user_id}/orders")
-def admin_user_orders(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def admin_user_orders(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
     if not db.get(User, user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    rows = db.execute(select(Order, Stock).join(Stock, Order.stock_id == Stock.id).where(Order.user_id == user_id).order_by(Order.created_at.desc())).all()
+    rows = db.execute(select(Order, Stock).join(Stock, Order.stock_id == Stock.id).where(Order.user_id == user_id).order_by(Order.created_at.desc()).limit(limit).offset(offset)).all()
     return [{"id": order.id, "symbol": stock.symbol, "order_type": order.order_type, "quantity": order.quantity, "requested_price": order.requested_price, "status": order.status, "created_at": order.created_at} for order, stock in rows]
 
+@app.get("/admin/tx-metrics")
+def admin_tx_metrics(user: User = Depends(require_admin)):
+    return get_metrics()
+
 @app.post("/simulation/decay")
-def decay(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    for stock in db.scalars(select(Stock).with_for_update()).all():
-        stock.previous_simulated_price = stock.simulated_price; stock.simulated_price = decay_price(stock.simulated_price, stock.reference_price)
-        db.add(PriceHistory(stock_id=stock.id, reference_price=stock.reference_price, simulated_price=stock.simulated_price, deviation=stock.simulated_price-stock.reference_price, deviation_percentage=(stock.simulated_price-stock.reference_price)/stock.reference_price*100))
-    db.commit(); return {"ok": True}
+def decay(user: User = Depends(require_admin)):
+    run_decay_tx()
+    return {"ok": True}
 
 @app.get("/")
 def frontend():

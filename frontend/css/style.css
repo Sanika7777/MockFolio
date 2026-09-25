@@ -442,6 +442,7 @@ th,
 td {
   padding: 17px 18px;
   text-align: left;
+  vertical-align: middle;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -456,6 +457,16 @@ th {
 tr:last-child td {
   border-bottom: 0;
 }
+/* Market/Watchlist rows mix stacked text, a round icon button, and a
+   sparkline — each a slightly different natural height. Rather than
+   trying to pixel-match those exactly, give the row a fixed minimum
+   height well above any of them: vertical-align: middle then centers
+   every cell in the same space, so a couple of px of natural difference
+   between them stops being visible at all. */
+#market-table tr,
+#watchlist-table tr {
+  min-height: 76px;
+}
 .stock-name {
   display: flex;
   flex-direction: column;
@@ -463,6 +474,23 @@ tr:last-child td {
 }
 .stock-name strong {
   font-size: 14px;
+}
+.stock-name-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sector-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 .market-price {
   font-size: 16px;
@@ -475,11 +503,26 @@ td small {
   font-size: 12px;
   margin-top: 4px;
 }
+.deviation-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.deviation-text {
+  display: flex;
+  flex-direction: column;
+}
 .deviation-chip {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   font-weight: 700;
+}
+.sparkline {
+  display: block;
+  width: 72px;
+  height: 28px;
+  flex: none;
 }
 .row-actions {
   display: flex;
@@ -801,6 +844,13 @@ td small {
   position: relative;
   min-height: 220px;
 }
+.donut-card {
+  /* A donut + legend never needs to be full-bleed wide; without this it
+     stretches edge-to-edge wherever the card isn't already constrained by
+     a grid column (e.g. on the Profile page), leaving the donut looking
+     tiny in an oversized box. */
+  max-width: 520px;
+}
 .donut-wrap {
   display: flex;
   align-items: center;
@@ -809,8 +859,8 @@ td small {
 }
 .donut-canvas-wrap {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 200px;
+  height: 200px;
   flex: none;
 }
 .donut-center {
@@ -833,15 +883,15 @@ td small {
   text-align: center;
 }
 .donut-center strong {
-  font-size: 16px;
+  font-size: 19px;
   letter-spacing: -0.3px;
 }
 .donut-center span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .donut-legend {
   list-style: none;
