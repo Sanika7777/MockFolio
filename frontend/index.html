@@ -2,9 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Market | MockFolio</title>
     <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body data-page="market">
@@ -29,12 +33,28 @@
             <h2>All stocks</h2>
           </div>
           <div class="toolbar-actions">
-            <input
-              id="stock-search"
-              class="search"
-              placeholder="Search symbol or company"
-              aria-label="Search stocks"
-            /><select id="market-filter" aria-label="Market filter">
+            <div class="search-field">
+              <svg
+                class="search-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                id="stock-search"
+                class="search"
+                placeholder="Search symbol or company"
+                aria-label="Search stocks"
+              />
+            </div>
+            <select id="market-filter" aria-label="Market filter">
               <option value="all">All stocks</option>
               <option value="watchlist">Watchlist</option>
             </select>
@@ -51,7 +71,7 @@
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody id="market-table"></tbody>
+            <tbody id="market-table" data-cols="5"></tbody>
           </table>
         </div>
         <section class="price-explainer">

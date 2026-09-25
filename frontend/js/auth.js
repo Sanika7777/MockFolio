@@ -1,7 +1,7 @@
 (() => {
   const form = document.querySelector("form");
   const error = document.querySelector("#error");
-  const button = form?.querySelector("button");
+  const button = form?.querySelector('button[type="submit"]');
   if (!form) return;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -17,6 +17,7 @@
     }
     delete data.confirm_password;
     button.disabled = true;
+    button.classList.add("is-loading");
     button.textContent =
       form.id === "register" ? "Creating account..." : "Signing in...";
     try {
@@ -29,8 +30,9 @@
     } catch (requestError) {
       error.textContent = requestError.message;
       button.disabled = false;
+      button.classList.remove("is-loading");
       button.textContent =
-        form.id === "register" ? "Start with ₹1,00,000" : "Sign in";
+        form.id === "register" ? "Open your desk" : "Sign in to desk";
     }
   });
 })();

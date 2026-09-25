@@ -2,10 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Portfolio | MockFolio</title>
     <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
   </head>
   <body data-page="portfolio">
     <div id="app">
@@ -19,6 +24,7 @@
           </p>
         </section>
         <section class="stats" id="stats"></section>
+        <section class="charts-grid" id="portfolio-charts"></section>
         <div class="section-heading">
           <div>
             <span class="eyebrow">HOLDINGS</span>
@@ -38,7 +44,7 @@
                 <th>P&L</th>
               </tr>
             </thead>
-            <tbody id="portfolio-table"></tbody>
+            <tbody id="portfolio-table" data-cols="7"></tbody>
           </table>
         </div>
       </main>

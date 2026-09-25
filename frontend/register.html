@@ -2,66 +2,274 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Create account | MockFolio</title>
     <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body class="auth-page">
-    <main class="auth-layout">
-      <section class="auth-story">
-        <a class="brand" href="index.html"
-          ><span class="brand-mark">M</span><span>mockfolio</span></a
-        >
-        <div>
-          <span class="eyebrow">START WITH VIRTUAL CASH</span>
-          <h1>A calmer way<br /><em>to learn markets.</em></h1>
-          <p>
-            Get ₹1,00,000 virtual cash. No real money, no live orders, just a
-            clear place to understand price movement.
+    <header class="auth-topbar">
+      <a class="brand" href="index.html"
+        ><span class="brand-mark">M</span><span>mockfolio</span></a
+      >
+      <p class="auth-topbar-link">
+        Already registered? <a href="login.html">Sign in</a>
+      </p>
+    </header>
+    <main class="auth-grid">
+      <aside class="auth-hero" aria-hidden="true">
+        <div class="hero-chart-card">
+          <span class="eyebrow">HOW PRICES MOVE</span>
+          <h2>Two prices, one lesson.</h2>
+          <svg
+            class="hero-chart"
+            viewBox="0 0 384 140"
+            preserveAspectRatio="none"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+          >
+            <path
+              class="line-fill"
+              d="M6 100 C 50 90, 90 96, 130 78 S 210 40, 260 46 S 330 24, 378 20 L378 130 L6 130 Z"
+            />
+            <path
+              class="line-reference"
+              d="M6 108 C 60 104, 120 100, 180 90 S 300 66, 378 54"
+            />
+            <path
+              id="hero-path"
+              class="line-primary"
+              pathLength="1000"
+              d="M6 100 C 50 90, 90 96, 130 78 S 210 40, 260 46 S 330 24, 378 20"
+            />
+            <circle class="line-dot" r="5">
+              <animateMotion
+                dur="7s"
+                repeatCount="indefinite"
+                keyPoints="0;1;0"
+                keyTimes="0;0.5;1"
+                calcMode="linear"
+                begin="indefinite"
+              >
+                <mpath href="#hero-path" xlink:href="#hero-path" />
+              </animateMotion>
+            </circle>
+          </svg>
+          <div class="hero-legend">
+            <span><span class="dot"></span>MockFolio price</span>
+            <span><span class="dot ref"></span>Reference price</span>
+          </div>
+          <p class="hero-caption">
+            Your trades move the MockFolio price. It always drifts back
+            toward the reference price over time.
           </p>
         </div>
-        <span class="auth-note"
-          >Your account is local to this classroom simulation.</span
-        >
-      </section>
-      <section class="auth-panel">
+        <ul class="trust-list">
+          <li>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+            <div>
+              <strong>Virtual money only</strong>
+              <small>Zero risk to real capital</small>
+            </div>
+          </li>
+          <li>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 12h4l2-7 4 14 3-9 2 4h5" />
+            </svg>
+            <div>
+              <strong>Simulated pricing</strong>
+              <small>Moves with sandbox trades</small>
+            </div>
+          </li>
+          <li>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 8l10-4 10 4-10 4-10-4Z" />
+              <path d="M6 10.5V16c0 1.1 2.7 2 6 2s6-.9 6-2v-5.5" />
+              <path d="M22 8v6" />
+            </svg>
+            <div>
+              <strong>Practice, not prediction</strong>
+              <small>Built for learning, not live trading</small>
+            </div>
+          </li>
+        </ul>
+      </aside>
+      <section class="auth-card">
         <span class="eyebrow">CREATE ACCOUNT</span>
-        <h2>Open your desk</h2>
-        <p class="muted">₹1,00,000 virtual cash is credited instantly.</p>
-        <form id="register">
-          <label
-            >Username<input
+        <h1>
+          Start with
+          <span class="count-up" id="cash-counter" data-target="100000"
+            >₹0</span
+          >
+        </h1>
+        <p class="muted">
+          Virtual capital to practice Indian stock markets. No real money,
+          ever.
+        </p>
+        <form id="register" novalidate>
+          <div class="field" style="--i: 0">
+            <label for="username">Username</label>
+            <input
+              id="username"
               name="username"
               autocomplete="username"
               placeholder="Choose a username"
               minlength="3"
-              required /></label
-          ><label
-            >Email<input
+              required
+            />
+          </div>
+          <div class="field" style="--i: 1">
+            <label for="email">Email</label>
+            <input
+              id="email"
               name="email"
               type="email"
               autocomplete="email"
               placeholder="you@example.com"
-              required /></label
-          ><label
-            >Password<input
-              name="password"
-              type="password"
-              autocomplete="new-password"
-              placeholder="At least 6 characters"
-              minlength="6"
-              required /></label
-          ><label
-            >Confirm password<input
-              name="confirm_password"
-              type="password"
-              autocomplete="new-password"
-              placeholder="Repeat your password"
-              required /></label
-          ><button class="primary-button full">Start with ₹1,00,000</button>
+              required
+            />
+          </div>
+          <div class="field" style="--i: 2">
+            <label for="password"
+              >Password<span class="field-hint" id="password-strength"></span
+            ></label>
+            <div class="input-with-action">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="new-password"
+                placeholder="At least 6 characters"
+                minlength="6"
+                required
+              />
+              <button
+                type="button"
+                class="field-action"
+                data-toggle-password="password"
+                aria-label="Show password"
+                aria-pressed="false"
+              >
+                <svg
+                  class="icon-eye"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  class="icon-eye-off"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 3l18 18" />
+                  <path
+                    d="M10.6 5.1A11 11 0 0 1 12 5c7 0 11 7 11 7a13.2 13.2 0 0 1-3.4 4M6.6 6.6C3.8 8.4 2 12 2 12s4 7 11 7c1.5 0 2.9-.3 4.1-.9"
+                  />
+                  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                </svg>
+              </button>
+            </div>
+            <div class="strength-meter" id="password-strength-meter">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="field" style="--i: 3">
+            <label for="confirm_password">Confirm password</label>
+            <div class="input-with-action">
+              <input
+                id="confirm_password"
+                name="confirm_password"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Repeat your password"
+                required
+              />
+              <button
+                type="button"
+                class="field-action"
+                data-toggle-password="confirm_password"
+                aria-label="Show password"
+                aria-pressed="false"
+              >
+                <svg
+                  class="icon-eye"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  class="icon-eye-off"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 3l18 18" />
+                  <path
+                    d="M10.6 5.1A11 11 0 0 1 12 5c7 0 11 7 11 7a13.2 13.2 0 0 1-3.4 4M6.6 6.6C3.8 8.4 2 12 2 12s4 7 11 7c1.5 0 2.9-.3 4.1-.9"
+                  />
+                  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="primary-button full">
+            Open your desk
+          </button>
         </form>
-        <p id="error" class="error"></p>
+        <p id="error" class="error" role="alert" aria-live="polite"></p>
         <p class="auth-switch">
           Already registered? <a href="login.html">Sign in</a>
         </p>
@@ -69,5 +277,6 @@
     </main>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/auth-motion.js"></script>
   </body>
 </html>
