@@ -1,7 +1,14 @@
 (() => {
   const key = "mockfolio-theme";
   const saved = localStorage.getItem(key);
-  document.documentElement.dataset.theme = saved === "dark" ? "dark" : "light";
+  const system = window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+  document.documentElement.dataset.theme = saved
+    ? saved === "dark"
+      ? "dark"
+      : "light"
+    : system;
   window.MockfolioTheme = {
     key,
     current: () => document.documentElement.dataset.theme,

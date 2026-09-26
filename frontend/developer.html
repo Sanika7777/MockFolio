@@ -2,9 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Developer Dashboard | MockFolio</title>
     <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body data-page="developer">
@@ -23,12 +27,27 @@
             <span class="eyebrow">REGISTERED USERS</span>
             <h2>All users</h2>
           </div>
-          <input
-            id="user-search"
-            class="search"
-            placeholder="Search username or email"
-            aria-label="Search users"
-          />
+          <div class="search-field">
+            <svg
+              class="search-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              id="user-search"
+              class="search"
+              placeholder="Search username or email"
+              aria-label="Search users"
+            />
+          </div>
         </section>
         <div class="table-wrap">
           <table>
@@ -43,9 +62,10 @@
                 <th>Trades</th>
               </tr>
             </thead>
-            <tbody id="users-table"></tbody>
+            <tbody id="users-table" data-cols="7"></tbody>
           </table>
         </div>
+        <section id="developer-actions"></section>
       </main>
     </div>
     <div id="toast-region" class="toast-region"></div>

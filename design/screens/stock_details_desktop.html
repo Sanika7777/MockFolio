@@ -1,0 +1,527 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"primary-fixed":"#9bf2e8","on-primary-container":"#a1f8ee","on-surface-muted":"#5F6E75","inverse-on-surface":"#eff1f1","tertiary":"#724600","on-tertiary-container":"#ffe3c8","surface-container-low":"#f2f4f4","on-tertiary":"#ffffff","background":"#f8fafa","error":"#ba1a1a","on-tertiary-fixed":"#2b1700","surface-soft":"#F9FBFB","surface-container-highest":"#e1e3e3","on-primary":"#ffffff","border":"#E2E8E8","surface-tint":"#006a63","on-error-container":"#93000a","secondary-fixed":"#d4e5ed","surface-container-high":"#e6e8e8","inverse-primary":"#7fd5cb","primary-container":"#0b756d","secondary-container":"#d1e3ea","inverse-surface":"#2e3131","on-primary-fixed":"#00201d","surface-variant":"#e1e3e3","secondary-fixed-dim":"#b8c9d1","secondary":"#506168","on-secondary-fixed-variant":"#394950","surface-bright":"#f8fafa","on-primary-fixed-variant":"#00504a","tertiary-fixed":"#ffddb9","tertiary-container":"#905d15","surface-dim":"#d8dada","on-surface-variant":"#3e4947","negative":"#C04E4E","positive":"#0B756D","on-surface":"#16262B","error-container":"#ffdad6","surface":"#FFFFFF","on-tertiary-fixed-variant":"#663e00","tertiary-fixed-dim":"#fcba6a","outline":"#6e7977","outline-variant":"#bdc9c6","primary":"#005b54","on-secondary":"#ffffff","surface-container":"#eceeee","on-background":"#191c1d","primary-fixed-dim":"#7fd5cb","on-secondary-container":"#54656c","primary-dark":"#075B55","surface-container-lowest":"#ffffff","on-error":"#ffffff","on-secondary-fixed":"#0d1e23"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"gutter-desktop":"1.5rem","gutter":"1rem","space-xs":"0.25rem","space-md":"1rem","space-sm":"0.5rem","margin-desktop":"2rem","margin":"1rem","space-lg":"1.5rem","space-xl":"2rem"},"fontFamily":{"body-md":["Inter"],"headline-lg":["Inter"],"body-sm":["Inter"],"display":["Inter"],"label-sm":["Inter"],"headline-md":["Inter"],"title":["Inter"]},"fontSize":{"body-md":["15px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["28px",{"lineHeight":"36px","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"20px","fontWeight":"400"}],"display":["32px",{"lineHeight":"40px","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.08em","fontWeight":"500"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"600"}],"title":["16px",{"lineHeight":"24px","fontWeight":"500"}]}}}}</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(22,38,43,0.04)]"><div class="h-16 max-w-[1200px] mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><img alt="Brand logo. - Primary color: #0b756d
+- Font: inter
+- Mode: light
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1W6-Neq_j6ir5w4P3C43JHH730slay6ij-LPbD4oSHfVRDPR9SFSGbIditW6k_dUVaKk5aYIlmpPMLtbCxfkSghmpfsGsfiUtl8ibuKyQd0jxxwFdMpdxiraErNybRjUfEABGHcxL-V3c4-hRCZyeD_GweuY_ulek8hU6yJ26fIa5_zegvAebvyV0ZRIeSeeI68vTePCEkYIXsV-zojp43jsLOcHfgBrS602v8oG6QWuSSCIPpcTMHtX4c"><span class="font-title text-title text-primary tracking-tight font-semibold">MockFolio</span></div><nav class="hidden lg:flex items-center gap-space-xs" data-active-classes="bg-surface-container-low text-primary font-medium rounded-lg"><a class="px-space-md py-space-sm font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="market" href="#">Market</a><a class="px-space-md py-space-sm font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="watchlist" href="#">Watchlist</a><a class="px-space-md py-space-sm font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="portfolio" href="#">Portfolio</a><a class="px-space-md py-space-sm font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="orders" href="#">Orders</a><a class="px-space-md py-space-sm font-title text-title text-on-surface-variant hover:text-on-surface transition-colors" data-path="profile" href="#">Profile</a></nav></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-soft text-positive"><span class="w-2 h-2 rounded-full bg-positive animate-pulse"></span><span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">NSE LIVE SIM</span></div><div class="hidden md:flex flex-col items-end px-space-md py-1 rounded-lg bg-surface-soft"><span class="font-label-sm text-label-sm text-on-surface-muted uppercase">Virtual Cash</span><span class="font-title text-title font-semibold text-on-surface tabular-nums">₹1,04,250.00</span></div><button aria-label="Notifications" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="max-w-[1240px] w-full mx-auto px-gutter-desktop py-space-lg flex flex-col gap-space-lg">
+<!-- Top Breadcrumb & Status Ribbon -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
+<a class="flex items-center gap-1 font-title text-title text-primary hover:text-primary-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+<span>Back to Market</span>
+</a>
+<span class="text-outline-variant">•</span>
+<span class="uppercase tracking-wider font-semibold font-label-sm text-label-sm text-secondary">NSE Equities</span>
+<span class="text-outline-variant">/</span>
+<span class="uppercase tracking-wider font-semibold font-label-sm text-label-sm text-primary">Energy Sector</span>
+</div>
+<div class="flex items-center gap-space-xs px-3 py-1 rounded-full bg-surface-container-low shadow-sm">
+<span class="w-2 h-2 rounded-full bg-positive animate-pulse"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-positive font-semibold">Sandbox Depth Inflow Active</span>
+</div>
+</div>
+<!-- Main Split Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT COLUMN: ~65% (8 of 12 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<!-- Company Header Block -->
+<div class="bg-surface rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-wrap items-start justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-space-sm flex-wrap">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Reliance Industries Ltd.</h1>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high font-label-sm text-label-sm font-semibold tracking-wider text-secondary">RELIANCE · NSE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted">ISIN: INE002A01018 • Conglomerate &amp; Energy Refining • BSE Code: 500325</p>
+</div>
+<button class="w-10 h-10 rounded-xl bg-surface-soft hover:bg-surface-container-high flex items-center justify-center transition-colors text-on-surface-muted hover:text-tertiary" id="watchlistBtn" onclick="toggleWatchlist()" title="Add to Watchlist">
+<span class="material-symbols-outlined text-[20px]" id="starIcon">star</span>
+</button>
+</div>
+<div class="flex flex-wrap items-baseline gap-space-md pt-space-xs">
+<div class="flex items-baseline gap-space-sm">
+<span class="font-display text-display font-semibold tracking-tight text-on-surface tabular-nums">₹2,944.80</span>
+<span class="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full bg-positive/10 text-positive font-title text-body-sm font-semibold tabular-nums">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                +₹14.20 (+0.48%)
+              </span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-low text-secondary font-body-sm text-body-sm tabular-nums">
+<span class="material-symbols-outlined text-[16px] text-secondary">apartment</span>
+<span>Dalal St Reference: <strong class="text-on-surface font-semibold">₹2,930.60</strong></span>
+<span class="text-on-surface-muted text-xs font-medium">(Drift +₹14.20 / +0.48%)</span>
+</div>
+</div>
+</div>
+<!-- Interactive Dual-Price Chart Card -->
+<div class="bg-surface rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold text-primary">Interactive Spread Visualizer</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Community Drift Engine</h2>
+</div>
+<!-- Timeframe Selector -->
+<div class="flex items-center gap-1 p-1 bg-surface-soft rounded-lg">
+<button class="px-2.5 py-1 rounded-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all" onclick="switchRange(this)">1H</button>
+<button class="px-2.5 py-1 rounded-md text-xs font-semibold bg-primary text-on-primary transition-all" onclick="switchRange(this)">1D</button>
+<button class="px-2.5 py-1 rounded-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all" onclick="switchRange(this)">1W</button>
+<button class="px-2.5 py-1 rounded-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all" onclick="switchRange(this)">1M</button>
+<button class="px-2.5 py-1 rounded-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all" onclick="switchRange(this)">1Y</button>
+<button class="px-2.5 py-1 rounded-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all" onclick="switchRange(this)">ALL</button>
+</div>
+</div>
+<!-- Chart Area -->
+<div class="relative w-full bg-surface-soft rounded-xl p-space-md overflow-hidden">
+<!-- Dynamic Tooltip HUD (Desktop Simulated Readout) -->
+<div class="flex items-center justify-between text-xs text-on-surface-muted mb-2">
+<span class="font-mono">SESSION: 09:15 - 15:30 IST</span>
+<div class="flex items-center gap-space-sm font-mono tabular-nums">
+<span class="text-primary font-semibold">Simulated: ₹2,944.80</span>
+<span class="text-secondary">Ref: ₹2,930.60</span>
+<span class="text-positive font-medium">Spread: +₹14.20</span>
+</div>
+</div>
+<!-- SVG Visualizer -->
+<svg class="w-full h-72 overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 260">
+<defs>
+<!-- Area between curve fill -->
+<linearGradient id="depthGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#0B756D" stop-opacity="0.18"></stop>
+<stop offset="100%" stop-color="#0B756D" stop-opacity="0.01"></stop>
+</linearGradient>
+<linearGradient id="lineGlow" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0%" stop-color="#0B756D"></stop>
+<stop offset="100%" stop-color="#005b54"></stop>
+</linearGradient>
+</defs>
+<!-- Subtle Horizontal Grid Lines -->
+<line stroke="#E2E8E8" stroke-dasharray="3,3" stroke-width="1" x1="0" x2="760" y1="40" y2="40"></line>
+<text class="tabular-nums" fill="#5F6E75" font-family="Inter" font-size="10" text-anchor="end" x="755" y="44">₹2,950.00</text>
+<line stroke="#E2E8E8" stroke-dasharray="3,3" stroke-width="1" x1="0" x2="760" y1="110" y2="110"></line>
+<text class="tabular-nums" fill="#5F6E75" font-family="Inter" font-size="10" text-anchor="end" x="755" y="114">₹2,940.00</text>
+<line stroke="#E2E8E8" stroke-dasharray="3,3" stroke-width="1" x1="0" x2="760" y1="180" y2="180"></line>
+<text class="tabular-nums" fill="#5F6E75" font-family="Inter" font-size="10" text-anchor="end" x="755" y="184">₹2,930.00</text>
+<!-- Depth Spread Shaded Area between curves -->
+<polygon fill="url(#depthGradient)" points="
+                0,195
+                75,185 150,172 225,160 300,168 380,140 455,130 530,115 605,95 680,82 740,70
+                740,110 680,118 605,130 530,142 455,150 380,158 300,172 225,178 150,182 75,188 0,195
+              "></polygon>
+<!-- Dashed Dalal St Anchor Line (Reference) -->
+<path d="
+                M 0 195 
+                Q 75 190, 150 182 
+                T 300 172 
+                T 455 150 
+                T 605 130 
+                T 740 110
+              " fill="none" stroke="#6E7F86" stroke-dasharray="4,4" stroke-width="1.75"></path>
+<!-- Solid MockFolio Simulated Price Curve -->
+<path d="
+                M 0 195 
+                Q 75 185, 150 172 
+                T 300 168 
+                T 455 130 
+                T 605 95 
+                T 680 82 
+                L 740 70
+              " fill="none" id="simulatedPath" stroke="url(#lineGlow)" stroke-linecap="round" stroke-width="3"></path>
+<!-- Live Endpoint Dot & Label -->
+<circle cx="740" cy="70" fill="#0B756D" r="5"></circle>
+<circle cx="740" cy="70" fill="#0B756D" fill-opacity="0.2" r="9"></circle>
+<!-- Anchor endpoint dot -->
+<circle cx="740" cy="110" fill="#6E7F86" r="3.5"></circle>
+<!-- Marker Tag at MockFolio endpoint -->
+<g transform="translate(620, 48)">
+<rect fill="#16262B" height="24" rx="6" width="115"></rect>
+<text class="tabular-nums" fill="#FFFFFF" font-family="Inter" font-size="11" font-weight="600" text-anchor="middle" x="57" y="16">MockFolio ₹2,944.80</text>
+</g>
+<!-- Time axis markers -->
+<text fill="#5F6E75" font-family="Inter" font-size="11" x="10" y="245">09:15</text>
+<text fill="#5F6E75" font-family="Inter" font-size="11" x="185" y="245">11:00</text>
+<text fill="#5F6E75" font-family="Inter" font-size="11" x="375" y="245">13:00</text>
+<text fill="#5F6E75" font-family="Inter" font-size="11" x="560" y="245">14:30</text>
+<text fill="#5F6E75" font-family="Inter" font-size="11" x="725" y="245">15:30</text>
+</svg>
+</div>
+<!-- Chart Legend & Plain English Explainer -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<div class="flex flex-wrap items-center gap-space-md text-xs font-medium text-secondary">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-on-surface font-semibold">MockFolio Sandbox (Live Sim)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-0.5 border-t-2 border-dashed border-[#6E7F86]"></span>
+<span>Dalal St Benchmark</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-2 rounded-sm bg-primary/20"></span>
+<span>Simulated Liquidity Drift Spread</span>
+</div>
+</div>
+<!-- Educational Callout -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-primary shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">school</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-title text-title text-on-surface font-semibold">How Community Drift Works</span>
+<p class="font-body-sm text-body-sm text-on-surface-muted">
+                  The green shaded area measures how retail virtual volume has shifted this stock away from the actual Dalal Street cash quote. High community buying momentarily creates a premium; unfulfilled orders gradually revert to benchmark over time.
+                </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Simulated Execution History / Result Card -->
+<div class="bg-surface rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-positive/10 text-positive flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</span>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold text-positive">Simulated Execution Filled</span>
+<span class="font-mono text-xs px-2 py-0.5 rounded bg-surface-container text-secondary font-medium">#MF-98421</span>
+</div>
+</div>
+<span class="text-xs text-on-surface-muted font-mono">Today, 14:22:08 IST</span>
+</div>
+<div class="bg-surface-soft rounded-xl p-space-md flex flex-col gap-space-md">
+<div>
+<h3 class="font-title text-title font-semibold text-on-surface">5 shares of RELIANCE bought at market depth</h3>
+<p class="font-body-sm text-body-sm text-on-surface-muted">Execution completed via MockFolio Virtual Matching Engine with zero slippage penalty.</p>
+</div>
+<!-- Metric Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm text-left">
+<div class="p-space-sm rounded-lg bg-surface shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-muted block uppercase">Fill Price</span>
+<span class="font-title text-title font-semibold text-on-surface tabular-nums">₹2,944.80</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-muted block uppercase">Gross Capital</span>
+<span class="font-title text-title font-semibold text-on-surface tabular-nums">₹14,724.00</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-muted block uppercase">Brokerage (0.1%)</span>
+<span class="font-title text-title font-semibold text-on-surface tabular-nums">₹14.72</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-muted block uppercase">Engine Latency</span>
+<span class="font-title text-title font-semibold text-positive tabular-nums">180 ms</span>
+</div>
+</div>
+<!-- Price Impact Telemetry -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs text-xs text-secondary font-mono">
+<div class="flex items-center gap-1.5">
+<span>Book Depth Impact:</span>
+<span class="text-on-surface font-semibold">₹2,944.80 → ₹2,945.10</span>
+<span class="text-positive">(+₹0.30 / +0.010%)</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="text-primary hover:underline font-title font-medium text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">receipt_long</span> Download Contract Slip
+                </button>
+<span class="text-outline-variant">•</span>
+<button class="text-primary hover:underline font-title font-medium text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">account_balance_wallet</span> View in Portfolio
+                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Educational Insight Card -->
+<div class="bg-surface rounded-xl p-space-lg shadow-sm flex flex-col md:flex-row items-center gap-space-lg">
+<div class="w-full md:w-36 h-32 rounded-xl bg-surface-container-low shrink-0 overflow-hidden relative flex items-center justify-center p-space-sm text-center">
+<div class="flex flex-col items-center">
+<span class="font-display text-display font-semibold text-primary tabular-nums">8.7%</span>
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">NIFTY 50 Weight</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-1 text-tertiary font-label-sm text-label-sm font-semibold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px]">lightbulb</span>
+              Market Literacy Note
+            </div>
+<h4 class="font-title text-title font-semibold text-on-surface">Why Reliance Moves the Indian Benchmark</h4>
+<p class="font-body-sm text-body-sm text-on-surface-muted leading-relaxed">
+              Reliance Industries is the heavyweight champion of Indian capital markets. With roughly 8.7% influence in the NIFTY 50 index, sharp fluctuations here directly sway broad mutual fund NAVs and index funds. Testing large orders in this sandbox demonstrates how heavy equity volumes absorb available ask depth.
+            </p>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: ~35% (4 of 12 cols, Sticky Trading Desk) -->
+<div class="lg:col-span-4 sticky top-20 flex flex-col gap-space-md">
+<div class="bg-surface rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<!-- Sandbox Order Desk Header -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold text-primary">Risk-Free Sandbox</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Simulated Order Desk</h2>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+              Paper Mode
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted -mt-2">Simulate real-time depth absorption with zero financial exposure.</p>
+<!-- Buy / Sell Segmented Control -->
+<div class="grid grid-cols-2 gap-1 p-1 bg-surface-soft rounded-xl">
+<button class="py-2.5 rounded-lg text-sm font-semibold text-center bg-primary text-on-primary shadow-sm transition-all flex items-center justify-center gap-1" id="buyTab" onclick="setSide('buy')">
+<span>BUY</span>
+<span class="text-xs opacity-80">(Long)</span>
+</button>
+<button class="py-2.5 rounded-lg text-sm font-semibold text-center text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center gap-1" id="sellTab" onclick="setSide('sell')">
+<span>SELL</span>
+<span class="text-xs opacity-80">(Short)</span>
+</button>
+</div>
+<!-- Order Type & Market Price Reference -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between text-xs">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px] text-primary">bolt</span>
+<span class="font-semibold text-on-surface">Instant Market Order</span>
+</div>
+<span class="font-mono font-medium text-secondary">Depth Fill</span>
+</div>
+<!-- Quantity Stepper -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Quantity (Shares)</label>
+<span class="font-body-sm text-xs text-on-surface-muted">Lot Size: 1</span>
+</div>
+<div class="flex items-center gap-2">
+<button aria-label="Decrease quantity" class="w-11 h-11 rounded-lg bg-surface-soft hover:bg-surface-container text-on-surface flex items-center justify-center transition-colors text-lg font-semibold active:scale-95" onclick="adjustQty(-1)">
+                −
+              </button>
+<div class="relative flex-1">
+<input class="w-full h-11 px-3 bg-surface-soft rounded-lg text-center font-title text-title font-semibold text-on-surface focus:outline-none focus:bg-surface focus:shadow-[0_0_0_2px_#0B756D] transition-all tabular-nums" id="qtyInput" max="100" min="1" oninput="updateCalculations()" type="number" value="5">
+</div>
+<button aria-label="Increase quantity" class="w-11 h-11 rounded-lg bg-surface-soft hover:bg-surface-container text-on-surface flex items-center justify-center transition-colors text-lg font-semibold active:scale-95" onclick="adjustQty(1)">
+                +
+              </button>
+</div>
+<!-- Quick Pill Buttons -->
+<div class="grid grid-cols-4 gap-1.5 pt-1">
+<button class="py-1 px-2 rounded-md bg-surface-soft hover:bg-surface-container font-label-sm text-xs font-semibold text-secondary hover:text-on-surface transition-colors" onclick="setQty(1)">+1</button>
+<button class="py-1 px-2 rounded-md bg-surface-soft hover:bg-surface-container font-label-sm text-xs font-semibold text-secondary hover:text-on-surface transition-colors" onclick="setQty(5)">+5</button>
+<button class="py-1 px-2 rounded-md bg-surface-soft hover:bg-surface-container font-label-sm text-xs font-semibold text-secondary hover:text-on-surface transition-colors" onclick="setQty(10)">+10</button>
+<button class="py-1 px-2 rounded-md bg-surface-soft hover:bg-surface-container font-label-sm text-xs font-semibold text-primary hover:text-primary-dark transition-colors" onclick="setQty(14)">Max (14)</button>
+</div>
+</div>
+<!-- Micro Market Impact Visual Bar -->
+<div class="flex flex-col gap-1 p-space-sm rounded-lg bg-surface-soft">
+<div class="flex items-center justify-between text-xs">
+<span class="text-on-surface-muted">Estimated Book Spread Impact:</span>
+<span class="font-mono font-semibold text-positive tabular-nums" id="impactVal">+₹0.30 (+0.010%)</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-300" id="impactBar" style="width: 14%;"></div>
+</div>
+</div>
+<!-- Cost Breakdown Card -->
+<div class="flex flex-col gap-2 pt-space-xs text-sm">
+<div class="flex items-center justify-between text-on-surface-muted font-body-sm">
+<span>Unit Fill Quote</span>
+<span class="font-mono text-on-surface tabular-nums">₹2,944.80</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-muted font-body-sm">
+<span>Gross Simulated Value</span>
+<span class="font-mono text-on-surface font-medium tabular-nums" id="grossVal">₹14,724.00</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-muted font-body-sm">
+<span class="flex items-center gap-1">
+                Virtual Brokerage &amp; STT (0.1%)
+                <span class="material-symbols-outlined text-[14px] text-outline-variant" title="Simulated regulatory fee to teach realistic net profit expectations">info</span>
+</span>
+<span class="font-mono text-on-surface tabular-nums" id="feeVal">₹14.72</span>
+</div>
+<div class="h-px bg-surface-container-high my-1"></div>
+<div class="flex items-baseline justify-between">
+<span class="font-title text-title font-semibold text-on-surface">Estimated Capital</span>
+<span class="font-headline-md text-headline-md font-semibold text-on-surface tabular-nums" id="totalCostVal">₹14,738.72</span>
+</div>
+<!-- Virtual Balance Indicator -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low text-xs">
+<span class="text-secondary font-medium">Virtual Cash Available:</span>
+<div class="flex items-center gap-1.5">
+<span class="font-mono font-bold text-on-surface tabular-nums">₹1,04,250.00</span>
+<button class="text-primary hover:underline font-semibold" title="Reset/Refill Sandbox funds">+ Refill</button>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full py-3.5 px-space-md rounded-xl bg-primary hover:bg-primary-dark text-on-primary font-title text-title font-semibold shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2" id="orderBtn" onclick="executeMockOrder()">
+<span class="material-symbols-outlined text-[20px]">flash_on</span>
+<span id="btnLabel">Buy 5 Shares of RELIANCE</span>
+</button>
+<!-- Reassurance Footer Notice -->
+<div class="flex items-start gap-2 pt-1 text-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-on-surface-muted shrink-0">verified_user</span>
+<p class="font-label-sm text-xs text-on-surface-muted leading-tight">
+              Educational simulation only. Zero actual monetary liabilities. All filled lots reflect immediate simulated depth decay.
+            </p>
+</div>
+</div>
+<!-- Micro Market Depth Widget Card -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm text-xs">
+<div class="flex items-center justify-between font-label-sm uppercase font-semibold text-secondary">
+<span>Simulated Depth (Top 3)</span>
+<span class="text-primary font-mono font-medium">Depth Ratio 1.4:1</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-1">
+<!-- Bid Side -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-on-surface-muted font-mono pb-0.5">
+<span>BID QTY</span>
+<span>PRICE</span>
+</div>
+<div class="flex justify-between font-mono bg-positive/5 px-1.5 py-0.5 rounded text-positive font-medium">
+<span>120</span>
+<span>₹2,944.80</span>
+</div>
+<div class="flex justify-between font-mono bg-positive/5 px-1.5 py-0.5 rounded text-positive font-medium">
+<span>450</span>
+<span>₹2,944.50</span>
+</div>
+<div class="flex justify-between font-mono bg-positive/5 px-1.5 py-0.5 rounded text-positive font-medium">
+<span>890</span>
+<span>₹2,944.00</span>
+</div>
+</div>
+<!-- Ask Side -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-on-surface-muted font-mono pb-0.5">
+<span>PRICE</span>
+<span>ASK QTY</span>
+</div>
+<div class="flex justify-between font-mono bg-negative/5 px-1.5 py-0.5 rounded text-negative font-medium">
+<span>₹2,945.10</span>
+<span>85</span>
+</div>
+<div class="flex justify-between font-mono bg-negative/5 px-1.5 py-0.5 rounded text-negative font-medium">
+<span>₹2,945.50</span>
+<span>310</span>
+</div>
+<div class="flex justify-between font-mono bg-negative/5 px-1.5 py-0.5 rounded text-negative font-medium">
+<span>₹2,946.00</span>
+<span>620</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  let currentSide = 'buy';
+  const unitPrice = 2944.80;
+  let isWatchlisted = false;
+
+  function toggleWatchlist() {
+    isWatchlisted = !isWatchlisted;
+    const icon = document.getElementById('starIcon');
+    const btn = document.getElementById('watchlistBtn');
+    if (isWatchlisted) {
+      icon.textContent = 'star';
+      icon.style.fontVariationSettings = "'FILL' 1";
+      icon.className = 'material-symbols-outlined text-[20px] text-tertiary';
+    } else {
+      icon.textContent = 'star';
+      icon.style.fontVariationSettings = "'FILL' 0";
+      icon.className = 'material-symbols-outlined text-[20px] text-on-surface-muted';
+    }
+  }
+
+  function setSide(side) {
+    currentSide = side;
+    const buyBtn = document.getElementById('buyTab');
+    const sellBtn = document.getElementById('sellTab');
+    const actionBtn = document.getElementById('orderBtn');
+
+    if (side === 'buy') {
+      buyBtn.className = 'py-2.5 rounded-lg text-sm font-semibold text-center bg-primary text-on-primary shadow-sm transition-all flex items-center justify-center gap-1';
+      sellBtn.className = 'py-2.5 rounded-lg text-sm font-semibold text-center text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center gap-1';
+      actionBtn.className = 'w-full py-3.5 px-space-md rounded-xl bg-primary hover:bg-primary-dark text-on-primary font-title text-title font-semibold shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2';
+    } else {
+      sellBtn.className = 'py-2.5 rounded-lg text-sm font-semibold text-center bg-negative text-on-error shadow-sm transition-all flex items-center justify-center gap-1';
+      buyBtn.className = 'py-2.5 rounded-lg text-sm font-semibold text-center text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center gap-1';
+      actionBtn.className = 'w-full py-3.5 px-space-md rounded-xl bg-negative hover:opacity-90 text-on-error font-title text-title font-semibold shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2';
+    }
+    updateCalculations();
+  }
+
+  function adjustQty(delta) {
+    const input = document.getElementById('qtyInput');
+    let val = parseInt(input.value, 10) || 1;
+    val = Math.max(1, Math.min(100, val + delta));
+    input.value = val;
+    updateCalculations();
+  }
+
+  function setQty(val) {
+    const input = document.getElementById('qtyInput');
+    input.value = val;
+    updateCalculations();
+  }
+
+  function updateCalculations() {
+    const input = document.getElementById('qtyInput');
+    let qty = parseInt(input.value, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+
+    const gross = qty * unitPrice;
+    const fee = gross * 0.001; // 0.1% simulated brokerage
+    const total = gross + fee;
+
+    // Formatting in Indian numbering
+    const formatINR = (num) => '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    document.getElementById('grossVal').textContent = formatINR(gross);
+    document.getElementById('feeVal').textContent = formatINR(fee);
+    document.getElementById('totalCostVal').textContent = formatINR(total);
+
+    const sideVerb = currentSide === 'buy' ? 'Buy' : 'Sell';
+    document.getElementById('btnLabel').textContent = `${sideVerb} ${qty} Shares of RELIANCE`;
+
+    // Impact simulation
+    const impactPercent = (qty * 0.002).toFixed(3);
+    const impactPrice = (qty * 0.06).toFixed(2);
+    const impactSign = currentSide === 'buy' ? '+' : '−';
+    document.getElementById('impactVal').textContent = `${impactSign}₹${impactPrice} (${impactSign}${impactPercent}%)`;
+    
+    const barWidth = Math.min(100, Math.max(5, qty * 2.8));
+    document.getElementById('impactBar').style.width = barWidth + '%';
+  }
+
+  function switchRange(btn) {
+    const container = btn.parentElement;
+    container.querySelectorAll('button').forEach(b => {
+      b.className = 'px-2.5 py-1 rounded-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all';
+    });
+    btn.className = 'px-2.5 py-1 rounded-md text-xs font-semibold bg-primary text-on-primary transition-all';
+  }
+
+  function executeMockOrder() {
+    const btn = document.getElementById('orderBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Placing Simulated Order...`;
+
+    setTimeout(() => {
+      btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">done</span> Filled at Market Depth!`;
+      btn.classList.add('bg-positive');
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        updateCalculations();
+      }, 2000);
+    }, 600);
+  }
+</script></main><footer class="w-full bg-surface py-space-xl mt-auto shadow-[0_-1px_6px_rgba(22,38,43,0.03)]"><div class="max-w-[1200px] mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md text-center md:text-left"><div class="flex flex-col gap-space-xs"><div class="flex items-center justify-center md:justify-start gap-space-xs"><span class="font-title text-title text-primary font-semibold">MockFolio</span><span class="font-body-sm text-body-sm text-on-surface-muted">• Paper Trading India</span></div><p class="font-body-sm text-body-sm text-on-surface-muted max-w-xl">For educational and training purposes only. Simulated transactions involve zero real capital, zero brokerage liabilities, and reflect delayed market data for India securities.</p></div><div class="flex flex-col items-center md:items-end gap-space-xs"><div class="flex items-center gap-space-md font-body-sm text-body-sm text-on-surface-muted"><a class="hover:text-primary transition-colors" href="#">Terms</a><a class="hover:text-primary transition-colors" href="#">Privacy</a><a class="hover:text-primary transition-colors" href="#">SEBI Literacy Guide</a></div><span class="font-label-sm text-label-sm text-on-surface-muted">© 2024 MockFolio Labs. All rights reserved.</span></div></div></footer></body></html>

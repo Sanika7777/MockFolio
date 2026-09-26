@@ -32,9 +32,11 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Set `DATABASE_URL` and `JWT_SECRET` in `.env`. The default URL matches the sample MySQL user.
+Set `DATABASE_URL` and `JWT_SECRET` in `.env`. The default URL matches the sample MySQL user. `JWT_SECRET` must be a real value — the app refuses to start if it's unset or left as one of the placeholder strings from `.env.example`.
 
 To provision the local developer account, also set `DEV_USERNAME`, `DEV_EMAIL`, and `DEV_PASSWORD`. The backend creates the account on startup if it does not exist and marks it `is_admin`; the password is never returned by an API or placed in frontend code.
+
+Optional environment variables (all have working defaults): `CORS_ORIGINS` (comma-separated allowed origins, defaults to the two localhost dev URLs), `LOCK_WAIT_TIMEOUT` (seconds, default 5), `TX_ISOLATION` (`READ COMMITTED` / `REPEATABLE READ` [default] / `SERIALIZABLE` — anything else refuses to start), `MOCKFOLIO_LOCKING` and `MOCKFOLIO_ORDERING` (`on` [default] / `off`, used only by `scripts/concurrency_report.py`'s demos — never set `off` outside that script), and `TEST_DATABASE_URL` (a separate, disposable MySQL database — required only for `pytest tests/concurrency` and the `scripts/*.py` demos, and must not equal `DATABASE_URL`, since those tests truncate tables).
 
 3. Run the API from the project root:
 
@@ -58,18 +60,24 @@ For a trade, `impact = min(0.08 * sqrt(quantity / average_daily_volume), 0.05)`.
 
 ## BUY and SELL transaction flow
 
-`backend/trading.py` starts one SQLAlchemy transaction and locks the stock and account rows with `SELECT ... FOR UPDATE` via `with_for_update()`. SELL also locks the holding. It validates cash/shares, changes the account, holding, stock price, order, and trade together, then commits. Any exception rolls back, preventing negative balances, negative holdings, and lost price updates. `client_order_key` is unique to make repeated submissions idempotent.
+`backend/trading.py::execute_trade` locks the stock, then the account, then (SELL only) the holding — always in that order, via the single file allowed to take row locks, `backend/locks.py`. It validates cash/shares, then mutates cash/holding/stock price/trade together inside a SQL `SAVEPOINT` (`backend/transactions.py::savepoint`), after the `Order` row is created and flushed, so a failure in that inner block can be rolled back without discarding the order/lock work that came before it. `POST /trades/{side}` runs the whole thing through `execute_trade_tx`, which retries automatically on a real MySQL deadlock or lock-wait timeout (`backend/transactions.py::run_in_transaction`) with jittered exponential backoff, and never retries a business rejection. A rejected trade (insufficient cash or shares) still rolls back completely and writes no order row — by design, not a bug: there is no audit trail for a request that was never actually accepted.
+
+`client_order_key` makes repeated submissions idempotent, including under a real race: two simultaneous requests with the same key resolve to the same trade (never a raw 500), and reusing a key with a different quantity/side/stock/user is rejected with 409 rather than silently returning someone else's trade.
+
+The first-time-BUY path historically had a real gap-lock deadlock at REPEATABLE READ (fixed with `INSERT ... ON DUPLICATE KEY UPDATE` instead of `SELECT ... FOR UPDATE` + `INSERT`), and `POST /simulation/decay` (admin-only) locks all stocks in ascending `id` order so it can't deadlock against a trade or against itself. All of this — the lock order, the deadlock fix, the retry policy, the idempotency design, an isolation-level comparison, a lost-update demonstration, and a crash-recovery test, all with real numbers from real MySQL — is written up in `docs/TRANSACTION_CONTROL.md`.
 
 ## API
 
 - `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
-- `GET /stocks`, `GET /stocks/{id}`, `GET /stocks/{id}/history`
+- `GET /stocks`, `GET /stocks/{id}`, `GET /stocks/{id}/history` (paginated, see below)
 - `POST /trades/buy`, `POST /trades/sell`
 - `GET /portfolio`, `GET /portfolio/summary`
-- `GET /orders`, `GET /trades`
+- `GET /orders`, `GET /trades` (paginated, see below)
 - `GET/POST/DELETE /watchlist`
-- `POST /simulation/decay`
-- Admin-only `GET /admin/summary`, `GET /admin/users`, `GET /admin/users/{id}`, `GET /admin/users/{id}/trades`, `GET /admin/users/{id}/orders`, `POST /admin/reset-market`, and `POST /admin/reset-user/{id}`
+- `POST /simulation/decay` (admin-only)
+- Admin-only `GET /admin/summary`, `GET /admin/users` (paginated), `GET /admin/users/{id}`, `GET /admin/users/{id}/trades` (paginated), `GET /admin/users/{id}/orders` (paginated), `POST /admin/reset-market`, `POST /admin/reset-user/{id}`, and `GET /admin/tx-metrics` (deadlock/retry counters)
+
+Paginated endpoints accept `limit` (default 50, max 200 — a higher value is rejected with 422, not silently clamped) and `offset` query params, and still return a plain list by default so existing callers are unaffected.
 
 The frontend pages are `index.html` (market), `stock.html` (trade detail), `watchlist.html`, `portfolio.html`, `orders.html`, `profile.html`, `developer.html`, and `developer-user.html`. BUY and SELL confirmations use the authoritative backend response and refresh the simulated price/chart without a browser reload.
 
@@ -85,12 +93,14 @@ The developer dashboard is available only to users whose database `is_admin` fla
 - Candidate/unique keys: usernames, emails, one account per user, one holding per user/stock, and client order keys.
 - Constraints: nonnegative cash, positive holdings, enum sides, and foreign-key cascades.
 - 3NF normalization: users, accounts, stocks, holdings, orders, trades, and history separate facts; orders reference users/stocks instead of duplicating names.
-- ACID transactions and rollback: `backend/trading.py`; procedures in `sql/procedures.sql`.
-- Row-level locking: stock/account/holding `with_for_update()` calls in `backend/trading.py`.
-- Trigger: `sql/triggers.sql` writes holding changes to `audit_log`.
+- ACID transactions, rollback, and savepoints: `backend/trading.py`, `backend/transactions.py`; procedures in `sql/procedures.sql`.
+- Row-level locking, in one canonical order: `backend/locks.py` is the only file that calls `with_for_update()`.
+- Deadlock retry with jittered backoff and metrics: `backend/transactions.py::run_in_transaction`, exposed at `GET /admin/tx-metrics`.
+- Triggers: `sql/triggers.sql` writes `HOLDING_CREATE` (INSERT), `HOLDING_CHANGE` (UPDATE), and `HOLDING_DELETE` (DELETE) rows to `audit_log` — full CRUD coverage on `holdings`, not just updates.
 - Views, joins, aggregation, and GROUP BY: `sql/views.sql` (`portfolio_view`, `account_summary_view`).
-- Indexes: lookup and composite indexes in `sql/schema.sql`.
+- Indexes: lookup and composite indexes in `sql/schema.sql`, including `orders`/`trades` composites added after measuring a real `EXPLAIN` filesort (see `reports/index_evidence.md`).
 - Stored procedures: `reset_user_account` and `reset_market`.
+- Transaction isolation levels, configurable and demonstrably different in practice: see `docs/TRANSACTION_CONTROL.md`.
 
 ## Demo flow
 
@@ -98,4 +108,8 @@ Register two users, open RELIANCE at its reference price, BUY a visible quantity
 
 ## Known limitations and future improvements
 
-This is an educational simulation, not a brokerage system. It has no live prices, WebSockets, payments, short selling, margin, advanced orders, or production secret management. Price decay remains an explicit `POST /simulation/decay` operation rather than a background scheduler. Chart.js is loaded from its public CDN. The admin endpoints remain API-only; the normal user shell does not expose admin controls.
+This is an educational simulation, not a brokerage system. It has no live prices, WebSockets, payments, short selling, margin, or advanced orders. Price decay remains an explicit `POST /simulation/decay` operation (now admin-only) rather than a background scheduler. Chart.js is loaded from its public CDN. The admin endpoints remain API-only; the normal user shell does not expose admin controls.
+
+Transaction-control specific limitations (see `docs/TRANSACTION_CONTROL.md` for the full write-up): single MySQL node only, no replication or distributed transactions; the idempotency key is a single global unique column, not schema-enforced per user; the deadlock retry policy (3 attempts, exponential backoff with jitter) is a fixed constant, not tuned against real production traffic; and the crash-recovery demonstration kills the application process, not MySQL itself, so it proves application-level durability but says nothing about MySQL's own crash recovery.
+
+The app now refuses to start with an unset or placeholder `JWT_SECRET`, and CORS origins are read from the `CORS_ORIGINS` environment variable rather than hardcoded — see Setup below.

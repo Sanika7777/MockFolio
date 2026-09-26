@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 from jose import JWTError, jwt
 
 load_dotenv()
-SECRET_KEY = os.getenv("JWT_SECRET", "change-this-development-secret")
+
+_PLACEHOLDER_JWT_SECRETS = {"change-this-development-secret", "replace-with-a-long-random-development-secret"}
+
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY or SECRET_KEY in _PLACEHOLDER_JWT_SECRETS:
+    raise RuntimeError("JWT_SECRET must be set in .env to a real secret (not unset or a placeholder value)")
 ALGORITHM = "HS256"
 
 def hash_password(password: str) -> str:
