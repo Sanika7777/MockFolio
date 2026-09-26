@@ -1,7 +1,6 @@
 ---
 version: alpha
 name: MockFolio
-description: Calm, minimal paper-trading learning app. Teal accent, tinted neutrals, gains green and losses soft red. Charts and large numbers are the visual heroes.
 colors:
   primary: "#0B756D"
   primary-dark: "#075B55"
