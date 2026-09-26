@@ -1,7 +1,7 @@
 """Central transaction wrapper: retries MySQL deadlocks and lock-wait timeouts.
 
 Every write path that needs retry-on-deadlock semantics should go through
-`run_in_transaction`, which owns a fresh `SessionLocal()` per attempt so a
+`run_in_transaction`, which owns a fresh `database.SessionLocal()` per attempt so a
 failed attempt can never leak a half-mutated session into a retry.
 """
 import logging
@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from .database import SessionLocal
+from . import database
 
 logger = logging.getLogger("mockfolio.tx")
 
@@ -89,14 +89,13 @@ def run_in_transaction(fn, *, max_attempts: int = 3, base_delay: float = 0.05):
     """
     for attempt in range(max_attempts):
         _metrics.bump("attempts")
-        db = SessionLocal()
+        db = database.SessionLocal()
         try:
             result = fn(db)
             db.commit()
             return result
         except Exception as exc:
             db.rollback()
-            last_exc = exc
             code = _mysql_error_code(exc)
             if code == MYSQL_DEADLOCK:
                 _metrics.bump("deadlocks")

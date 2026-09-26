@@ -1,5 +1,5 @@
 (() => {
-  const API_BASE = "http://127.0.0.1:8000";
+  const API_BASE = "";
   const formatINR = (value) => {
     const amount = Number(value || 0);
     return `${amount < 0 ? "-" : ""}₹${Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -74,9 +74,9 @@
         auth: false,
       }),
     me: () => request("/auth/me"),
-    stocks: () => request("/stocks"),
-    stock: (id) => request(`/stocks/${id}`),
-    history: (id) => request(`/stocks/${id}/history`),
+    stocks: () => request("/instruments"),
+    stock: (id) => request(`/instruments/${id}`),
+    history: (id, isAdjusted = 1) => request(`/instruments/${id}/candles?is_adjusted=${isAdjusted}`),
     portfolio: () => request("/portfolio"),
     summary: () => request("/portfolio/summary"),
     orders: () => request("/orders"),
@@ -90,11 +90,15 @@
         body: JSON.stringify(data),
       }),
     resetMarket: () => request("/admin/reset-market", { method: "POST" }),
-    resetUser: (id) => request(`/admin/reset-user/${id}`, { method: "POST" }),
+    resetUser: (id) => request(`/admin/reset-account/${id}`, { method: "POST" }),
     adminUsers: () => request("/admin/users"),
     adminSummary: () => request("/admin/summary"),
     adminUser: (id) => request(`/admin/users/${id}`),
     adminUserTrades: (id) => request(`/admin/users/${id}/trades`),
     adminUserOrders: (id) => request(`/admin/users/${id}/orders`),
+    adminSettings: () => request("/admin/settings"),
+    updateSetting: (key, value) =>
+      request(`/admin/settings/${key}`, { method: "PUT", body: JSON.stringify({ value: String(value) }) }),
+    txMetrics: () => request("/admin/tx-metrics"),
   };
 })();

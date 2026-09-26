@@ -1,23 +1,43 @@
 from decimal import Decimal, ROUND_HALF_UP
-from math import sqrt
+from math import exp, sqrt
 
-IMPACT_STRENGTH = Decimal("0.08")
-MAX_TRADE_MOVE = Decimal("0.05")
-BROKERAGE_RATE = Decimal("0.001")
-DECAY_FACTOR = Decimal("0.03")
+MIN_PRICE = Decimal("0.05")
 
 
-def money(value: Decimal) -> Decimal:
+def money(value) -> Decimal:
     return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-def calculate_impact(quantity: int, average_daily_volume: int) -> Decimal:
-    raw = IMPACT_STRENGTH * Decimal(str(sqrt(quantity / max(average_daily_volume, 1))))
-    return min(raw, MAX_TRADE_MOVE)
 
-def moved_price(current: Decimal, quantity: int, volume: int, side: str) -> tuple[Decimal, Decimal]:
-    impact = calculate_impact(quantity, volume)
-    factor = Decimal("1") + impact if side == "BUY" else Decimal("1") - impact
-    return money(current * factor), impact
+def offset(value) -> Decimal:
+    return Decimal(value).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
 
-def decay_price(current: Decimal, reference: Decimal) -> Decimal:
-    return money(current + (reference - current) * DECAY_FACTOR)
+
+def impact_fraction(quantity: int, avg_daily_vol: int, daily_sigma: Decimal, kappa: Decimal, cap: Decimal) -> Decimal:
+    if quantity <= 0 or avg_daily_vol <= 0:
+        return Decimal("0")
+    participation = Decimal(str(sqrt(quantity / avg_daily_vol)))
+    raw = kappa * Decimal(daily_sigma) * participation
+    return min(raw, cap)
+
+
+def split_impact(price_move: Decimal, perm_fraction: Decimal) -> tuple[Decimal, Decimal]:
+    permanent = offset(price_move * perm_fraction)
+    return permanent, offset(price_move - permanent)
+
+
+def decayed_temp_offset(temp_offset: Decimal, elapsed_seconds: float, tau_seconds: int) -> Decimal:
+    if tau_seconds <= 0 or elapsed_seconds <= 0:
+        return offset(temp_offset)
+    return offset(Decimal(temp_offset) * Decimal(str(exp(-elapsed_seconds / tau_seconds))))
+
+
+def adjusted(raw_price: Decimal, perm_offset: Decimal, temp_offset: Decimal) -> Decimal:
+    total = Decimal(raw_price) + Decimal(perm_offset) + Decimal(temp_offset)
+    return max(total.quantize(Decimal("0.00001"), rounding=ROUND_HALF_UP), MIN_PRICE)
+
+
+def trade_price_move(pre_price: Decimal, quantity: int, avg_daily_vol: int, daily_sigma: Decimal, side: str, kappa: Decimal, cap: Decimal) -> tuple[Decimal, Decimal]:
+    fraction = impact_fraction(quantity, avg_daily_vol, daily_sigma, kappa, cap)
+    magnitude = Decimal(pre_price) * fraction
+    move = magnitude if side == "BUY" else -magnitude
+    return offset(move), fraction

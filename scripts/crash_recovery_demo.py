@@ -16,7 +16,6 @@ Prints PASS or FAIL. Run this three times in a row for the acceptance check
 Requires TEST_DATABASE_URL (a dedicated, disposable MySQL database) that is
 not the same as DATABASE_URL -- this script truncates tables in it.
 """
-import json
 import os
 import subprocess
 import sys
@@ -57,13 +56,13 @@ def _reset_db(test_db_url: str):
     code = (
         "import sys; sys.path.insert(0, '.')\n"
         "from sqlalchemy import text\n"
-        "import backend.transactions as t\n"
-        "db = t.SessionLocal()\n"
+        "import backend.database as d\n"
+        "db = d.SessionLocal()\n"
         "db.execute(text('SET FOREIGN_KEY_CHECKS=0'))\n"
-        "for tbl in ('audit_log','trades','orders','holdings','price_history','watchlist','accounts','users'):\n"
+        "for tbl in ('audit_log','trades','orders','holdings','candles_1m','watchlist','accounts','users'):\n"
         "    db.execute(text('TRUNCATE TABLE ' + tbl))\n"
         "db.execute(text('SET FOREIGN_KEY_CHECKS=1'))\n"
-        "db.execute(text('UPDATE stocks SET simulated_price = reference_price, previous_simulated_price = reference_price'))\n"
+        "db.execute(text('UPDATE price_state SET perm_offset = 0, temp_offset = 0, last_decay_at = UTC_TIMESTAMP(3)'))\n"
         "db.commit()\n"
         "db.close()\n"
     )
@@ -74,7 +73,7 @@ def _wait_for_server(timeout=45):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            r = httpx.get(f"{BASE_URL}/stocks", timeout=1)
+            r = httpx.get(f"{BASE_URL}/health", timeout=1)
             if r.status_code == 200:
                 return
         except Exception:
@@ -120,7 +119,7 @@ def _register_user(client: httpx.Client) -> str:
     return resp.json()["access_token"]
 
 
-def _fire_batch_and_kill(proc: subprocess.Popen, token: str, stock_id: int) -> list[int]:
+def _fire_batch_and_kill(proc: subprocess.Popen, token: str, instrument_id: int) -> list[int]:
     successful_order_ids = []
     sent_count = {"n": 0}
     lock = threading.Lock()
@@ -131,7 +130,7 @@ def _fire_batch_and_kill(proc: subprocess.Popen, token: str, stock_id: int) -> l
             for _ in range(n_requests):
                 key = str(uuid.uuid4())
                 try:
-                    resp = client.post("/trades/buy", json={"stock_id": stock_id, "quantity": 1, "client_order_key": key})
+                    resp = client.post("/trades/buy", json={"instrument_id": instrument_id, "quantity": 1, "client_order_id": key})
                     with lock:
                         sent_count["n"] += 1
                     if resp.status_code == 200:
@@ -169,13 +168,14 @@ def _fire_batch_and_kill(proc: subprocess.Popen, token: str, stock_id: int) -> l
 
 def _verify(successful_order_ids: list[int]) -> bool:
     from sqlalchemy import select
-    import backend.transactions as transactions
+    import backend.database as database
     from backend.models import Account, Holding, Order, Trade
+    from backend.price_engine import money
 
-    db = transactions.SessionLocal()
+    db = database.SessionLocal()
     try:
         ok = True
-        orders_by_id = {o.id: o for o in db.scalars(select(Order)).all()}
+        orders_by_id = {o.order_id: o for o in db.scalars(select(Order)).all()}
         trades_by_order_id = {t.order_id: t for t in db.scalars(select(Trade)).all()}
 
         missing = [oid for oid in successful_order_ids if oid not in orders_by_id]
@@ -200,15 +200,15 @@ def _verify(successful_order_ids: list[int]) -> bool:
         accounts = db.scalars(select(Account)).all()
         for account in accounts:
             if account.cash_balance < 0:
-                print(f"  FAIL: negative cash for user {account.user_id}: {account.cash_balance}")
+                print(f"  FAIL: negative cash for account {account.account_id}: {account.cash_balance}")
                 ok = False
 
         total_cash = sum((a.cash_balance for a in accounts), Decimal("0"))
-        total_starting = sum((a.starting_balance for a in accounts), Decimal("0"))
+        total_starting = sum((a.starting_cash for a in accounts), Decimal("0"))
         all_trades = db.scalars(select(Trade)).all()
         net_flow = Decimal("0")
         for t in all_trades:
-            value = t.fill_price * t.quantity
+            value = money(t.exec_price * t.quantity)
             net_flow += (value + t.brokerage) if t.side == "BUY" else -(value - t.brokerage)
         expected_cash = total_starting - net_flow
         if total_cash != expected_cash:
@@ -217,8 +217,8 @@ def _verify(successful_order_ids: list[int]) -> bool:
 
         holdings = db.scalars(select(Holding)).all()
         for h in holdings:
-            if h.quantity <= 0:
-                print(f"  FAIL: non-positive holding quantity: user={h.user_id} stock={h.stock_id} qty={h.quantity}")
+            if h.quantity < 0:
+                print(f"  FAIL: negative holding quantity: account={h.account_id} instrument={h.instrument_id} qty={h.quantity}")
                 ok = False
 
         print(f"  {len(successful_order_ids)} client-successful orders: all present with matching trades" if not missing and not missing_trades else "  (see FAILs above)")
@@ -241,8 +241,8 @@ def main():
     try:
         with httpx.Client(base_url=BASE_URL, timeout=5) as setup_client:
             token = _register_user(setup_client)
-            stock_id = setup_client.get("/stocks").json()[0]["id"]
-        successful_order_ids = _fire_batch_and_kill(proc, token, stock_id)
+            instrument_id = setup_client.get("/instruments").json()[0]["instrument_id"]
+        successful_order_ids = _fire_batch_and_kill(proc, token, instrument_id)
     finally:
         if proc.poll() is None:
             proc.kill()

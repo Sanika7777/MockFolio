@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-import backend.transactions as transactions
+import backend.database as database
 from backend.main import app, current_user
 from backend.models import Order
 from backend.trading import IdempotencyConflict, execute_trade_tx
@@ -27,17 +27,17 @@ def _fake_admin():
 
 def test_same_key_different_quantity_conflicts_for_real():
     helpers.reset_db()
-    user_id = helpers.make_users(1)[0]
-    stock_id = helpers.get_stock_ids(1)[0]
+    account_id = helpers.make_accounts(1)[0]
+    instrument_id = helpers.get_instrument_ids(1)[0]
     key = "conflict-qty-key"
 
-    execute_trade_tx(user_id, stock_id, 5, "BUY", key)
+    execute_trade_tx(account_id, instrument_id, 5, "BUY", key)
     with pytest.raises(IdempotencyConflict):
-        execute_trade_tx(user_id, stock_id, 10, "BUY", key)
+        execute_trade_tx(account_id, instrument_id, 10, "BUY", key)
 
-    db = transactions.SessionLocal()
+    db = database.SessionLocal()
     try:
-        orders = db.scalars(select(Order).where(Order.client_order_key == key)).all()
+        orders = db.scalars(select(Order).where(Order.client_order_id == key)).all()
         assert len(orders) == 1, "the conflicting request must not have inserted a second order"
     finally:
         db.close()
@@ -45,20 +45,20 @@ def test_same_key_different_quantity_conflicts_for_real():
 
 def test_same_key_different_user_does_not_leak_for_real():
     helpers.reset_db()
-    user_a, user_b = helpers.make_users(2)
-    stock_id = helpers.get_stock_ids(1)[0]
+    user_a, user_b = helpers.make_accounts(2)
+    instrument_id = helpers.get_instrument_ids(1)[0]
     key = "conflict-user-key"
 
-    trade_a = execute_trade_tx(user_a, stock_id, 5, "BUY", key)
+    trade_a = execute_trade_tx(user_a, instrument_id, 5, "BUY", key)
     with pytest.raises(IdempotencyConflict):
-        execute_trade_tx(user_b, stock_id, 5, "BUY", key)
+        execute_trade_tx(user_b, instrument_id, 5, "BUY", key)
 
-    db = transactions.SessionLocal()
+    db = database.SessionLocal()
     try:
-        orders = db.scalars(select(Order).where(Order.client_order_key == key)).all()
+        orders = db.scalars(select(Order).where(Order.client_order_id == key)).all()
         assert len(orders) == 1
-        assert orders[0].user_id == user_a
-        assert orders[0].id == trade_a.order_id
+        assert orders[0].account_id == user_a
+        assert orders[0].order_id == trade_a.order_id
     finally:
         db.close()
 
@@ -72,6 +72,6 @@ def test_decay_succeeds_for_admin_for_real():
         client = TestClient(app)
         resp = client.post("/simulation/decay")
         assert resp.status_code == 200
-        assert resp.json() == {"ok": True}
+        assert resp.json()["instruments"] > 0
     finally:
         app.dependency_overrides.pop(current_user, None)

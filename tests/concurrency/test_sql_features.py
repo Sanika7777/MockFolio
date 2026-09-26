@@ -1,66 +1,98 @@
-"""Task 9 items 1 & 2: holding audit trigger coverage, and proof that
-reset_user_account leaves audit_log intact (no cascade)."""
 from sqlalchemy import text
 
-import backend.transactions as transactions
+import backend.database as database
 from backend.trading import execute_trade_tx
 
 import helpers
 
 
-def test_holding_insert_and_delete_are_audited():
-    helpers.reset_db()
-    user_id = helpers.make_users(1)[0]
-    stock_id = helpers.get_stock_ids(1)[0]
-
-    execute_trade_tx(user_id, stock_id, 5, "BUY")  # first buy -> INSERT into holdings
-
-    db = transactions.SessionLocal()
+def _audit(action: str):
+    db = database.SessionLocal()
     try:
-        create_rows = db.execute(text("SELECT old_value, new_value FROM audit_log WHERE action = 'HOLDING_CREATE'")).all()
-        assert len(create_rows) == 1
-        assert create_rows[0].old_value is None
-        assert create_rows[0].new_value == "5"
-    finally:
-        db.close()
-
-    execute_trade_tx(user_id, stock_id, 5, "SELL")  # sell the full position -> DELETE from holdings
-
-    db = transactions.SessionLocal()
-    try:
-        delete_rows = db.execute(text("SELECT old_value, new_value FROM audit_log WHERE action = 'HOLDING_DELETE'")).all()
-        assert len(delete_rows) == 1
-        assert delete_rows[0].old_value == "5"
-        assert delete_rows[0].new_value is None
+        return db.execute(
+            text(
+                "SELECT row_key, old_value->>'$.quantity' AS old_qty, new_value->>'$.quantity' AS new_qty "
+                "FROM audit_log WHERE table_name = 'holdings' AND action = :a ORDER BY log_id"
+            ),
+            {"a": action},
+        ).all()
     finally:
         db.close()
 
 
-def test_reset_user_account_does_not_cascade_into_audit_log():
+def test_first_buy_is_audited_as_an_insert():
     helpers.reset_db()
-    user_id = helpers.make_users(1)[0]
-    stock_id = helpers.get_stock_ids(1)[0]
+    account_id = helpers.make_accounts(1)[0]
+    instrument_id = helpers.get_instrument_ids(1)[0]
 
-    execute_trade_tx(user_id, stock_id, 3, "BUY")
+    execute_trade_tx(account_id, instrument_id, 5, "BUY")
 
-    db = transactions.SessionLocal()
+    rows = _audit("INSERT")
+    assert len(rows) == 1
+    assert rows[0].old_qty is None
+    assert rows[0].new_qty == "5"
+    assert rows[0].row_key == f"acct={account_id};instr={instrument_id}"
+
+
+def test_selling_the_whole_position_is_audited_as_an_update_to_zero():
+    helpers.reset_db()
+    account_id = helpers.make_accounts(1)[0]
+    instrument_id = helpers.get_instrument_ids(1)[0]
+
+    execute_trade_tx(account_id, instrument_id, 5, "BUY")
+    execute_trade_tx(account_id, instrument_id, 5, "SELL")
+
+    rows = _audit("UPDATE")
+    assert rows, "selling the full position should leave an UPDATE audit row"
+    assert rows[-1].old_qty == "5"
+    assert rows[-1].new_qty == "0"
+
+    db = database.SessionLocal()
     try:
-        audit_count_before = db.execute(text("SELECT COUNT(*) FROM audit_log")).scalar()
-        assert audit_count_before >= 1  # the HOLDING_CREATE row from the buy above
+        quantity = db.execute(
+            text("SELECT quantity FROM holdings WHERE account_id = :a AND instrument_id = :i"),
+            {"a": account_id, "i": instrument_id},
+        ).scalar()
+        assert quantity == 0, "the zero-quantity row is kept on purpose; the portfolio view filters it out"
+        visible = db.execute(
+            text("SELECT COUNT(*) FROM v_portfolio_summary WHERE account_id = :a"), {"a": account_id}
+        ).scalar()
+        assert visible == 0
+    finally:
+        db.close()
 
-        db.execute(text("CALL reset_user_account(:uid)"), {"uid": user_id})
+
+def test_reset_account_does_not_cascade_into_audit_log():
+    helpers.reset_db()
+    account_id = helpers.make_accounts(1)[0]
+    instrument_id = helpers.get_instrument_ids(1)[0]
+
+    execute_trade_tx(account_id, instrument_id, 3, "BUY")
+
+    db = database.SessionLocal()
+    try:
+        before = db.execute(text("SELECT COUNT(*) FROM audit_log")).scalar()
+        assert before >= 1
+
+        db.execute(text("CALL sp_reset_account(:a)"), {"a": account_id})
         db.commit()
 
-        # The procedure's DELETE FROM holdings fires trg_holding_audit_delete,
-        # so the count should grow (not shrink or stay flat), proving the
-        # earlier audit_log rows were not cascade-deleted along with the
-        # holdings/trades/orders rows the procedure removes.
-        audit_count_after = db.execute(text("SELECT COUNT(*) FROM audit_log")).scalar()
-        assert audit_count_after > audit_count_before
+        after = db.execute(text("SELECT COUNT(*) FROM audit_log")).scalar()
+        assert after > before
 
-        remaining_holdings = db.execute(text("SELECT COUNT(*) FROM holdings WHERE user_id = :uid"), {"uid": user_id}).scalar()
-        remaining_orders = db.execute(text("SELECT COUNT(*) FROM orders WHERE user_id = :uid"), {"uid": user_id}).scalar()
-        remaining_trades = db.execute(text("SELECT COUNT(*) FROM trades WHERE user_id = :uid"), {"uid": user_id}).scalar()
-        assert (remaining_holdings, remaining_orders, remaining_trades) == (0, 0, 0)
+        counts = db.execute(
+            text(
+                "SELECT (SELECT COUNT(*) FROM holdings WHERE account_id = :a) AS n_holdings, "
+                "(SELECT COUNT(*) FROM orders WHERE account_id = :a) AS n_orders, "
+                "(SELECT COUNT(*) FROM trades WHERE account_id = :a) AS n_trades"
+            ),
+            {"a": account_id},
+        ).one()
+        assert (counts.n_holdings, counts.n_orders, counts.n_trades) == (0, 0, 0)
+
+        cash = db.execute(
+            text("SELECT cash_balance = starting_cash FROM accounts WHERE account_id = :a"), {"a": account_id}
+        ).scalar()
+        assert cash == 1
     finally:
         db.close()

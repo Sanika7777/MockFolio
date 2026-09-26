@@ -61,62 +61,65 @@ Isolation level comparison -- why they differ:
 # wrong coupling.
 # ---------------------------------------------------------------------------
 
-_TRUNCATE_TABLES = ("audit_log", "trades", "orders", "holdings", "price_history", "watchlist", "accounts", "users")
+_TRUNCATE_TABLES = ("audit_log", "trades", "orders", "holdings", "candles_1m", "watchlist", "accounts", "users")
 
 
 def _reset_db():
     from sqlalchemy import text
-    import backend.transactions as transactions
-    db = transactions.SessionLocal()
+    import backend.database as database
+    db = database.SessionLocal()
     try:
         db.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         for table in _TRUNCATE_TABLES:
             db.execute(text(f"TRUNCATE TABLE {table}"))
         db.execute(text("SET FOREIGN_KEY_CHECKS=1"))
-        db.execute(text("UPDATE stocks SET simulated_price = reference_price, previous_simulated_price = reference_price"))
+        db.execute(text("UPDATE price_state SET perm_offset = 0, temp_offset = 0, last_decay_at = UTC_TIMESTAMP(3)"))
         db.commit()
     finally:
         db.close()
 
 
-def _make_users(n, cash="100000.00"):
-    import backend.transactions as transactions
+def _make_accounts(n, cash="100000.00"):
+    from sqlalchemy import select
+    import backend.database as database
     from backend.auth import hash_password
     from backend.models import Account, User
-    db = transactions.SessionLocal()
+    db = database.SessionLocal()
     try:
         ids = []
         for _ in range(n):
             suffix = uuid.uuid4().hex[:10]
-            user = User(username=f"rep_{suffix}", email=f"rep_{suffix}@test.local", password_hash=hash_password("x"))
-            user.account = Account(cash_balance=Decimal(cash), starting_balance=Decimal(cash))
+            user = User(username=f"rep_{suffix}", email=f"rep_{suffix}@test.local", password_hash=hash_password("x"), role="USER", is_active=1)
             db.add(user)
             db.flush()
-            ids.append(user.id)
+            account = db.scalar(select(Account).where(Account.user_id == user.user_id))
+            account.cash_balance = Decimal(cash)
+            account.starting_cash = Decimal(cash)
+            ids.append(account.account_id)
         db.commit()
         return ids
     finally:
         db.close()
 
 
-def _get_stock_ids(limit=5):
+def _get_instrument_ids(limit=5):
     from sqlalchemy import select
-    import backend.transactions as transactions
-    from backend.models import Stock
-    db = transactions.SessionLocal()
+    import backend.database as database
+    from backend.models import Instrument
+    db = database.SessionLocal()
     try:
-        return list(db.scalars(select(Stock.id).where(Stock.is_active).order_by(Stock.id).limit(limit)).all())
+        return list(db.scalars(select(Instrument.instrument_id).where(Instrument.is_active == 1).order_by(Instrument.instrument_id).limit(limit)).all())
     finally:
         db.close()
 
 
-def _get_stock_price(stock_id):
+def _get_instrument_price(instrument_id):
     from sqlalchemy import select
-    import backend.transactions as transactions
-    from backend.models import Stock
-    db = transactions.SessionLocal()
+    import backend.database as database
+    from backend.models import PriceState
+    db = database.SessionLocal()
     try:
-        return db.scalar(select(Stock.reference_price).where(Stock.id == stock_id))
+        return db.scalar(select(PriceState.adjusted_price).where(PriceState.instrument_id == instrument_id))
     finally:
         db.close()
 
@@ -158,8 +161,9 @@ def _run_workers_timed(specs):
 
 def _worker_lost_update(payload):
     from sqlalchemy import select
-    import backend.transactions as transactions
+    import backend.database as database
     from backend.models import Account, Trade
+    from backend.price_engine import money
     from backend.trading import execute_trade_tx
 
     _reset_db()
@@ -167,22 +171,22 @@ def _worker_lost_update(payload):
     concurrency = payload["concurrency"]
     quantity = payload.get("quantity", 1)
 
-    user_id = _make_users(1, cash=str(starting_cash))[0]
-    stock_id = _get_stock_ids(1)[0]
+    account_id = _make_accounts(1, cash=str(starting_cash))[0]
+    instrument_id = _get_instrument_ids(1)[0]
 
-    specs = [lambda: execute_trade_tx(user_id, stock_id, quantity, "BUY") for _ in range(concurrency)]
+    specs = [lambda: execute_trade_tx(account_id, instrument_id, quantity, "BUY") for _ in range(concurrency)]
     result = _run_workers_timed(specs)
 
-    db = transactions.SessionLocal()
+    db = database.SessionLocal()
     try:
-        account = db.scalar(select(Account).where(Account.user_id == user_id))
-        trades = db.scalars(select(Trade).where(Trade.user_id == user_id)).all()
+        account = db.scalar(select(Account).where(Account.account_id == account_id))
+        trades = db.scalars(select(Trade).where(Trade.account_id == account_id)).all()
     finally:
         db.close()
 
     expected = starting_cash
     for t in trades:
-        expected -= (t.fill_price * t.quantity + t.brokerage)
+        expected -= (money(t.exec_price * t.quantity) + t.brokerage)
     actual = account.cash_balance
     discrepancy = actual - expected
 
@@ -194,13 +198,13 @@ def _worker_lost_update(payload):
 
 
 def _worker_deadlock(payload):
-    from backend.locks import ORDERING_ENABLED, lock_stock
-    import backend.database as database
+    from backend.locks import ORDERING_ENABLED, lock_price_state
     from sqlalchemy.exc import OperationalError
+    import backend.database as database
 
     _reset_db()
-    stock_ids = payload.get("stock_ids") or _get_stock_ids(2)
-    a, b = stock_ids[0], stock_ids[1]
+    instrument_ids = payload.get("instrument_ids") or _get_instrument_ids(2)
+    a, b = instrument_ids[0], instrument_ids[1]
 
     errors = []
     captured = {"text": None}
@@ -219,15 +223,15 @@ def _worker_deadlock(payload):
 
     def buy_two(ids_in_request_order):
         # Mirrors what a hypothetical multi-stock trade would do with the
-        # real ORDERING_ENABLED flag and the real lock_stock() helper from
+        # real ORDERING_ENABLED flag and the real lock_price_state() helper from
         # backend/locks.py (Task 4) -- nothing here is demo-only code.
         ordered = sorted(ids_in_request_order) if ORDERING_ENABLED else list(ids_in_request_order)
         db = database.SessionLocal()
         try:
             with db.begin():
-                lock_stock(db, ordered[0])
+                lock_price_state(db, ordered[0])
                 time.sleep(0.3)
-                lock_stock(db, ordered[1])
+                lock_price_state(db, ordered[1])
         except OperationalError as exc:
             code = exc.orig.args[0] if getattr(exc, "orig", None) and getattr(exc.orig, "args", None) else None
             if code == 1213:
@@ -256,21 +260,21 @@ def _worker_deadlock(payload):
 
 
 def _worker_isolation(payload):
-    import backend.database as database
     import backend.transactions as transactions
     from backend.trading import execute_trade_tx
+    import backend.database as database
 
     _reset_db()
-    user_ids = _make_users(payload.get("users", 8))
-    stock_ids = _get_stock_ids(payload.get("stocks", 5))
+    account_ids = _make_accounts(payload.get("users", 8))
+    instrument_ids = _get_instrument_ids(payload.get("instruments", 5))
 
     specs = []
-    for user_id in user_ids:
+    for account_id in account_ids:
         for _ in range(payload.get("orders_per_user", 10)):
-            stock_id = random.choice(stock_ids)
+            instrument_id = random.choice(instrument_ids)
             side = random.choice(["BUY", "SELL"])
             quantity = random.randint(1, 5)
-            specs.append(lambda u=user_id, s=stock_id, side=side, q=quantity: execute_trade_tx(u, s, q, side))
+            specs.append(lambda u=account_id, s=instrument_id, side=side, q=quantity: execute_trade_tx(u, s, q, side))
 
     result = _run_workers_timed(specs)
     metrics = transactions.get_metrics()
@@ -373,11 +377,11 @@ def main():
 
     # 2. Deadlock demo -----------------------------------------------------
     print("\n-- Deadlock demo (two threads locking two stocks in opposite order) --")
-    stock_ids = None
+    instrument_ids = None
     deadlock_runs = []
     for ordering in ("off", "on"):
         for run_no in range(1, 4):
-            payload = {"stock_ids": stock_ids} if stock_ids else {}
+            payload = {"instrument_ids": instrument_ids} if instrument_ids else {}
             result = _run_worker("deadlock", {"MOCKFOLIO_ORDERING": ordering}, payload, test_db_url)
             result.update({"ordering": ordering, "run": run_no, "thread_count": 2})
             deadlock_runs.append(result)
@@ -398,7 +402,7 @@ def main():
     isolation_runs = []
     for level in ("READ COMMITTED", "REPEATABLE READ", "SERIALIZABLE"):
         for run_no in range(1, 6):
-            payload = {"users": 8, "stocks": 5, "orders_per_user": 10}
+            payload = {"users": 8, "instruments": 5, "orders_per_user": 10}
             result = _run_worker("isolation", {"TX_ISOLATION": level}, payload, test_db_url)
             result.update({"run": run_no, "thread_count": 80})
             isolation_runs.append(result)

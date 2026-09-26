@@ -1,107 +1,179 @@
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Computed, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
+SIDES = ("BUY", "SELL")
+ORDER_TYPES = ("MARKET", "LIMIT", "STOPLOSS")
+ORDER_STATUSES = ("PENDING", "FILLED", "PARTIAL", "REJECTED", "CANCELLED")
+ROLES = ("USER", "ADMIN")
+
+
+class Setting(Base):
+    __tablename__ = "settings"
+    setting_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    setting_value: Mapped[str] = mapped_column(String(255))
+    value_type: Mapped[str] = mapped_column(Enum("INT", "DECIMAL", "BOOL", "STRING"), default="DECIMAL")
+    description: Mapped[str | None] = mapped_column(String(255))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
-    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    account = relationship("Account", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(256), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    email: Mapped[str] = mapped_column(String(256), unique=True)
+    role: Mapped[str] = mapped_column(Enum(*ROLES), default="USER")
+    is_active: Mapped[int] = mapped_column(SmallInteger, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    account = relationship("Account", back_populates="user", uselist=False)
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "ADMIN"
+
 
 class Account(Base):
     __tablename__ = "accounts"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    cash_balance: Mapped[Decimal] = mapped_column(Numeric(16, 2), default=Decimal("100000.00"))
-    starting_balance: Mapped[Decimal] = mapped_column(Numeric(16, 2), default=Decimal("100000.00"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    account_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"), unique=True)
+    cash_balance: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    starting_cash: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    blocked_margin: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    realised_pl: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    version: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     user = relationship("User", back_populates="account")
-    __table_args__ = (CheckConstraint("cash_balance >= 0", name="ck_account_cash_nonnegative"),)
 
-class Stock(Base):
-    __tablename__ = "stocks"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    symbol: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    company_name: Mapped[str] = mapped_column(String(120))
-    sector: Mapped[str] = mapped_column(String(80))
-    reference_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    simulated_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    previous_simulated_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    average_daily_volume: Mapped[int] = mapped_column(Integer)
-    volatility: Mapped[Decimal] = mapped_column(Numeric(8, 4), default=Decimal("0.02"))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-class Holding(Base):
-    __tablename__ = "holdings"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.id"))
-    quantity: Mapped[int] = mapped_column(Integer)
-    average_buy_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    __table_args__ = (UniqueConstraint("user_id", "stock_id", name="uq_holding_user_stock"), CheckConstraint("quantity > 0", name="ck_holding_quantity_positive"), Index("ix_holdings_user_stock", "user_id", "stock_id"))
+class Instrument(Base):
+    __tablename__ = "instruments"
+    instrument_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(256))
+    exchange: Mapped[str] = mapped_column(Enum("NSE", "BSE"), default="NSE")
+    angel_token: Mapped[str | None] = mapped_column(String(256))
+    yf_ticker: Mapped[str | None] = mapped_column(String(256))
+    company_name: Mapped[str] = mapped_column(String(256))
+    sector: Mapped[str | None] = mapped_column(String(256))
+    avg_daily_vol: Mapped[int] = mapped_column(BigInteger)
+    daily_sigma: Mapped[Decimal] = mapped_column(Numeric(10, 6))
+    tick_size: Mapped[Decimal] = mapped_column(Numeric(10, 4))
+    lot_size: Mapped[int] = mapped_column(Integer)
+    is_active: Mapped[int] = mapped_column(SmallInteger)
+    kappa_override: Mapped[Decimal | None] = mapped_column(Numeric(12, 4))
+    price = relationship("PriceState", back_populates="instrument", uselist=False)
+
+
+class PriceState(Base):
+    __tablename__ = "price_state"
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.instrument_id", ondelete="CASCADE"), primary_key=True)
+    raw_price: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    prev_close: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    perm_offset: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    temp_offset: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    adjusted_price: Mapped[Decimal] = mapped_column(
+        Numeric(20, 5),
+        Computed("GREATEST(raw_price + perm_offset + temp_offset, 0.0500)", persisted=True),
+    )
+    last_tick_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_decay_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    instrument = relationship("Instrument", back_populates="price")
+
 
 class Order(Base):
     __tablename__ = "orders"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.id"), index=True)
-    order_type: Mapped[str] = mapped_column(String(4))
+    order_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    client_order_id: Mapped[str] = mapped_column(String(36), unique=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.account_id"))
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.instrument_id"))
+    side: Mapped[str] = mapped_column(Enum(*SIDES))
+    order_type: Mapped[str] = mapped_column(Enum(*ORDER_TYPES), default="MARKET")
     quantity: Mapped[int] = mapped_column(Integer)
-    requested_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    status: Mapped[str] = mapped_column(String(20), default="FILLED")
-    client_order_key: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    __table_args__ = (Index("ix_orders_user_created", "user_id", "created_at"),)
+    limit_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 4))
+    trigger_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 4))
+    status: Mapped[str] = mapped_column(Enum(*ORDER_STATUSES), default="PENDING")
+    reject_reason: Mapped[str | None] = mapped_column(String(256))
+    retry_count: Mapped[int] = mapped_column(SmallInteger, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
 
 class Trade(Base):
     __tablename__ = "trades"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), unique=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.id"), index=True)
-    side: Mapped[str] = mapped_column(String(4))
+    trade_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.order_id"), unique=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.account_id"))
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.instrument_id"))
+    side: Mapped[str] = mapped_column(Enum(*SIDES))
+    pre_trade_price: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    exec_price: Mapped[Decimal] = mapped_column(Numeric(20, 5))
     quantity: Mapped[int] = mapped_column(Integer)
-    fill_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    brokerage: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    price_before: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    price_after: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    price_impact: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    deviation_after_trade: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    __table_args__ = (Index("ix_trades_user_created", "user_id", "created_at"),)
+    brokerage: Mapped[Decimal] = mapped_column(Numeric(20, 5))
+    realised_pl: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    price_impact: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    deviation_after_trade: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    executed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-class PriceHistory(Base):
-    __tablename__ = "price_history"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.id", ondelete="CASCADE"), index=True)
-    reference_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    simulated_price: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    deviation: Mapped[Decimal] = mapped_column(Numeric(16, 2))
-    deviation_percentage: Mapped[Decimal] = mapped_column(Numeric(8, 4))
-    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+class Holding(Base):
+    __tablename__ = "holdings"
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.account_id", ondelete="CASCADE"), primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.instrument_id"), primary_key=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    avg_price: Mapped[Decimal] = mapped_column(Numeric(20, 4))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Candle(Base):
+    __tablename__ = "candles_1m"
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.instrument_id", ondelete="CASCADE"), primary_key=True)
+    is_adjusted: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    bucket_start: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
+    open_price: Mapped[Decimal] = mapped_column(Numeric(20, 4))
+    high_price: Mapped[Decimal] = mapped_column(Numeric(20, 4))
+    low_price: Mapped[Decimal] = mapped_column(Numeric(20, 4))
+    close_price: Mapped[Decimal] = mapped_column(Numeric(20, 4))
+    volume: Mapped[Decimal] = mapped_column(Numeric(20, 4))
+    trade_count: Mapped[int] = mapped_column(Integer)
+
 
 class Watchlist(Base):
     __tablename__ = "watchlist"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.id", ondelete="CASCADE"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    __table_args__ = (UniqueConstraint("user_id", "stock_id", name="uq_watchlist_user_stock"),)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.account_id", ondelete="CASCADE"), primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.instrument_id", ondelete="CASCADE"), primary_key=True)
+    sort_order: Mapped[int] = mapped_column(SmallInteger)
+    added_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    action: Mapped[str] = mapped_column(String(40))
-    table_name: Mapped[str] = mapped_column(String(50))
-    record_id: Mapped[int] = mapped_column(Integer)
-    old_value: Mapped[str | None] = mapped_column(Text)
-    new_value: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    log_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    table_name: Mapped[str] = mapped_column(String(64))
+    action: Mapped[str] = mapped_column(Enum("INSERT", "UPDATE", "DELETE"))
+    row_key: Mapped[str] = mapped_column(String(64))
+    old_value: Mapped[dict | None] = mapped_column(JSON)
+    new_value: Mapped[dict | None] = mapped_column(JSON)
+    db_user: Mapped[str] = mapped_column(String(96))
+    changed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class ConcurrencyRun(Base):
+    __tablename__ = "concurrency_runs"
+    run_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    label: Mapped[str] = mapped_column(String(64))
+    isolation_level: Mapped[str] = mapped_column(String(32))
+    lock_ordering: Mapped[int] = mapped_column(SmallInteger)
+    use_for_update: Mapped[int] = mapped_column(SmallInteger)
+    threads: Mapped[int] = mapped_column(SmallInteger)
+    duration_sec: Mapped[int] = mapped_column(SmallInteger)
+    orders_attempted: Mapped[int] = mapped_column(Integer)
+    orders_filled: Mapped[int] = mapped_column(Integer)
+    deadlocks: Mapped[int] = mapped_column(Integer)
+    avg_latency_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    p95_latency_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    notes: Mapped[str | None] = mapped_column(Text)
+    run_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

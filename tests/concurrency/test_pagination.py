@@ -20,9 +20,9 @@ def test_orders_pagination_limit_offset_and_hard_cap():
         token = resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        stock_id = client.get("/stocks").json()[0]["id"]
+        instrument_id = client.get("/instruments").json()[0]["instrument_id"]
         for _ in range(5):
-            r = client.post("/trades/buy", json={"stock_id": stock_id, "quantity": 1, "client_order_key": str(uuid.uuid4())}, headers=headers)
+            r = client.post("/trades/buy", json={"instrument_id": instrument_id, "quantity": 1, "client_order_id": str(uuid.uuid4())}, headers=headers)
             assert r.status_code == 200, r.text
 
         all_orders = client.get("/orders", headers=headers).json()
@@ -31,7 +31,7 @@ def test_orders_pagination_limit_offset_and_hard_cap():
 
         page = client.get("/orders", params={"limit": 2, "offset": 2}, headers=headers).json()
         assert len(page) == 2
-        assert [o["id"] for o in page] == [o["id"] for o in all_orders[2:4]]
+        assert [o["order_id"] for o in page] == [o["order_id"] for o in all_orders[2:4]]
 
         over_cap = client.get("/orders", params={"limit": 500}, headers=headers)
         assert over_cap.status_code == 422, "limit above the 200 hard cap must be rejected, not silently clamped"

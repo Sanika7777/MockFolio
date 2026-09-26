@@ -40,7 +40,7 @@ def test_real_jwt_secret_starts_fine():
     assert result.returncode == 0, result.stderr
 
 
-def test_default_cors_origins():
+def test_cors_is_empty_by_default_because_frontend_is_same_origin():
     env = dict(os.environ)
     env.pop("CORS_ORIGINS", None)
     result = subprocess.run(
@@ -48,7 +48,7 @@ def test_default_cors_origins():
         cwd=str(REPO_ROOT), env=env, capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "['http://127.0.0.1:5500', 'http://localhost:5500']"
+    assert result.stdout.strip() == "[]"
 
 
 def test_custom_cors_origins_from_env():

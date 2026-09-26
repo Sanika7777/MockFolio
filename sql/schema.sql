@@ -1,12 +1,194 @@
-CREATE DATABASE IF NOT EXISTS mockfolio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE mockfolio;
+SET time_zone = '+00:00';
 
-CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(50) NOT NULL UNIQUE, email VARCHAR(255) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT FALSE, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX ix_users_username (username), INDEX ix_users_email (email)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS accounts (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL UNIQUE, cash_balance DECIMAL(16,2) NOT NULL DEFAULT 100000.00, starting_balance DECIMAL(16,2) NOT NULL DEFAULT 100000.00, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_accounts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, CONSTRAINT ck_accounts_cash CHECK (cash_balance >= 0)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS stocks (id INT AUTO_INCREMENT PRIMARY KEY, symbol VARCHAR(20) NOT NULL UNIQUE, company_name VARCHAR(120) NOT NULL, sector VARCHAR(80) NOT NULL, reference_price DECIMAL(16,2) NOT NULL, simulated_price DECIMAL(16,2) NOT NULL, previous_simulated_price DECIMAL(16,2) NOT NULL, average_daily_volume INT NOT NULL, volatility DECIMAL(8,4) NOT NULL DEFAULT 0.0200, is_active BOOLEAN NOT NULL DEFAULT TRUE, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX ix_stocks_symbol (symbol)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS holdings (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, stock_id INT NOT NULL, quantity INT NOT NULL, average_buy_price DECIMAL(16,2) NOT NULL, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uq_holdings_user_stock (user_id, stock_id), CONSTRAINT fk_holdings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, CONSTRAINT fk_holdings_stock FOREIGN KEY (stock_id) REFERENCES stocks(id), CONSTRAINT ck_holdings_quantity CHECK (quantity > 0), INDEX ix_holdings_user_stock (user_id, stock_id)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS orders (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, stock_id INT NOT NULL, order_type ENUM('BUY','SELL') NOT NULL, quantity INT NOT NULL, requested_price DECIMAL(16,2) NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'FILLED', client_order_key VARCHAR(80) UNIQUE, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, CONSTRAINT fk_orders_stock FOREIGN KEY (stock_id) REFERENCES stocks(id), INDEX ix_orders_user (user_id), INDEX ix_orders_stock (stock_id), INDEX ix_orders_user_created (user_id, created_at)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS trades (id INT AUTO_INCREMENT PRIMARY KEY, order_id INT NOT NULL UNIQUE, user_id INT NOT NULL, stock_id INT NOT NULL, side ENUM('BUY','SELL') NOT NULL, quantity INT NOT NULL, fill_price DECIMAL(16,2) NOT NULL, brokerage DECIMAL(16,2) NOT NULL, price_before DECIMAL(16,2) NOT NULL, price_after DECIMAL(16,2) NOT NULL, price_impact DECIMAL(16,2) NOT NULL, deviation_after_trade DECIMAL(16,2) NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_trades_order FOREIGN KEY (order_id) REFERENCES orders(id), CONSTRAINT fk_trades_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, CONSTRAINT fk_trades_stock FOREIGN KEY (stock_id) REFERENCES stocks(id), INDEX ix_trades_user (user_id), INDEX ix_trades_stock (stock_id), INDEX ix_trades_user_created (user_id, created_at)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS price_history (id INT AUTO_INCREMENT PRIMARY KEY, stock_id INT NOT NULL, reference_price DECIMAL(16,2) NOT NULL, simulated_price DECIMAL(16,2) NOT NULL, deviation DECIMAL(16,2) NOT NULL, deviation_percentage DECIMAL(8,4) NOT NULL, recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_history_stock FOREIGN KEY (stock_id) REFERENCES stocks(id) ON DELETE CASCADE, INDEX ix_history_stock_time (stock_id, recorded_at)) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS watchlist (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, stock_id INT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_watchlist_user_stock (user_id, stock_id), CONSTRAINT fk_watch_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, CONSTRAINT fk_watch_stock FOREIGN KEY (stock_id) REFERENCES stocks(id) ON DELETE CASCADE) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS audit_log (id INT AUTO_INCREMENT PRIMARY KEY, action VARCHAR(40) NOT NULL, table_name VARCHAR(50) NOT NULL, record_id INT NOT NULL, old_value TEXT, new_value TEXT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version VARCHAR(50) NOT NULL PRIMARY KEY,
+    filename VARCHAR(256) NOT NULL,
+    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(64) NOT NULL PRIMARY KEY,
+    setting_value VARCHAR(255) NOT NULL,
+    value_type ENUM('INT','DECIMAL','BOOL','STRING') NOT NULL DEFAULT 'DECIMAL',
+    description VARCHAR(255) NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(256) NOT NULL UNIQUE,
+    password_hash VARCHAR(256) NOT NULL,
+    email VARCHAR(256) NOT NULL UNIQUE,
+    role ENUM('USER','ADMIN') NOT NULL DEFAULT 'USER',
+    is_active TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS accounts (
+    account_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    cash_balance DECIMAL(20,5) NOT NULL DEFAULT 500000.00000,
+    starting_cash DECIMAL(20,5) NOT NULL DEFAULT 500000.00000,
+    blocked_margin DECIMAL(20,5) NOT NULL DEFAULT 0.00000,
+    realised_pl DECIMAL(20,5) NOT NULL DEFAULT 0.00000,
+    version INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    UNIQUE KEY uq_accounts_user (user_id),
+    CONSTRAINT fk_accounts_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE RESTRICT,
+    CONSTRAINT chk_accounts_cash CHECK (cash_balance >= 0),
+    CONSTRAINT chk_accounts_margin CHECK (blocked_margin >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS instruments (
+    instrument_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    symbol VARCHAR(256) NOT NULL,
+    exchange ENUM('NSE','BSE') NOT NULL DEFAULT 'NSE',
+    angel_token VARCHAR(256) NULL,
+    yf_ticker VARCHAR(256) NULL,
+    company_name VARCHAR(256) NOT NULL,
+    sector VARCHAR(256) NULL,
+    avg_daily_vol BIGINT UNSIGNED NOT NULL,
+    daily_sigma DECIMAL(10,6) NOT NULL,
+    tick_size DECIMAL(10,4) NOT NULL DEFAULT 0.0500,
+    lot_size INT UNSIGNED NOT NULL DEFAULT 1,
+    is_active TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    kappa_override DECIMAL(12,4) NULL,
+    UNIQUE KEY uq_instr_symbol_exch (symbol, exchange),
+    KEY idx_instr_angel_token (angel_token(32)),
+    CONSTRAINT chk_instr_adv CHECK (avg_daily_vol > 0),
+    CONSTRAINT chk_instr_sigma CHECK (daily_sigma > 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS price_state (
+    instrument_id INT UNSIGNED NOT NULL PRIMARY KEY,
+    raw_price DECIMAL(20,5) NOT NULL,
+    prev_close DECIMAL(20,5) NOT NULL DEFAULT 0.00000,
+    perm_offset DECIMAL(20,6) NOT NULL DEFAULT 0.000000,
+    temp_offset DECIMAL(20,6) NOT NULL DEFAULT 0.000000,
+    adjusted_price DECIMAL(20,5) AS (GREATEST(raw_price + perm_offset + temp_offset, 0.0500)) STORED,
+    last_tick_at DATETIME(3) NOT NULL,
+    last_decay_at DATETIME(3) NOT NULL,
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    CONSTRAINT fk_pricestate_instr FOREIGN KEY (instrument_id) REFERENCES instruments(instrument_id) ON DELETE CASCADE,
+    CONSTRAINT chk_pricestate_raw CHECK (raw_price > 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS orders (
+    order_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    client_order_id CHAR(36) NOT NULL,
+    account_id INT UNSIGNED NOT NULL,
+    instrument_id INT UNSIGNED NOT NULL,
+    side ENUM('BUY','SELL') NOT NULL,
+    order_type ENUM('MARKET','LIMIT','STOPLOSS') NOT NULL DEFAULT 'MARKET',
+    quantity INT UNSIGNED NOT NULL,
+    limit_price DECIMAL(20,4) NULL,
+    trigger_price DECIMAL(20,4) NULL,
+    status ENUM('PENDING','FILLED','PARTIAL','REJECTED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+    reject_reason VARCHAR(256) NULL,
+    retry_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    UNIQUE KEY uq_orders_client_id (client_order_id),
+    KEY idx_orders_account_status (account_id, status, order_id),
+    KEY idx_orders_account_time (account_id, created_at),
+    KEY idx_orders_instr_time (instrument_id, created_at),
+    CONSTRAINT fk_orders_account FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_orders_instr FOREIGN KEY (instrument_id) REFERENCES instruments(instrument_id) ON DELETE RESTRICT,
+    CONSTRAINT chk_orders_qty CHECK (quantity > 0),
+    CONSTRAINT chk_orders_limit CHECK (order_type <> 'LIMIT' OR limit_price IS NOT NULL)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS trades (
+    trade_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT UNSIGNED NOT NULL,
+    account_id INT UNSIGNED NOT NULL,
+    instrument_id INT UNSIGNED NOT NULL,
+    side ENUM('BUY','SELL') NOT NULL,
+    pre_trade_price DECIMAL(20,5) NOT NULL,
+    exec_price DECIMAL(20,5) NOT NULL,
+    quantity INT UNSIGNED NOT NULL,
+    brokerage DECIMAL(20,5) NOT NULL DEFAULT 0.00000,
+    realised_pl DECIMAL(20,5) NULL,
+    price_impact DECIMAL(20,6) NOT NULL DEFAULT 0.000000,
+    deviation_after_trade DECIMAL(20,6) NOT NULL DEFAULT 0.000000,
+    executed_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    UNIQUE KEY uq_trades_order (order_id),
+    KEY idx_trades_account_time (account_id, executed_at),
+    KEY idx_trades_instr_time (instrument_id, executed_at),
+    CONSTRAINT fk_trades_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_trades_account FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_trades_instr FOREIGN KEY (instrument_id) REFERENCES instruments(instrument_id) ON DELETE RESTRICT,
+    CONSTRAINT chk_trades_qty CHECK (quantity > 0),
+    CONSTRAINT chk_trades_price CHECK (exec_price > 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS holdings (
+    account_id INT UNSIGNED NOT NULL,
+    instrument_id INT UNSIGNED NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    avg_price DECIMAL(20,4) NOT NULL DEFAULT 0.0000,
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (account_id, instrument_id),
+    KEY idx_holdings_instr (instrument_id),
+    CONSTRAINT fk_holdings_account FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE,
+    CONSTRAINT fk_holdings_instr FOREIGN KEY (instrument_id) REFERENCES instruments(instrument_id) ON DELETE RESTRICT,
+    CONSTRAINT chk_holdings_qty CHECK (quantity >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS candles_1m (
+    instrument_id INT UNSIGNED NOT NULL,
+    bucket_start DATETIME NOT NULL,
+    is_adjusted TINYINT UNSIGNED NOT NULL,
+    open_price DECIMAL(20,4) NOT NULL,
+    high_price DECIMAL(20,4) NOT NULL,
+    low_price DECIMAL(20,4) NOT NULL,
+    close_price DECIMAL(20,4) NOT NULL,
+    volume DECIMAL(20,4) NOT NULL DEFAULT 0.0000,
+    trade_count INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (instrument_id, is_adjusted, bucket_start),
+    CONSTRAINT fk_candles_instr FOREIGN KEY (instrument_id) REFERENCES instruments(instrument_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS watchlist (
+    account_id INT UNSIGNED NOT NULL,
+    instrument_id INT UNSIGNED NOT NULL,
+    sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    added_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (account_id, instrument_id),
+    CONSTRAINT fk_watchlist_account FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE,
+    CONSTRAINT fk_watchlist_instr FOREIGN KEY (instrument_id) REFERENCES instruments(instrument_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    log_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    table_name VARCHAR(64) NOT NULL,
+    action ENUM('INSERT','UPDATE','DELETE') NOT NULL,
+    row_key VARCHAR(64) NOT NULL,
+    old_value JSON NULL,
+    new_value JSON NULL,
+    db_user VARCHAR(96) NOT NULL,
+    changed_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    KEY idx_audit_table_time (table_name, changed_at)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS concurrency_runs (
+    run_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    label VARCHAR(64) NOT NULL,
+    isolation_level VARCHAR(32) NOT NULL,
+    lock_ordering TINYINT UNSIGNED NOT NULL,
+    use_for_update TINYINT UNSIGNED NOT NULL,
+    threads SMALLINT UNSIGNED NOT NULL,
+    duration_sec SMALLINT UNSIGNED NOT NULL,
+    orders_attempted INT UNSIGNED NOT NULL DEFAULT 0,
+    orders_filled INT UNSIGNED NOT NULL DEFAULT 0,
+    deadlocks INT UNSIGNED NOT NULL DEFAULT 0,
+    avg_latency_ms DECIMAL(10,2) NULL,
+    p95_latency_ms DECIMAL(10,2) NULL,
+    notes TEXT NULL,
+    run_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+) ENGINE=InnoDB;
+
+INSERT INTO schema_migrations (version, filename)
+VALUES ('001', 'schema.sql')
+ON DUPLICATE KEY UPDATE applied_at = applied_at;

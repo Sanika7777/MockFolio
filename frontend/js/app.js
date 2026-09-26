@@ -207,7 +207,7 @@
   // Shared 4-stat descriptor set for Market and Portfolio (§4/§6). holdingsCount
   // is optional; when omitted the holdings-value stat has no caption.
   function summaryStats(summary, holdingsCount) {
-    const pnl = Number(summary.total_pnl || 0);
+    const pnl = Number(summary.unrealised_pnl || 0);
     const pnlPercent = (pnl / 100000) * 100;
     const arrow = pnl > 0 ? "▲" : pnl < 0 ? "▼" : "–";
     return [
@@ -241,13 +241,13 @@
 
   function stockRow(stock, starred) {
     const deviation = Number(stock.deviation);
-    const href = `stock.html?id=${stock.id}`;
+    const href = `stock.html?id=${stock.instrument_id}`;
     const arrow = deviation > 0 ? "▲" : deviation < 0 ? "▼" : "–";
     const actionLabel = currentUser?.is_admin ? "View" : "Trade";
     const sectorTag = stock.sector
       ? `<span class="sector-tag">${escapeHTML(stock.sector)}</span>`
       : "";
-    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="MockFolio price"><strong class="market-price">${money(stock.simulated_price)}</strong><small>MockFolio price</small></td><td data-label="Reference price">${money(stock.reference_price)}</td><td data-label="Deviation"><div class="deviation-cell"><div class="deviation-text"><span class="deviation-chip ${tone(deviation)}">${arrow} ${signed(deviation)}</span><small class="${tone(deviation)}">${percent(stock.deviation_percentage)}</small></div><canvas class="sparkline" data-sparkline="${stock.id}" width="72" height="28" aria-hidden="true"></canvas></div></td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
+    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="MockFolio price"><strong class="market-price">${money(stock.adjusted_price)}</strong><small>MockFolio price</small></td><td data-label="Reference price">${money(stock.raw_price)}</td><td data-label="Deviation"><div class="deviation-cell"><div class="deviation-text"><span class="deviation-chip ${tone(deviation)}">${arrow} ${signed(deviation)}</span><small class="${tone(deviation)}">${percent(stock.deviation_percentage)}</small></div><canvas class="sparkline" data-sparkline="${stock.instrument_id}" width="72" height="28" aria-hidden="true"></canvas></div></td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
   }
 
   function bindWatchButtons() {
@@ -304,11 +304,11 @@
             `${stock.symbol} ${stock.company_name}`
               .toLowerCase()
               .includes(query) &&
-            (mode !== "watchlist" || watchIds.has(stock.id)),
+            (mode !== "watchlist" || watchIds.has(stock.instrument_id)),
         );
         $("#market-table").innerHTML = filtered.length
           ? filtered
-              .map((stock) => stockRow(stock, watchIds.has(stock.id)))
+              .map((stock) => stockRow(stock, watchIds.has(stock.instrument_id)))
               .join("")
           : `<tr><td colspan="5"><div class="empty-state compact"><strong>${query ? "No stocks match your search." : mode === "watchlist" ? "No stocks in your watchlist." : "No stocks available."}</strong><span>${query ? "Try a different symbol or company name." : "The simulated market has no active stocks right now."}</span></div></td></tr>`;
         bindWatchButtons();
@@ -356,7 +356,7 @@
         ? holdings
             .map(
               (item) =>
-                `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.stock_id}"><strong>${escapeHTML(item.symbol)}</strong></a></td><td data-label="Quantity">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Average buy">${money(item.average_buy_price)}</td><td data-label="Current price">${money(item.simulated_price)}</td><td data-label="Invested">${money(item.invested_value)}</td><td data-label="Current value">${money(item.current_value)}</td><td data-label="P&L" class="${tone(item.profit_loss)}"><strong>${signed(item.profit_loss)}</strong><small>${percent((Number(item.profit_loss) / Number(item.invested_value || 1)) * 100)}</small></td></tr>`,
+                `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong></a></td><td data-label="Quantity">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Average buy">${money(item.avg_price)}</td><td data-label="Current price">${money(item.adjusted_price)}</td><td data-label="Invested">${money(item.invested_value)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong><small>${percent((Number(item.unrealised_pnl) / Number(item.invested_value || 1)) * 100)}</small></td></tr>`,
             )
             .join("")
         : `<tr><td colspan="7"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>`;
@@ -391,7 +391,7 @@
         ? orders
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Requested price">${money(item.requested_price)}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
+                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Limit price">${item.limit_price ? money(item.limit_price) : "—"}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
             )
             .join("")
         : `<tr><td colspan="6"><div class="empty-state"><strong>No orders yet</strong><span>Your completed orders will appear here.</span></div></td></tr>`;
@@ -399,7 +399,7 @@
         ? trades
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.fill_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td></tr>`,
+                `<tr><td data-label="Date">${new Date(item.executed_at).toLocaleString("en-IN")}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td></tr>`,
             )
             .join("")
         : `<tr><td colspan="7"><div class="empty-state"><strong>No trades yet</strong><span>Execute a trade to see its price impact here.</span></div></td></tr>`;
@@ -487,13 +487,13 @@
         0,
       );
       const pnlPercent = invested
-        ? (Number(summary.total_pnl) / invested) * 100
+        ? (Number(summary.unrealised_pnl) / invested) * 100
         : 0;
       const activity = trades.slice(0, 6);
       const profileRow = (label, value) =>
         `<div><span>${label}</span><strong>${value}</strong></div>`;
       $("#profile-content").innerHTML =
-        `<section class="profile-hero"><div><span class="eyebrow">PROFILE / ACCOUNT</span><h1>Hi, ${escapeHTML(user.name || user.username)}</h1><p>Your paper-trading account.</p></div>${user.is_admin ? '<span class="account-status"><strong>Developer Account</strong><small>Trading disabled</small></span>' : ""}</section><section class="portfolio-summary panel"><span class="eyebrow">PORTFOLIO</span><strong class="portfolio-total">${money(summary.total_account_value)}</strong><span class="summary-label">Total account value</span><div class="summary-metrics"><div><span>Invested</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>P&L</span><strong class="${tone(summary.total_pnl)}">${signed(summary.total_pnl)} <small>(${percent(pnlPercent)})</small></strong></div></div></section><section class="profile-metrics"><div><span>Available cash</span><strong>${money(summary.cash_balance)}</strong></div><div><span>Invested value</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>Total P&L</span><strong class="${tone(summary.total_pnl)}">${signed(summary.total_pnl)}</strong></div></section><section class="profile-section">${allocationChartCard()}</section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">YOUR BOOK</span><h2>Your holdings</h2></div></div><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg. price</th><th>Simulated price</th><th>Current value</th><th>P&L</th></tr></thead><tbody>${holdings.length ? holdings.map((item) => `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.stock_id}"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Qty">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Avg. price">${money(item.average_buy_price)}</td><td data-label="Simulated price">${money(item.simulated_price)}</td><td data-label="Current value">${money(item.current_value)}</td><td data-label="P&L" class="${tone(item.profit_loss)}"><strong>${signed(item.profit_loss)}</strong></td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>'}</tbody></table></div></section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent activity</h2></div></div><div class="table-wrap"><table><thead><tr><th>Side</th><th>Stock</th><th>Quantity</th><th>Fill price</th><th>Price impact</th><th>Date</th></tr></thead><tbody>${activity.length ? activity.map((item) => `<tr><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.fill_price)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Date">${new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>No recent activity</strong></div></td></tr>'}</tbody></table></div></section><section class="profile-section account-section"><div class="section-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Account information</h2></div></div><div class="account-grid panel">${profileRow("Username", escapeHTML(user.username))}${profileRow("Email", escapeHTML(user.email))}${profileRow("Account type", user.is_admin ? "Developer · Trading disabled" : "Standard user")}${profileRow("Member since", new Date(user.created_at).toLocaleDateString("en-IN"))}</div></section>`;
+        `<section class="profile-hero"><div><span class="eyebrow">PROFILE / ACCOUNT</span><h1>Hi, ${escapeHTML(user.name || user.username)}</h1><p>Your paper-trading account.</p></div>${user.is_admin ? '<span class="account-status"><strong>Developer Account</strong><small>Trading disabled</small></span>' : ""}</section><section class="portfolio-summary panel"><span class="eyebrow">PORTFOLIO</span><strong class="portfolio-total">${money(summary.total_account_value)}</strong><span class="summary-label">Total account value</span><div class="summary-metrics"><div><span>Invested</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)} <small>(${percent(pnlPercent)})</small></strong></div></div></section><section class="profile-metrics"><div><span>Available cash</span><strong>${money(summary.cash_balance)}</strong></div><div><span>Invested value</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>Total P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)}</strong></div></section><section class="profile-section">${allocationChartCard()}</section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">YOUR BOOK</span><h2>Your holdings</h2></div></div><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg. price</th><th>Simulated price</th><th>Current value</th><th>P&L</th></tr></thead><tbody>${holdings.length ? holdings.map((item) => `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Qty">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Avg. price">${money(item.avg_price)}</td><td data-label="Simulated price">${money(item.adjusted_price)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong></td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>'}</tbody></table></div></section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent activity</h2></div></div><div class="table-wrap"><table><thead><tr><th>Side</th><th>Stock</th><th>Quantity</th><th>Fill price</th><th>Price impact</th><th>Date</th></tr></thead><tbody>${activity.length ? activity.map((item) => `<tr><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Date">${new Date(item.executed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>No recent activity</strong></div></td></tr>'}</tbody></table></div></section><section class="profile-section account-section"><div class="section-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Account information</h2></div></div><div class="account-grid panel">${profileRow("Username", escapeHTML(user.username))}${profileRow("Email", escapeHTML(user.email))}${profileRow("Account type", user.is_admin ? "Developer · Trading disabled" : "Standard user")}${profileRow("Member since", new Date(user.created_at).toLocaleDateString("en-IN"))}</div></section>`;
       renderAllocationChart(holdings, summary.cash_balance);
     } catch (error) {
       $("#profile-content").innerHTML =
@@ -522,14 +522,14 @@
         datasets: [
           {
             label: "MockFolio Price",
-            data: points.map((item) => item.simulated_price),
+            data: points.map((item) => item.adjusted_price),
             fill: true,
             tension: 0.25,
             pointRadius: 2,
           },
           {
             label: "Reference Price",
-            data: points.map((item) => item.reference_price),
+            data: points.map((item) => item.raw_price),
             fill: false,
             tension: 0.25,
             pointRadius: 0,
@@ -614,16 +614,16 @@
     );
     const sorted = holdings
       .slice()
-      .sort((a, b) => Number(b.current_value) - Number(a.current_value));
+      .sort((a, b) => Number(b.market_value) - Number(a.market_value));
     const top = sorted.slice(0, 4);
     const otherValue = sorted
       .slice(4)
-      .reduce((sum, item) => sum + Number(item.current_value || 0), 0);
+      .reduce((sum, item) => sum + Number(item.market_value || 0), 0);
     const slices = [
       { label: "Cash", value: Number(cashBalance) || 0 },
       ...top.map((item) => ({
         label: item.symbol,
-        value: Number(item.current_value) || 0,
+        value: Number(item.market_value) || 0,
       })),
     ];
     if (otherValue > 0) slices.push({ label: "Other", value: otherValue });
@@ -711,7 +711,7 @@
       0,
     );
     const current = holdings.reduce(
-      (sum, item) => sum + Number(item.current_value || 0),
+      (sum, item) => sum + Number(item.market_value || 0),
       0,
     );
     if (investedChart) investedChart.destroy();
@@ -766,9 +766,9 @@
         labels: holdings.map((item) => item.symbol),
         datasets: [
           {
-            data: holdings.map((item) => Number(item.profit_loss || 0)),
+            data: holdings.map((item) => Number(item.unrealised_pnl || 0)),
             backgroundColor: holdings.map((item) =>
-              Number(item.profit_loss) >= 0 ? positive : negative,
+              Number(item.unrealised_pnl) >= 0 ? positive : negative,
             ),
             borderRadius: 6,
             maxBarThickness: 22,
@@ -852,8 +852,8 @@
   }
   function fabricateMarketSeries(stock, count = 20) {
     const end =
-      Number(stock.reference_price) || Number(stock.simulated_price) || 100;
-    const next = seededRandom(stock.symbol || stock.id);
+      Number(stock.raw_price) || Number(stock.adjusted_price) || 100;
+    const next = seededRandom(stock.symbol || stock.instrument_id);
     const series = [end];
     let value = end;
     for (let i = 1; i < count; i++) {
@@ -865,11 +865,11 @@
   }
   async function fetchMarketLifeSeries(stock) {
     try {
-      const history = await api.history(stock.id);
+      const history = await api.history(stock.instrument_id);
       const real = history
         .slice()
         .reverse()
-        .map((item) => Number(item.reference_price))
+        .map((item) => Number(item.raw_price))
         .filter((value) => Number.isFinite(value));
       if (real.length >= 6) return real;
     } catch {
@@ -932,13 +932,13 @@
       ]);
       let stock = stockData;
       watchlist = watchlistData;
-      const starred = watchlist.some((item) => item.id === stock.id);
+      const starred = watchlist.some((item) => item.id === stock.instrument_id);
       const isAdmin = Boolean(currentUser?.is_admin);
       const tradePanel = isAdmin
         ? `<aside class="panel trade-panel read-only-panel"><span class="eyebrow">DEVELOPER ACCOUNT</span><h2>Trading disabled</h2><p class="helper">Developer accounts can inspect the simulated market but cannot place BUY or SELL orders.</p></aside>`
-        : `<aside class="panel trade-panel"><div class="panel-heading"><div><span class="eyebrow">SIMULATED ORDER DESK</span><h2>Trade ${escapeHTML(stock.symbol)}</h2></div><span class="paper-mode-pill">${svgIcon(ICONS.lock)} Paper mode</span></div><div class="segmented"><button class="active" data-side="BUY">${svgIcon(ICONS.plusCircle)}Buy</button><button data-side="SELL">${svgIcon(ICONS.minusCircle)}Sell</button></div><label for="quantity">Quantity (shares)</label><div class="quantity-stepper"><button type="button" id="qty-decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" step="1" value="10" inputmode="numeric" /><button type="button" id="qty-increase" aria-label="Increase quantity">+</button></div><div class="estimate"><div><span>Current price</span><strong id="estimate-price">${money(stock.simulated_price)}</strong></div><div><span>Estimated amount</span><strong id="estimate-value">${money(stock.simulated_price * 10)}</strong></div><div><span>Brokerage (0.1%)</span><strong id="estimate-brokerage">${money(stock.simulated_price * 10 * 0.001)}</strong></div><div class="estimate-total"><span>Estimated total</span><strong id="estimate-total">${money(stock.simulated_price * 10 * 1.001)}</strong></div></div><button class="primary-button full" id="trade-button">Buy stock</button><div id="trade-feedback" class="trade-feedback hidden"></div><p class="helper">Your fill price is determined by the server. A trade changes the shared simulated market price.</p></aside>`;
+        : `<aside class="panel trade-panel"><div class="panel-heading"><div><span class="eyebrow">SIMULATED ORDER DESK</span><h2>Trade ${escapeHTML(stock.symbol)}</h2></div><span class="paper-mode-pill">${svgIcon(ICONS.lock)} Paper mode</span></div><div class="segmented"><button class="active" data-side="BUY">${svgIcon(ICONS.plusCircle)}Buy</button><button data-side="SELL">${svgIcon(ICONS.minusCircle)}Sell</button></div><label for="quantity">Quantity (shares)</label><div class="quantity-stepper"><button type="button" id="qty-decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" step="1" value="10" inputmode="numeric" /><button type="button" id="qty-increase" aria-label="Increase quantity">+</button></div><div class="estimate"><div><span>Current price</span><strong id="estimate-price">${money(stock.adjusted_price)}</strong></div><div><span>Estimated amount</span><strong id="estimate-value">${money(stock.adjusted_price * 10)}</strong></div><div><span>Brokerage (0.1%)</span><strong id="estimate-brokerage">${money(stock.adjusted_price * 10 * 0.001)}</strong></div><div class="estimate-total"><span>Estimated total</span><strong id="estimate-total">${money(stock.adjusted_price * 10 * 1.001)}</strong></div></div><button class="primary-button full" id="trade-button">Buy stock</button><div id="trade-feedback" class="trade-feedback hidden"></div><p class="helper">Your fill price is determined by the server. A trade changes the shared simulated market price.</p></aside>`;
       $("#stock-content").innerHTML =
-        `<div class="stock-heading"><div><span class="eyebrow">${escapeHTML(stock.sector)}</span><h1>${escapeHTML(stock.company_name)}</h1><p class="symbol-label">${escapeHTML(stock.symbol)}</p></div><div class="price-block"><div class="price-block-top"><span>MockFolio price</span><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><strong id="stock-price">${money(stock.simulated_price)}</strong><em id="stock-deviation" class="${tone(stock.deviation)}">${signed(stock.deviation)} (${percent(stock.deviation_percentage)})</em><span class="reference-pill" id="stock-reference">Reference ${money(stock.reference_price)}</span></div></div><div class="stock-grid"><section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">PRICE STORY</span><h2>MockFolio price history</h2></div></div><canvas id="price-chart" aria-label="Line chart comparing the MockFolio price and the reference price over recent history" role="img"></canvas><div id="chart-empty" class="empty-state compact hidden">No price history yet. Your first trade will create a point.</div><p class="chart-caption">Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
+        `<div class="stock-heading"><div><span class="eyebrow">${escapeHTML(stock.sector)}</span><h1>${escapeHTML(stock.company_name)}</h1><p class="symbol-label">${escapeHTML(stock.symbol)}</p></div><div class="price-block"><div class="price-block-top"><span>MockFolio price</span><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><strong id="stock-price">${money(stock.adjusted_price)}</strong><em id="stock-deviation" class="${tone(stock.deviation)}">${signed(stock.deviation)} (${percent(stock.deviation_percentage)})</em><span class="reference-pill" id="stock-reference">Reference ${money(stock.raw_price)}</span></div></div><div class="stock-grid"><section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">PRICE STORY</span><h2>MockFolio price history</h2></div></div><canvas id="price-chart" aria-label="Line chart comparing the MockFolio price and the reference price over recent history" role="img"></canvas><div id="chart-empty" class="empty-state compact hidden">No price history yet. Your first trade will create a point.</div><p class="chart-caption">Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
       drawChart(history);
       bindWatchButtons();
       if (!isAdmin) bindTrade(stock);
@@ -958,8 +958,8 @@
     };
     const updateEstimate = () => {
       const amount =
-        Number(stock.simulated_price) * Number(quantity.value || 0);
-      $("#estimate-price").textContent = money(stock.simulated_price);
+        Number(stock.adjusted_price) * Number(quantity.value || 0);
+      $("#estimate-price").textContent = money(stock.adjusted_price);
       $("#estimate-value").textContent = money(amount);
       $("#estimate-brokerage").textContent = money(amount * 0.001);
       $("#estimate-total").textContent = money(
@@ -1000,29 +1000,29 @@
       $("#trade-feedback")?.classList.add("hidden");
       try {
         const result = await api.trade(side, {
-          stock_id: stock.id,
+          instrument_id: stock.instrument_id,
           quantity: amount,
-          client_order_key: crypto.randomUUID(),
+          client_order_id: crypto.randomUUID(),
         });
         const impact = Number(result.price_impact);
         const arrow = impact > 0 ? "↑" : impact < 0 ? "↓" : "–";
         $("#trade-result").className = "trade-result visible";
         $("#trade-result").innerHTML =
-          `<span class="success-mark">${svgIcon(ICONS.check)}</span><div><span class="eyebrow">TRADE EXECUTED</span><h2>${side} ${escapeHTML(stock.symbol)}</h2><div class="result-grid"><div><span>Fill price</span><strong>${money(result.fill_price)}</strong></div><div><span>Total cost</span><strong>${money(result.total_cost)}</strong></div><div><span>Brokerage</span><strong>${money(result.brokerage)}</strong></div><div><span>Price impact</span><strong class="${tone(impact)}">${signed(impact)}</strong></div><div><span>New deviation</span><strong class="${tone(result.deviation_after_trade)}">${signed(result.deviation_after_trade)}</strong></div></div><div class="impact-story"><span>Before ${money(result.price_before)}</span><b>${arrow} ${side} IMPACT ${signed(impact)}</b><span>After ${money(result.price_after)}</span></div></div>`;
+          `<span class="success-mark">${svgIcon(ICONS.check)}</span><div><span class="eyebrow">TRADE EXECUTED</span><h2>${side} ${escapeHTML(stock.symbol)}</h2><div class="result-grid"><div><span>Fill price</span><strong>${money(result.exec_price)}</strong></div><div><span>Total cost</span><strong>${money(result.total_value)}</strong></div><div><span>Brokerage</span><strong>${money(result.brokerage)}</strong></div><div><span>Price impact</span><strong class="${tone(impact)}">${signed(impact)}</strong></div><div><span>New deviation</span><strong class="${tone(result.deviation_after_trade)}">${signed(result.deviation_after_trade)}</strong></div></div><div class="impact-story"><span>Before ${money(result.pre_trade_price)}</span><b>${arrow} ${side} IMPACT ${signed(impact)}</b><span>After ${money(result.exec_price)}</span></div></div>`;
         toast("Trade executed successfully", "success");
-        const previousPrice = Number(stock.simulated_price);
-        stock = await api.stock(stock.id);
+        const previousPrice = Number(stock.adjusted_price);
+        stock = await api.stock(stock.instrument_id);
         updateEstimate();
         const priceEl = $("#stock-price");
         if (priceEl) {
           tweenNumber(
             priceEl,
             previousPrice,
-            Number(stock.simulated_price),
+            Number(stock.adjusted_price),
             money,
           );
           const flashClass =
-            Number(stock.simulated_price) >= previousPrice
+            Number(stock.adjusted_price) >= previousPrice
               ? "price-flash-up"
               : "price-flash-down";
           priceEl.classList.remove("price-flash-up", "price-flash-down");
@@ -1037,7 +1037,7 @@
         }
         const referenceEl = $("#stock-reference");
         if (referenceEl)
-          referenceEl.textContent = `Reference ${money(stock.reference_price)}`;
+          referenceEl.textContent = `Reference ${money(stock.raw_price)}`;
         if (priceChart) {
           priceChart.data.labels.push(
             new Date().toLocaleTimeString("en-IN", {
@@ -1045,8 +1045,8 @@
               minute: "2-digit",
             }),
           );
-          priceChart.data.datasets[0].data.push(stock.simulated_price);
-          priceChart.data.datasets[1].data.push(stock.reference_price);
+          priceChart.data.datasets[0].data.push(stock.adjusted_price);
+          priceChart.data.datasets[1].data.push(stock.raw_price);
           priceChart.update();
         }
       } catch (error) {
@@ -1102,7 +1102,7 @@
           ? filtered
               .map(
                 (item) =>
-                  `<tr><td data-label="Username"><a class="user-name-link" href="developer-user.html?id=${item.id}">${escapeHTML(item.username)}</a>${item.is_admin ? '<span class="badge admin">ADMIN</span>' : ""}</td><td data-label="Email">${escapeHTML(item.email)}</td><td data-label="Joined">${new Date(item.created_at).toLocaleDateString("en-IN")}</td><td data-label="Cash balance">${money(item.cash_balance)}</td><td data-label="Portfolio">${money(item.portfolio_value)}</td><td data-label="P&L" class="${tone(item.total_pnl)}">${signed(item.total_pnl)}</td><td data-label="Trades">${item.trade_count}</td></tr>`,
+                  `<tr><td data-label="Username"><a class="user-name-link" href="developer-user.html?id=${item.id}">${escapeHTML(item.username)}</a>${item.is_admin ? '<span class="badge admin">ADMIN</span>' : ""}</td><td data-label="Email">${escapeHTML(item.email)}</td><td data-label="Joined">${new Date(item.created_at).toLocaleDateString("en-IN")}</td><td data-label="Cash balance">${money(item.cash_balance)}</td><td data-label="Portfolio">${money(item.portfolio_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}">${signed(item.unrealised_pnl)}</td><td data-label="Trades">${item.trade_count}</td></tr>`,
               )
               .join("")
           : `<tr><td colspan="7"><div class="empty-state"><strong>No users found.</strong></div></td></tr>`;
@@ -1167,7 +1167,7 @@
         ? detail.holdings
             .map(
               (item) =>
-                `<tr><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name)}</small></td><td data-label="Quantity">${item.quantity}</td><td data-label="Average buy">${money(item.average_buy_price)}</td><td data-label="Current price">${money(item.simulated_price)}</td><td data-label="P&L" class="${tone(item.profit_loss)}">${signed(item.profit_loss)}</td></tr>`,
+                `<tr><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name)}</small></td><td data-label="Quantity">${item.quantity}</td><td data-label="Average buy">${money(item.avg_price)}</td><td data-label="Current price">${money(item.adjusted_price)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}">${signed(item.unrealised_pnl)}</td></tr>`,
             )
             .join("")
         : '<tr><td colspan="5"><div class="empty-state"><strong>No current holdings.</strong></div></td></tr>';
@@ -1175,7 +1175,7 @@
         ? trades
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.fill_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Before">${money(item.price_before)}</td><td data-label="After">${money(item.price_after)}</td></tr>`,
+                `<tr><td data-label="Date">${new Date(item.executed_at).toLocaleString("en-IN")}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Before">${money(item.pre_trade_price)}</td><td data-label="After">${money(item.exec_price)}</td></tr>`,
             )
             .join("")
         : '<tr><td colspan="9"><div class="empty-state"><strong>This user has not made any trades yet.</strong></div></td></tr>';
@@ -1183,7 +1183,7 @@
         ? orders
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Requested price">${money(item.requested_price)}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
+                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Limit price">${item.limit_price ? money(item.limit_price) : "—"}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
             )
             .join("")
         : '<tr><td colspan="6"><div class="empty-state"><strong>No orders yet.</strong></div></td></tr>';
@@ -1193,9 +1193,9 @@
         adminSummaryCard("Total account value", money(account.total_account_value)),
         adminSummaryCard(
           "Total P&L",
-          signed(account.total_pnl),
+          signed(account.unrealised_pnl),
           undefined,
-          tone(account.total_pnl),
+          tone(account.unrealised_pnl),
         ),
         adminSummaryCard("Trade count", trades.length),
         adminSummaryCard("Order count", orders.length),

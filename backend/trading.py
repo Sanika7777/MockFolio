@@ -1,141 +1,175 @@
-from datetime import datetime
+import uuid
 from decimal import Decimal
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from .database import SessionLocal
-from .locks import lock_account, lock_holding, lock_stock
-from .models import Order, PriceHistory, Trade
-from .price_engine import BROKERAGE_RATE, money, moved_price
+from . import settings_store
+from . import database
+from .locks import lock_account, lock_holding, lock_price_state
+from .models import Instrument, Order, Trade
+from .price_engine import adjusted, decayed_temp_offset, money, offset, split_impact, trade_price_move
 from .transactions import run_in_transaction, savepoint
 
+
 class TradingError(Exception):
-    pass
+    def __init__(self, message: str, code: str = "REJECTED"):
+        super().__init__(message)
+        self.code = code
+
 
 class IdempotencyConflict(Exception):
-    """Same client_order_key reused for a different user/stock/side/quantity."""
     pass
 
-def _is_duplicate_client_order_key(exc: IntegrityError) -> bool:
+
+def _is_duplicate_client_order_id(exc: IntegrityError) -> bool:
     orig = getattr(exc, "orig", None)
     args = getattr(orig, "args", None)
     if not args:
         return False
     message = str(args[1]) if len(args) > 1 else str(args[0])
-    return "client_order_key" in message
+    return "client_order_id" in message or "uq_orders_client_id" in message
 
-def _existing_trade_for_key(db: Session, user_id: int, stock_id: int, quantity: int, side: str, client_order_key: str):
-    """Look up the order already placed under this idempotency key, if any.
 
-    The key is globally unique (not scoped per user), so a mismatch on
-    user/stock/side/quantity means the key was reused for a different
-    request and must not silently return someone else's trade.
-    """
-    existing = db.scalar(select(Order).where(Order.client_order_key == client_order_key))
-    if not existing:
+def _existing_trade(db: Session, account_id: int, instrument_id: int, quantity: int, side: str, client_order_id: str):
+    order = db.scalar(select(Order).where(Order.client_order_id == client_order_id))
+    if not order:
         return None
-    if existing.user_id != user_id or existing.stock_id != stock_id or existing.order_type != side or existing.quantity != quantity:
-        raise IdempotencyConflict("Idempotency key reused with different request")
-    return db.scalar(select(Trade).where(Trade.order_id == existing.id, Trade.user_id == user_id))
+    if order.account_id != account_id or order.instrument_id != instrument_id or order.side != side or order.quantity != quantity:
+        raise IdempotencyConflict("Idempotency key reused with a different request")
+    return db.scalar(select(Trade).where(Trade.order_id == order.order_id))
 
-def _upsert_buy_holding(db: Session, user_id: int, stock_id: int, quantity: int, fill_price: Decimal):
-    """Add-to or create a holding for a BUY without ever locking a missing row.
 
-    A `SELECT ... FOR UPDATE` against a (user_id, stock_id) row that does not
-    exist yet takes a gap lock on the index gap at REPEATABLE READ. Two
-    concurrent first-buys of the same stock both take that gap lock and then
-    both block on each other's INSERT, which is a deadlock every time (MySQL
-    error 1213), not a rare race. `INSERT ... ON DUPLICATE KEY UPDATE` lets
-    MySQL resolve new-row-vs-existing-row atomically in one statement instead
-    of a SELECT-then-INSERT/UPDATE pair, so no gap lock is ever taken on a
-    missing row. The weighted-average math runs inside the UPDATE clause,
-    where `average_buy_price` is evaluated before `quantity` is overwritten
-    later in the same clause, so it still sees the pre-trade quantity.
-    """
+def _upsert_holding(db: Session, account_id: int, instrument_id: int, quantity: int, price: Decimal):
     db.execute(
         text(
-            "INSERT INTO holdings (user_id, stock_id, quantity, average_buy_price, updated_at) "
-            "VALUES (:user_id, :stock_id, :quantity, :fill_price, :now) "
+            "INSERT INTO holdings (account_id, instrument_id, quantity, avg_price) "
+            "VALUES (:account_id, :instrument_id, :quantity, :price) "
             "ON DUPLICATE KEY UPDATE "
-            "average_buy_price = ROUND(((average_buy_price * quantity) + (:fill_price * :quantity)) / (quantity + :quantity), 2), "
-            "quantity = quantity + :quantity, "
-            "updated_at = :now"
+            "avg_price = ROUND(((avg_price * quantity) + (:price * :quantity)) / (quantity + :quantity), 4), "
+            "quantity = quantity + :quantity"
         ),
-        {"user_id": user_id, "stock_id": stock_id, "quantity": quantity, "fill_price": fill_price, "now": datetime.utcnow()},
+        {"account_id": account_id, "instrument_id": instrument_id, "quantity": quantity, "price": price},
     )
 
-def execute_trade(db: Session, user_id: int, stock_id: int, quantity: int, side: str, client_order_key: str | None = None):
-    if quantity <= 0 or side not in {"BUY", "SELL"}:
-        raise TradingError("Quantity must be positive and side must be BUY or SELL")
-    if client_order_key:
-        existing_trade = _existing_trade_for_key(db, user_id, stock_id, quantity, side, client_order_key)
-        if existing_trade:
-            return existing_trade
-    stock = lock_stock(db, stock_id)
-    account = lock_account(db, user_id)
-    if not stock or not stock.is_active:
-        raise TradingError("Stock is invalid or inactive")
-    if not account:
-        raise TradingError("Trading account not found")
-    before = Decimal(stock.simulated_price)
-    after, impact = moved_price(before, quantity, stock.average_daily_volume, side)
-    fill = after
-    value = money(fill * quantity)
-    brokerage = money(value * BROKERAGE_RATE)
-    total = value + brokerage
-    holding = None
-    if side == "BUY":
-        if account.cash_balance < total:
-            raise TradingError("Insufficient cash")
-    else:
-        holding = lock_holding(db, user_id, stock_id)
-        if not holding or holding.quantity < quantity:
-            raise TradingError("Insufficient shares")
 
-    # Everything below this point actually mutates money/shares/price; the order
-    # row above is the only "earlier work" that must survive a failure here, so
-    # a savepoint isolates this block: a failure rolls back just this mutation
-    # (not the order/lock work already done) before re-raising to the caller.
-    order = Order(user_id=user_id, stock_id=stock_id, order_type=side, quantity=quantity, requested_price=before, status="FILLED", client_order_key=client_order_key)
+def execute_trade(db: Session, account_id: int, instrument_id: int, quantity: int, side: str, client_order_id: str, config: dict):
+    if side not in ("BUY", "SELL"):
+        raise TradingError("Side must be BUY or SELL", "BAD_SIDE")
+    if quantity <= 0:
+        raise TradingError("Quantity must be greater than zero", "BAD_QUANTITY")
+    if quantity > config["max_order_qty"]:
+        raise TradingError(f"Quantity exceeds the per-order cap of {config['max_order_qty']}", "QTY_CAP")
+
+    existing = _existing_trade(db, account_id, instrument_id, quantity, side, client_order_id)
+    if existing:
+        return existing
+
+    now = db.scalar(text("SELECT UTC_TIMESTAMP(3)"))
+
+    price_state = lock_price_state(db, instrument_id)
+    if not price_state:
+        raise TradingError("Unknown instrument", "UNKNOWN_INSTRUMENT")
+    instrument = db.get(Instrument, instrument_id)
+    if not instrument or not instrument.is_active:
+        raise TradingError("Instrument is inactive", "INACTIVE_INSTRUMENT")
+
+    elapsed = (now - price_state.last_decay_at).total_seconds()
+    temp_after_decay = decayed_temp_offset(price_state.temp_offset, elapsed, config["tau_seconds"])
+    pre_price = adjusted(price_state.raw_price, price_state.perm_offset, temp_after_decay)
+
+    kappa = instrument.kappa_override if instrument.kappa_override is not None else config["kappa"]
+    move, fraction = trade_price_move(
+        pre_price, quantity, instrument.avg_daily_vol, instrument.daily_sigma, side, kappa, config["max_impact_pct"]
+    )
+    perm_part, temp_part = split_impact(move, config["perm_fraction"])
+    new_perm = offset(price_state.perm_offset + perm_part)
+    new_temp = offset(temp_after_decay + temp_part)
+    exec_price = adjusted(price_state.raw_price, new_perm, new_temp)
+
+    value = money(exec_price * quantity)
+    brokerage = money(value * config["brokerage_pct"])
+
+    account = lock_account(db, account_id)
+    if not account:
+        raise TradingError("Trading account not found", "NO_ACCOUNT")
+
+    holding = None
+    realised = None
+    if side == "BUY":
+        if account.cash_balance < value + brokerage:
+            raise TradingError("Insufficient cash", "INSUFFICIENT_CASH")
+    else:
+        holding = lock_holding(db, account_id, instrument_id)
+        if not holding or holding.quantity < quantity:
+            raise TradingError("Insufficient shares", "INSUFFICIENT_SHARES")
+        realised = money((exec_price - holding.avg_price) * quantity - brokerage)
+
+    order = Order(
+        client_order_id=client_order_id,
+        account_id=account_id,
+        instrument_id=instrument_id,
+        side=side,
+        order_type="MARKET",
+        quantity=quantity,
+        status="PENDING",
+    )
     db.add(order)
     db.flush()
+
     with savepoint(db):
+        price_state.perm_offset = new_perm
+        price_state.temp_offset = new_temp
+        price_state.last_decay_at = now
         if side == "BUY":
-            account.cash_balance = money(account.cash_balance - total)
-            _upsert_buy_holding(db, user_id, stock_id, quantity, fill)
+            account.cash_balance = money(account.cash_balance - value - brokerage)
+            _upsert_holding(db, account_id, instrument_id, quantity, exec_price)
         else:
             account.cash_balance = money(account.cash_balance + value - brokerage)
+            account.realised_pl = money(account.realised_pl + realised)
             holding.quantity -= quantity
-            if holding.quantity == 0:
-                db.delete(holding)
-        stock.previous_simulated_price = before
-        stock.simulated_price = after
-        trade = Trade(order_id=order.id, user_id=user_id, stock_id=stock_id, side=side, quantity=quantity, fill_price=fill, brokerage=brokerage, price_before=before, price_after=after, price_impact=after - before, deviation_after_trade=after - stock.reference_price)
+        trade = Trade(
+            order_id=order.order_id,
+            account_id=account_id,
+            instrument_id=instrument_id,
+            side=side,
+            pre_trade_price=pre_price,
+            exec_price=exec_price,
+            quantity=quantity,
+            brokerage=brokerage,
+            realised_pl=realised,
+            price_impact=fraction,
+            deviation_after_trade=offset(new_perm + new_temp),
+        )
         db.add(trade)
-        db.add(PriceHistory(stock_id=stock_id, reference_price=stock.reference_price, simulated_price=after, deviation=after - stock.reference_price, deviation_percentage=(after - stock.reference_price) / stock.reference_price * 100))
+        order.status = "FILLED"
         db.flush()
     return trade
 
-def execute_trade_tx(user_id: int, stock_id: int, quantity: int, side: str, client_order_key: str | None = None, *, max_attempts: int = 3):
-    """execute_trade wrapped in the deadlock-retry transaction boundary; this is what routes should call."""
+
+def execute_trade_tx(account_id: int, instrument_id: int, quantity: int, side: str, client_order_id: str | None = None, *, max_attempts: int = 3):
+    key = client_order_id or str(uuid.uuid4())
+    config = {
+        "kappa": settings_store.get_decimal("kappa"),
+        "tau_seconds": settings_store.get_int("tau_seconds"),
+        "perm_fraction": settings_store.get_decimal("perm_fraction"),
+        "brokerage_pct": settings_store.get_decimal("brokerage_pct"),
+        "max_order_qty": settings_store.get_int("max_order_qty"),
+        "max_impact_pct": settings_store.get_decimal("max_impact_pct"),
+    }
+
     def _attempt(db: Session):
-        return execute_trade(db, user_id, stock_id, quantity, side, client_order_key)
+        return execute_trade(db, account_id, instrument_id, quantity, side, key, config)
+
     try:
         return run_in_transaction(_attempt, max_attempts=max_attempts)
     except IntegrityError as exc:
-        # Two simultaneous requests with the same client_order_key can both pass the
-        # pre-check and race to insert the Order row; exactly one INSERT wins and the
-        # other hits the unique index here. is_retryable() is False for IntegrityError
-        # (a duplicate key is not a deadlock), so this path is never retried by
-        # run_in_transaction -- we resolve it once, in a fresh session, by replaying
-        # the same idempotent lookup the sequential-repeat case already uses.
-        if not client_order_key or not _is_duplicate_client_order_key(exc):
+        if not _is_duplicate_client_order_id(exc):
             raise
-        db = SessionLocal()
+        db = database.SessionLocal()
         try:
-            trade = _existing_trade_for_key(db, user_id, stock_id, quantity, side, client_order_key)
+            trade = _existing_trade(db, account_id, instrument_id, quantity, side, key)
         finally:
             db.close()
         if trade is None:
-            raise TradingError("Trade could not be completed") from exc
+            raise TradingError("Trade could not be completed", "RETRY_EXHAUSTED") from exc
         return trade

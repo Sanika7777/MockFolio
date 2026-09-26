@@ -1,10 +1,8 @@
 """Session setup for the concurrency test suite (Task 6).
 
-These tests use real threads against a dedicated MySQL test database. The
-app's trading/decay code always resolves `SessionLocal` from module state at
-call time (see backend/transactions.py, backend/trading.py), so this fixture
-points that module state at the test database for the whole session instead
-of requiring DATABASE_URL itself to be changed -- the app's real
+These tests use real threads against a dedicated MySQL test database. Every backend module resolves `database.SessionLocal` at call time, so
+repointing that single attribute sends the whole app -- trading, decay, the
+tick worker and the settings store -- at the test database. The app's real
 DATABASE_URL-configured engine is never touched.
 """
 import os
@@ -14,7 +12,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import backend.database as database
-import backend.trading as trading
 import backend.transactions as transactions
 
 import helpers
@@ -38,14 +35,12 @@ def _point_app_at_test_database():
     test_engine = create_engine(_test_database_url(), pool_pre_ping=True, pool_size=20, max_overflow=20, future=True)
     test_session_local = sessionmaker(bind=test_engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
-    originals = (database.SessionLocal, transactions.SessionLocal, trading.SessionLocal)
+    original = database.SessionLocal
     database.SessionLocal = test_session_local
-    transactions.SessionLocal = test_session_local
-    trading.SessionLocal = test_session_local
     try:
         yield
     finally:
-        database.SessionLocal, transactions.SessionLocal, trading.SessionLocal = originals
+        database.SessionLocal = original
         test_engine.dispose()
 
 

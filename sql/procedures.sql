@@ -1,21 +1,35 @@
-USE mockfolio;
-DROP PROCEDURE IF EXISTS reset_user_account;
-DROP PROCEDURE IF EXISTS reset_market;
+DROP PROCEDURE IF EXISTS sp_reset_account;
+DROP PROCEDURE IF EXISTS sp_reset_market;
+
 DELIMITER $$
-CREATE PROCEDURE reset_user_account(IN p_user_id INT)
+
+CREATE PROCEDURE sp_reset_account(IN p_account_id INT UNSIGNED)
 BEGIN
-  START TRANSACTION;
-  DELETE FROM holdings WHERE user_id = p_user_id;
-  DELETE FROM trades WHERE user_id = p_user_id;
-  DELETE FROM orders WHERE user_id = p_user_id;
-  UPDATE accounts SET cash_balance = starting_balance WHERE user_id = p_user_id;
-  COMMIT;
+    DECLARE v_locked INT UNSIGNED;
+    SELECT account_id INTO v_locked FROM accounts WHERE account_id = p_account_id FOR UPDATE;
+    DELETE FROM holdings WHERE account_id = p_account_id;
+    DELETE FROM trades WHERE account_id = p_account_id;
+    DELETE FROM orders WHERE account_id = p_account_id;
+    UPDATE accounts
+    SET cash_balance = starting_cash,
+        realised_pl = 0,
+        blocked_margin = 0,
+        version = version + 1
+    WHERE account_id = p_account_id;
 END$$
-CREATE PROCEDURE reset_market()
+
+CREATE PROCEDURE sp_reset_market()
 BEGIN
-  START TRANSACTION;
-  UPDATE stocks SET previous_simulated_price = reference_price, simulated_price = reference_price;
-  DELETE FROM price_history;
-  COMMIT;
+    UPDATE price_state
+    SET perm_offset = 0,
+        temp_offset = 0,
+        last_decay_at = UTC_TIMESTAMP(3)
+    ORDER BY instrument_id;
+    DELETE FROM candles_1m WHERE is_adjusted = 1;
 END$$
+
 DELIMITER ;
+
+INSERT INTO schema_migrations (version, filename)
+VALUES ('004', 'procedures.sql')
+ON DUPLICATE KEY UPDATE applied_at = applied_at;
