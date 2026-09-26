@@ -1,0 +1,720 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>MockFolio - Calm Paper Trading Platform</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "outline": "#6e7977", "surface-soft": "#F9FBFB", "tertiary-fixed": "#ffddb9", "secondary-fixed-dim": "#b8c9d1", "surface-tint": "#006a63", "outline-variant": "#bdc9c6", "on-secondary-fixed-variant": "#394950", "on-secondary-fixed": "#0d1e23", "primary-dark": "#075B55", "surface-container-high": "#e6e8e8", "surface-variant": "#e1e3e3", "inverse-surface": "#2e3131", "on-background": "#191c1d", "negative": "#C04E4E", "secondary": "#506168", "on-surface": "#191c1d", "on-primary": "#ffffff", "primary": "#005b54", "on-surface-muted": "#5F6E75", "on-tertiary-container": "#ffe3c8", "error": "#ba1a1a", "surface-container-low": "#f2f4f4", "tertiary-container": "#905d15", "tertiary-fixed-dim": "#fcba6a", "on-tertiary": "#ffffff", "border": "#E2E8E8", "on-primary-fixed": "#00201d", "surface-container-highest": "#e1e3e3", "surface-dim": "#d8dada", "positive": "#0B756D", "primary-fixed-dim": "#7fd5cb", "secondary-fixed": "#d4e5ed", "inverse-on-surface": "#eff1f1", "on-tertiary-fixed": "#2b1700", "inverse-primary": "#7fd5cb", "on-surface-variant": "#3e4947", "background": "#f8fafa", "primary-container": "#0b756d", "surface-container-lowest": "#ffffff", "surface-container": "#eceeee", "on-error-container": "#93000a", "secondary-container": "#d1e3ea", "error-container": "#ffdad6", "on-secondary-container": "#54656c", "on-error": "#ffffff", "on-secondary": "#ffffff", "surface": "#FFFFFF", "on-primary-container": "#a1f8ee", "on-primary-fixed-variant": "#00504a", "surface-bright": "#f8fafa", "on-tertiary-fixed-variant": "#663e00", "primary-fixed": "#9bf2e8", "tertiary": "#724600" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-desktop": "2rem", "space-lg": "1.5rem", "space-sm": "0.5rem", "gutter": "1rem", "space-md": "1rem", "space-xs": "0.25rem", "space-xl": "2rem", "margin": "1rem", "gutter-desktop": "1.5rem" }, "fontFamily": { "title": [ "Inter" ], "body-md": [ "Inter" ], "display": [ "Inter" ], "headline-md": [ "Inter" ], "body-sm": [ "Inter" ], "headline-lg": [ "Inter" ], "label-sm": [ "Inter" ] }, "fontSize": { "title": [ "16px", { "lineHeight": "24px", "fontWeight": "500" } ], "body-md": [ "15px", { "lineHeight": "24px", "fontWeight": "400" } ], "display": [ "32px", { "lineHeight": "40px", "fontWeight": "600" } ], "headline-md": [ "20px", { "lineHeight": "28px", "fontWeight": "600" } ], "body-sm": [ "13px", { "lineHeight": "20px", "fontWeight": "400" } ], "headline-lg": [ "28px", { "lineHeight": "36px", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-background font-body-md text-body-md text-on-surface min-h-screen flex flex-col"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-[1200px] mx-auto px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><a class="flex items-center gap-space-xs text-primary" data-path="portfolio" href="#"><span class="material-symbols-outlined text-[26px]">query_stats</span><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">Mock<span class="text-primary">Folio</span></span></a><nav class="hidden lg:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-medium rounded-lg"><a class="px-space-md py-space-xs rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-path="market" href="#">Market</a><a class="px-space-md py-space-xs rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-path="watchlist" href="#">Watchlist</a><a aria-current="page" class="px-space-md py-space-xs transition-all bg-primary-container text-on-primary-container font-medium rounded-lg" data-path="portfolio" href="#">Portfolio</a><a class="px-space-md py-space-xs rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-path="orders" href="#">Orders</a><a class="px-space-md py-space-xs rounded-lg font-title text-title text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-path="profile" href="#">Profile</a></nav></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-low"><span class="w-2 h-2 rounded-full bg-positive animate-pulse"></span><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">NSE LIVE SIM</span></div><div class="flex items-center gap-space-xs bg-surface-soft px-space-md py-space-xs rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.03)]"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted hidden md:inline">Virtual Cash</span><span class="font-title text-title font-semibold text-primary">₹1,04,250.00</span></div><button aria-label="Notifications" class="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span></button><a class="flex items-center" data-path="profile" href="#"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></a></div></div></header><main class="w-full flex-1 pt-16 bg-background"><div class="max-w-[1200px] mx-auto px-margin-desktop py-space-xl"><div class="flex flex-col w-full text-on-surface">
+<!-- Top Level Notification / Status Banner -->
+<div class="mb-space-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md p-space-md bg-surface rounded-xl shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="flex h-2.5 w-2.5 rounded-full bg-positive animate-pulse"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Live Indian Paper Session</span>
+<span class="text-outline-variant">•</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Market depth synchronized with real-time NSE simulation clock</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant font-body-sm text-body-sm transition-all flex items-center gap-space-xs cursor-pointer" id="toggle-state-btn" type="button">
+<span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+<span id="toggle-state-label">Preview Empty State</span>
+</button>
+<div class="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm tracking-wider font-semibold">
+        DEMO ID: MF-8921-IN
+      </div>
+</div>
+</div>
+<!-- Header Section -->
+<div class="mb-space-xl flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg">
+<div>
+<div class="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-muted mb-space-xs">HOLDINGS OVERVIEW</div>
+<div class="flex flex-wrap items-center gap-space-md">
+<h1 class="font-display text-display text-on-surface tracking-tight">Portfolio</h1>
+<div class="flex items-center gap-space-xs px-space-md py-1 rounded-full bg-surface-container-low">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="font-body-sm text-body-sm font-medium text-on-surface">4 active positions · Paper Simulator</span>
+</div>
+</div>
+</div>
+<!-- Quick action links -->
+<div class="flex items-center gap-space-sm">
+<a class="px-space-md py-2.5 rounded-xl bg-surface hover:bg-surface-soft text-on-surface font-title text-title flex items-center gap-space-xs shadow-sm transition-all" data-path="orders" href="#">
+<span class="material-symbols-outlined text-[20px] text-on-surface-muted">history</span>
+<span>Order Book</span>
+</a>
+<a class="px-space-md py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-on-primary font-title text-title flex items-center gap-space-xs shadow-sm transition-all" data-path="market" href="#">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>New Paper Trade</span>
+</a>
+</div>
+</div>
+<!-- Metric Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md mb-space-xl">
+<!-- Card 1: Total Account Value -->
+<div class="bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted mb-space-sm">Total Account Value</div>
+<div class="space-y-space-xs">
+<div class="font-headline-lg text-headline-lg font-semibold tabular-nums text-on-surface">₹1,04,250.00</div>
+<div class="flex items-center gap-1.5 text-positive font-body-sm text-body-sm font-medium">
+<span class="material-symbols-outlined text-[16px]">arrow_drop_up</span>
+<span class="tabular-nums">+₹4,250.00 (+4.25%)</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs text-on-surface-muted font-body-sm text-body-sm flex justify-between">
+<span>Starting Base</span>
+<span class="tabular-nums">₹1,00,000.00</span>
+</div>
+</div>
+<!-- Card 2: Invested Capital -->
+<div class="bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted mb-space-sm">Invested Capital</div>
+<div class="space-y-space-xs">
+<div class="font-headline-lg text-headline-lg font-semibold tabular-nums text-on-surface">₹57,500.00</div>
+<div class="text-on-surface-muted font-body-sm text-body-sm">4 Equity Holdings</div>
+</div>
+<div class="mt-space-md pt-space-xs text-on-surface-muted font-body-sm text-body-sm flex justify-between">
+<span>Capital Allocation</span>
+<span class="tabular-nums font-medium text-on-surface">55.15%</span>
+</div>
+</div>
+<!-- Card 3: Current Stock Value -->
+<div class="bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted mb-space-sm">Current Value</div>
+<div class="space-y-space-xs">
+<div class="font-headline-lg text-headline-lg font-semibold tabular-nums text-on-surface">₹61,750.00</div>
+<div class="flex items-center gap-1 text-positive font-body-sm text-body-sm font-medium">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="tabular-nums">+₹4,250.00 unrealized</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs text-on-surface-muted font-body-sm text-body-sm flex justify-between">
+<span>Day's MTM Impact</span>
+<span class="tabular-nums text-positive">+₹860.20</span>
+</div>
+</div>
+<!-- Card 4: Liquid Available Cash -->
+<div class="bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted mb-space-sm">Available Cash</div>
+<div class="space-y-space-xs">
+<div class="font-headline-lg text-headline-lg font-semibold tabular-nums text-primary">₹42,500.00</div>
+<div class="text-on-surface-muted font-body-sm text-body-sm">Unencumbered reserve</div>
+</div>
+<div class="mt-space-md pt-space-xs text-on-surface-muted font-body-sm text-body-sm flex justify-between">
+<span>Buying Power</span>
+<span class="tabular-nums font-medium text-on-surface">₹42,500.00</span>
+</div>
+</div>
+<!-- Card 5: Unrealized ROI -->
+<div class="bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted mb-space-sm">Total Unrealized ROI</div>
+<div class="space-y-space-xs">
+<div class="font-headline-lg text-headline-lg font-semibold tabular-nums text-positive">+7.39%</div>
+<div class="text-on-surface-muted font-body-sm text-body-sm">On deployed capital</div>
+</div>
+<div class="mt-space-md pt-space-xs text-on-surface-muted font-body-sm text-body-sm flex justify-between">
+<span>NSE NIFTY 50 Sim</span>
+<span class="tabular-nums text-on-surface-muted">+3.12%</span>
+</div>
+</div>
+</div>
+<!-- ACTIVE CONTENT CONTAINER -->
+<div class="flex flex-col w-full space-y-space-xl" id="portfolio-populated-view">
+<!-- TOP ROW: Visualizers (Donut, Capital Deployment, Diverging P&L) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- 1. Donut Allocation Card (5 Columns on Desktop) -->
+<div class="lg:col-span-5 bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Asset Allocation</h2>
+<p class="font-body-sm text-body-sm text-on-surface-muted">Capital breakdown across 5 assets</p>
+</div>
+<span class="px-space-sm py-1 rounded-lg bg-surface-container font-label-sm text-label-sm text-on-surface-variant font-medium">TOTAL 100%</span>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-space-lg my-space-md">
+<!-- Inline SVG Donut Chart with exact Serene Mint 5-tone palette -->
+<div class="relative w-44 h-44 flex-shrink-0 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+<!-- Slices calculated for circumference ~251.32 (r=40) -->
+<!-- Liquid Cash: 40.8% -> stroke-dasharray 102.5 148.8 -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#0B756D" stroke-dasharray="100.5 150.8" stroke-dashoffset="0" stroke-width="12"></circle>
+<!-- RELIANCE: 28.2% -> stroke-dasharray 70.8 180.5 -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#8FCBC4" stroke-dasharray="68.8 182.5" stroke-dashoffset="-102.5" stroke-width="12"></circle>
+<!-- TCS: 18.7% -> stroke-dasharray 47.0 204.3 -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#3E5C76" stroke-dasharray="45.0 206.3" stroke-dashoffset="-173.3" stroke-width="12"></circle>
+<!-- INFY: 8.8% -> stroke-dasharray 22.1 229.2 -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#9AA8AD" stroke-dasharray="20.1 231.2" stroke-dashoffset="-220.3" stroke-width="12"></circle>
+<!-- ICICIBANK / Other: 3.5% -> stroke-dasharray 8.8 242.5 -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#C9B48A" stroke-dasharray="7.0 244.3" stroke-dashoffset="-242.4" stroke-width="12"></circle>
+</svg>
+<!-- Center Text -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Total</span>
+<span class="font-title text-title font-semibold tabular-nums text-on-surface">₹1,04,250</span>
+<span class="font-label-sm text-label-sm text-on-surface-muted">5 Slices</span>
+</div>
+</div>
+<!-- Structured Legend -->
+<div class="flex-1 w-full space-y-2">
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full" style="background-color: #0B756D;"></span>
+<span class="font-medium text-on-surface">Liquid Cash</span>
+</div>
+<div class="text-right tabular-nums">
+<span class="font-medium text-on-surface">40.8%</span>
+<span class="text-on-surface-muted text-body-sm ml-2">₹42,500.00</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full" style="background-color: #8FCBC4;"></span>
+<span class="font-medium text-on-surface">RELIANCE</span>
+</div>
+<div class="text-right tabular-nums">
+<span class="font-medium text-on-surface">28.2%</span>
+<span class="text-on-surface-muted text-body-sm ml-2">₹29,448.00</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full" style="background-color: #3E5C76;"></span>
+<span class="font-medium text-on-surface">TCS</span>
+</div>
+<div class="text-right tabular-nums">
+<span class="font-medium text-on-surface">18.7%</span>
+<span class="text-on-surface-muted text-body-sm ml-2">₹19,460.00</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full" style="background-color: #9AA8AD;"></span>
+<span class="font-medium text-on-surface">INFY</span>
+</div>
+<div class="text-right tabular-nums">
+<span class="font-medium text-on-surface">8.8%</span>
+<span class="text-on-surface-muted text-body-sm ml-2">₹9,145.00</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full" style="background-color: #C9B48A;"></span>
+<span class="font-medium text-on-surface">ICICIBANK</span>
+</div>
+<div class="text-right tabular-nums">
+<span class="font-medium text-on-surface">3.5%</span>
+<span class="text-on-surface-muted text-body-sm ml-2">₹3,697.00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-space-sm text-on-surface-muted font-body-sm text-body-sm">
+          Cash cushion maintains low drawdown risk during active paper testing.
+        </div>
+</div>
+<!-- 2. Invested vs Current Capital Deployment Card (3 Columns on Desktop) -->
+<div class="lg:col-span-3 bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface">Deployment</h2>
+<span class="px-2 py-0.5 rounded-full bg-positive/10 text-positive font-label-sm text-label-sm font-semibold">+7.39% ROI</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted mb-space-lg">Invested capital vs Market value</p>
+<div class="space-y-space-lg">
+<!-- Invested progress -->
+<div class="space-y-1.5">
+<div class="flex justify-between font-body-sm text-body-sm">
+<span class="text-on-surface-muted">Total Invested</span>
+<span class="font-medium tabular-nums text-on-surface">₹57,500.00</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<!-- 57500 / 65000 max cap = 88.4% -->
+<div class="h-full bg-secondary-fixed-dim rounded-full transition-all duration-500" style="width: 88.4%;"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-muted">
+<span>Base ₹0</span>
+<span>Cap ₹65,000</span>
+</div>
+</div>
+<!-- Current Value progress -->
+<div class="space-y-1.5">
+<div class="flex justify-between font-body-sm text-body-sm">
+<span class="text-on-surface-muted">Current Value</span>
+<span class="font-medium tabular-nums text-positive">₹61,750.00</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<!-- 61750 / 65000 max cap = 95.0% -->
+<div class="h-full bg-primary rounded-full transition-all duration-500" style="width: 95.0%;"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-muted">
+<span>Net Growth</span>
+<span class="text-positive font-medium">+₹4,250.00</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-space-md bg-surface-soft rounded-xl mt-space-md">
+<div class="flex items-center gap-space-xs text-primary font-title text-title mb-1">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Capital Efficiency</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Outperforming the static risk-free simulator baseline by 320 bps.
+          </p>
+</div>
+</div>
+<!-- 3. Diverging P&L by Holding Card (4 Columns on Desktop) -->
+<div class="lg:col-span-4 bg-surface p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<h2 class="font-headline-md text-headline-md text-on-surface">Unrealized P&amp;L</h2>
+<span class="font-label-sm text-label-sm text-on-surface-muted uppercase">Diverging %</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted mb-space-md">Individual position performance</p>
+<!-- Diverging Bar Chart around 0.0% -->
+<div class="space-y-space-md">
+<!-- Center axis scale markers -->
+<div class="grid grid-cols-12 text-center font-label-sm text-label-sm text-on-surface-muted pb-1">
+<span class="col-span-3 text-left">-15%</span>
+<span class="col-span-3 text-right pr-2">-5%</span>
+<span class="col-span-1 text-center font-bold text-on-surface">0%</span>
+<span class="col-span-2 text-left pl-2">+5%</span>
+<span class="col-span-3 text-right">+15%</span>
+</div>
+<!-- RELIANCE: +10.1% -->
+<div class="space-y-1">
+<div class="flex justify-between font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">RELIANCE</span>
+<span class="text-positive font-medium tabular-nums">+₹2,698.00 (+10.1%)</span>
+</div>
+<div class="h-4 w-full bg-surface-container-low rounded flex items-center relative">
+<!-- Center Line marker -->
+<div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-outline-variant z-10"></div>
+<!-- Bar (right of center, 10.1 / 15 * 50% = 33.6%) -->
+<div class="h-3 bg-primary rounded-r" style="margin-left: 50%; width: 33.6%;"></div>
+</div>
+</div>
+<!-- TCS: +11.2% -->
+<div class="space-y-1">
+<div class="flex justify-between font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">TCS</span>
+<span class="text-positive font-medium tabular-nums">+₹1,960.00 (+11.2%)</span>
+</div>
+<div class="h-4 w-full bg-surface-container-low rounded flex items-center relative">
+<div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-outline-variant z-10"></div>
+<!-- Bar (right of center, 11.2 / 15 * 50% = 37.3%) -->
+<div class="h-3 bg-primary rounded-r" style="margin-left: 50%; width: 37.3%;"></div>
+</div>
+</div>
+<!-- INFY: +1.6% -->
+<div class="space-y-1">
+<div class="flex justify-between font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">INFY</span>
+<span class="text-positive font-medium tabular-nums">+₹145.00 (+1.6%)</span>
+</div>
+<div class="h-4 w-full bg-surface-container-low rounded flex items-center relative">
+<div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-outline-variant z-10"></div>
+<!-- Bar (right of center, 1.6 / 15 * 50% = 5.3%) -->
+<div class="h-3 bg-primary rounded-r" style="margin-left: 50%; width: 5.3%;"></div>
+</div>
+</div>
+<!-- ICICIBANK: -13.0% -->
+<div class="space-y-1">
+<div class="flex justify-between font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">ICICIBANK</span>
+<span class="text-negative font-medium tabular-nums">-₹553.00 (-13.0%)</span>
+</div>
+<div class="h-4 w-full bg-surface-container-low rounded flex items-center relative justify-end">
+<div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-outline-variant z-10"></div>
+<!-- Bar (left of center, 13.0 / 15 * 50% = 43.3%) -->
+<div class="h-3 bg-negative rounded-l" style="margin-right: 50%; width: 43.3%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-space-sm flex items-center justify-between text-on-surface-muted font-body-sm text-body-sm">
+<span>Winner: TCS (+11.2%)</span>
+<span>Max Loss: ICICIBANK</span>
+</div>
+</div>
+</div>
+<!-- HOLDINGS TABLE SECTION -->
+<div class="bg-surface rounded-xl shadow-sm overflow-hidden">
+<!-- Table Filter Bar -->
+<div class="p-space-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-space-md bg-surface">
+<div class="flex items-center gap-space-md flex-1">
+<div class="relative w-full max-w-sm">
+<span class="material-symbols-outlined text-[20px] text-on-surface-muted absolute left-3.5 top-3">search</span>
+<input class="w-full h-11 pl-10 pr-space-md bg-surface-soft rounded-xl text-body-md font-body-md text-on-surface placeholder:text-on-surface-muted focus:outline-none focus:ring-2 focus:ring-primary" id="table-search" placeholder="Filter company name or NSE ticker..." type="text">
+</div>
+<div class="hidden sm:flex items-center gap-1 bg-surface-container-low p-1 rounded-xl">
+<button class="px-space-md py-1.5 rounded-lg bg-surface text-on-surface font-title text-title shadow-xs" type="button">All Positions (4)</button>
+<button class="px-space-md py-1.5 rounded-lg text-on-surface-muted hover:text-on-surface font-title text-title transition-colors" type="button">Large Cap (4)</button>
+<button class="px-space-md py-1.5 rounded-lg text-on-surface-muted hover:text-on-surface font-title text-title transition-colors" type="button">Mid/Small (0)</button>
+</div>
+</div>
+<div class="flex items-center gap-space-sm justify-end">
+<label class="font-body-sm text-body-sm text-on-surface-muted hidden sm:inline">Sort by:</label>
+<div class="relative">
+<select class="h-11 px-space-md pr-8 bg-surface-soft rounded-xl font-body-sm text-body-sm text-on-surface cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary appearance-none">
+<option>Current Value (High to Low)</option>
+<option>Unrealized P&amp;L %</option>
+<option>Invested Amount</option>
+<option>Company Name A-Z</option>
+</select>
+<span class="material-symbols-outlined text-[18px] text-on-surface-muted pointer-events-none absolute right-2.5 top-3">expand_more</span>
+</div>
+<button class="h-11 w-11 flex items-center justify-center rounded-xl bg-surface-soft hover:bg-surface-container text-on-surface-variant transition-colors" title="Export CSV simulation report" type="button">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<!-- Desktop Data Table -->
+<div class="w-full overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-muted font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-space-md px-space-lg">Asset / Company</th>
+<th class="py-space-md px-space-md text-right">Holding Qty</th>
+<th class="py-space-md px-space-md text-right">Avg Buy Price</th>
+<th class="py-space-md px-space-md text-right">Current Mock Price</th>
+<th class="py-space-md px-space-md text-center">Trend (30D)</th>
+<th class="py-space-md px-space-md text-right">Total Invested</th>
+<th class="py-space-md px-space-md text-right">Current Value</th>
+<th class="py-space-md px-space-md text-right">Unrealized P&amp;L</th>
+<th class="py-space-md px-space-lg text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y-0" id="holdings-tbody">
+<!-- Row 1: RELIANCE -->
+<tr class="hover:bg-surface-soft transition-colors position-row" data-symbol="RELIANCE">
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center font-bold text-primary">
+                    RE
+                  </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-title text-title font-semibold text-on-surface">RELIANCE</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-on-surface-muted uppercase">NSE</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-muted">Reliance Industries Ltd.</div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                10 <span class="text-on-surface-muted text-body-sm">shares</span>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹2,675.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-medium text-on-surface">
+                ₹2,944.80
+              </td>
+<!-- Sparkline SVG -->
+<td class="py-space-md px-space-md text-center">
+<div class="w-24 h-8 mx-auto flex items-center justify-center">
+<svg class="w-full h-full" viewBox="0 0 96 32">
+<!-- Dashed anchor line -->
+<path d="M 4 20 L 92 20" fill="none" opacity="0.6" stroke="#6E7F86" stroke-dasharray="3 3" stroke-width="1.2"></path>
+<!-- Teal solid trajectory -->
+<path d="M 4 22 Q 24 24 40 18 T 68 12 T 92 6" fill="none" stroke="#0B756D" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹26,750.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-semibold text-on-surface">
+                ₹29,448.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums">
+<div class="font-medium text-positive font-body-md text-body-md">+₹2,698.00</div>
+<div class="font-body-sm text-body-sm text-positive font-medium">(+10.09%)</div>
+</td>
+<td class="py-space-md px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs">
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-negative font-title text-title transition-all" type="button">Sell</button>
+<button class="px-space-md py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-title text-title transition-all" type="button">Trade</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: TCS -->
+<tr class="hover:bg-surface-soft transition-colors position-row" data-symbol="TCS">
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center font-bold text-[#3E5C76]">
+                    TC
+                  </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-title text-title font-semibold text-on-surface">TCS</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-on-surface-muted uppercase">NSE</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-muted">Tata Consultancy Services Ltd.</div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                5 <span class="text-on-surface-muted text-body-sm">shares</span>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹3,500.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-medium text-on-surface">
+                ₹3,892.00
+              </td>
+<!-- Sparkline SVG -->
+<td class="py-space-md px-space-md text-center">
+<div class="w-24 h-8 mx-auto flex items-center justify-center">
+<svg class="w-full h-full" viewBox="0 0 96 32">
+<path d="M 4 22 L 92 22" fill="none" opacity="0.6" stroke="#6E7F86" stroke-dasharray="3 3" stroke-width="1.2"></path>
+<path d="M 4 24 Q 28 20 48 15 T 72 10 T 92 4" fill="none" stroke="#0B756D" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹17,500.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-semibold text-on-surface">
+                ₹19,460.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums">
+<div class="font-medium text-positive font-body-md text-body-md">+₹1,960.00</div>
+<div class="font-body-sm text-body-sm text-positive font-medium">(+11.20%)</div>
+</td>
+<td class="py-space-md px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs">
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-negative font-title text-title transition-all" type="button">Sell</button>
+<button class="px-space-md py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-title text-title transition-all" type="button">Trade</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: INFY -->
+<tr class="hover:bg-surface-soft transition-colors position-row" data-symbol="INFY">
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center font-bold text-[#9AA8AD]">
+                    IN
+                  </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-title text-title font-semibold text-on-surface">INFY</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-on-surface-muted uppercase">NSE</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-muted">Infosys Limited</div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                6 <span class="text-on-surface-muted text-body-sm">shares</span>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹1,500.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-medium text-on-surface">
+                ₹1,524.30
+              </td>
+<!-- Sparkline SVG -->
+<td class="py-space-md px-space-md text-center">
+<div class="w-24 h-8 mx-auto flex items-center justify-center">
+<svg class="w-full h-full" viewBox="0 0 96 32">
+<path d="M 4 18 L 92 18" fill="none" opacity="0.6" stroke="#6E7F86" stroke-dasharray="3 3" stroke-width="1.2"></path>
+<path d="M 4 20 Q 30 14 50 19 T 74 15 T 92 14" fill="none" stroke="#0B756D" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹9,000.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-semibold text-on-surface">
+                ₹9,145.80
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums">
+<div class="font-medium text-positive font-body-md text-body-md">+₹145.80</div>
+<div class="font-body-sm text-body-sm text-positive font-medium">(+1.62%)</div>
+</td>
+<td class="py-space-md px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs">
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-negative font-title text-title transition-all" type="button">Sell</button>
+<button class="px-space-md py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-title text-title transition-all" type="button">Trade</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: ICICIBANK -->
+<tr class="hover:bg-surface-soft transition-colors position-row" data-symbol="ICICIBANK">
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center font-bold text-[#C9B48A]">
+                    IC
+                  </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-title text-title font-semibold text-on-surface">ICICIBANK</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-on-surface-muted uppercase">NSE</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-muted">ICICI Bank Limited</div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                4 <span class="text-on-surface-muted text-body-sm">shares</span>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹1,062.50
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-medium text-on-surface">
+                ₹924.25
+              </td>
+<!-- Sparkline SVG (Downward) -->
+<td class="py-space-md px-space-md text-center">
+<div class="w-24 h-8 mx-auto flex items-center justify-center">
+<svg class="w-full h-full" viewBox="0 0 96 32">
+<path d="M 4 12 L 92 12" fill="none" opacity="0.6" stroke="#6E7F86" stroke-dasharray="3 3" stroke-width="1.2"></path>
+<path d="M 4 10 Q 30 12 52 18 T 76 24 T 92 28" fill="none" stroke="#C04E4E" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md text-on-surface">
+                ₹4,250.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums font-body-md text-body-md font-semibold text-on-surface">
+                ₹3,697.00
+              </td>
+<td class="py-space-md px-space-md text-right tabular-nums">
+<div class="font-medium text-negative font-body-md text-body-md">-₹553.00</div>
+<div class="font-body-sm text-body-sm text-negative font-medium">(-13.01%)</div>
+</td>
+<td class="py-space-md px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs">
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-negative font-title text-title transition-all" type="button">Sell</button>
+<button class="px-space-md py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-title text-title transition-all" type="button">Trade</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Summary Row -->
+<div class="p-space-lg bg-surface-soft flex flex-col sm:flex-row items-center justify-between gap-space-md text-body-sm font-body-sm">
+<div class="flex items-center gap-space-md text-on-surface-muted">
+<span>Showing 4 of 4 active equities</span>
+<span>•</span>
+<span>Settlement: T+1 Sim Mode</span>
+<span>•</span>
+<span class="text-positive flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-positive"></span>
+            Zero brokerage incurred
+          </span>
+</div>
+<div class="flex items-center gap-space-xl">
+<div class="text-right">
+<span class="text-on-surface-muted">Combined Investment: </span>
+<span class="font-semibold tabular-nums text-on-surface">₹57,500.00</span>
+</div>
+<div class="text-right">
+<span class="text-on-surface-muted">Market Value: </span>
+<span class="font-semibold tabular-nums text-on-surface">₹61,750.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Educational Context / Mentor Card -->
+<div class="p-space-lg rounded-xl bg-surface shadow-sm flex flex-col md:flex-row items-center justify-between gap-space-lg">
+<div class="flex items-center gap-space-lg">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[28px]">school</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-0.5">SEBI Investor Insight: Diversification Health</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+            Your single largest equity exposure is RELIANCE at 28.2% of account equity. In a real portfolio, keeping single-stock allocations under 20% mitigates idiosyncratic company risk.
+          </p>
+</div>
+</div>
+<a class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-title text-title flex-shrink-0 transition-all flex items-center gap-space-xs" data-path="sebi-literacy-guide" href="#">
+<span>Read Risk Guide</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- EMPTY STATE DEMONSTRATION SECTION (Hidden by default, toggled via JS) -->
+<div class="hidden flex-col items-center justify-center p-space-xl bg-surface rounded-xl shadow-sm text-center py-24 my-space-xl" id="portfolio-empty-view">
+<div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center text-primary mb-space-lg">
+<span class="material-symbols-outlined text-[40px]">savings</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-space-xs">Your portfolio is empty</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md mb-space-xl">
+      Start paper trading to build your portfolio. Practice risk-free execution with your ₹1,00,000.00 virtual capital buffer.
+    </p>
+<div class="flex flex-col sm:flex-row items-center gap-space-md">
+<a class="px-space-xl py-3 rounded-xl bg-primary hover:bg-primary-dark text-on-primary font-title text-title flex items-center gap-space-xs shadow-sm transition-all" data-path="market" href="#">
+<span class="material-symbols-outlined text-[20px]">explore</span>
+<span>Browse stocks</span>
+</a>
+<button class="px-space-lg py-3 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-title text-title transition-all" id="restore-sample-btn" type="button">
+        Restore 4 Sample Positions
+      </button>
+</div>
+<!-- Quick recommendations for empty state -->
+<div class="mt-space-xl pt-space-lg max-w-lg w-full text-left">
+<div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted mb-space-md text-center">Popular Simulator Starters</div>
+<div class="grid grid-cols-3 gap-space-sm text-center">
+<div class="p-space-sm rounded-lg bg-surface-soft hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="font-title text-title font-semibold text-on-surface">RELIANCE</div>
+<div class="text-positive font-body-sm text-body-sm">₹2,944.80</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-soft hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="font-title text-title font-semibold text-on-surface">HDFCBANK</div>
+<div class="text-positive font-body-sm text-body-sm">₹1,650.10</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-soft hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="font-title text-title font-semibold text-on-surface">TCS</div>
+<div class="text-positive font-body-sm text-body-sm">₹3,892.00</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple interactive toggle between populated portfolio and empty state demo
+  const toggleBtn = document.getElementById('toggle-state-btn');
+  const toggleLabel = document.getElementById('toggle-state-label');
+  const restoreBtn = document.getElementById('restore-sample-btn');
+  const populatedView = document.getElementById('portfolio-populated-view');
+  const emptyView = document.getElementById('portfolio-empty-view');
+  const searchInput = document.getElementById('table-search');
+  const rows = document.querySelectorAll('.position-row');
+
+  function showEmpty() {
+    populatedView.classList.add('hidden');
+    emptyView.classList.remove('hidden');
+    emptyView.classList.add('flex');
+    toggleLabel.textContent = 'Preview Active Holdings';
+  }
+
+  function showPopulated() {
+    emptyView.classList.add('hidden');
+    emptyView.classList.remove('flex');
+    populatedView.classList.remove('hidden');
+    toggleLabel.textContent = 'Preview Empty State';
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    if (populatedView.classList.contains('hidden')) {
+      showPopulated();
+    } else {
+      showEmpty();
+    }
+  });
+
+  if (restoreBtn) {
+    restoreBtn.addEventListener('click', showPopulated);
+  }
+
+  // Real-time table filter
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+      });
+    });
+  }
+</script></div></main><footer class="w-full bg-surface shadow-[0_-1px_8px_rgba(0,0,0,0.02)] mt-auto"><div class="max-w-[1200px] mx-auto px-margin-desktop py-space-lg flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-muted"><div>© 2025 MockFolio Labs Pvt Ltd. All rights reserved. For educational and simulation purposes only.</div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" data-path="sebi-literacy-guide" href="#">SEBI Literacy Guide</a><a class="hover:text-primary transition-colors" data-path="terms-of-service" href="#">Terms</a><a class="hover:text-primary transition-colors" data-path="privacy-policy" href="#">Privacy</a></div></div></footer></body></html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<meta content="mobile_tab" name="shell-type">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#9bf2e8",
+            "secondary": "#506168",
+            "on-tertiary-fixed-variant": "#663e00",
+            "on-surface-variant": "#3e4947",
+            "on-primary-fixed": "#00201d",
+            "surface-container-low": "#f2f4f4",
+            "secondary-fixed-dim": "#b8c9d1",
+            "on-error-container": "#93000a",
+            "background": "#f8fafa",
+            "on-primary": "#ffffff",
+            "surface-tint": "#006a63",
+            "on-primary-fixed-variant": "#00504a",
+            "on-error": "#ffffff",
+            "surface": "#FFFFFF",
+            "border": "#E2E8E8",
+            "surface-variant": "#e1e3e3",
+            "primary-fixed-dim": "#7fd5cb",
+            "inverse-primary": "#7fd5cb",
+            "on-surface": "#191c1d",
+            "tertiary-fixed": "#ffddb9",
+            "surface-container-highest": "#e1e3e3",
+            "on-surface-muted": "#5F6E75",
+            "on-primary-container": "#a1f8ee",
+            "primary-container": "#0b756d",
+            "tertiary-fixed-dim": "#fcba6a",
+            "secondary-container": "#d1e3ea",
+            "tertiary": "#724600",
+            "error-container": "#ffdad6",
+            "surface-dim": "#d8dada",
+            "on-secondary-fixed": "#0d1e23",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed": "#2b1700",
+            "positive": "#0B756D",
+            "on-secondary-fixed-variant": "#394950",
+            "surface-soft": "#F9FBFB",
+            "primary-dark": "#075B55",
+            "inverse-on-surface": "#eff1f1",
+            "on-secondary-container": "#54656c",
+            "surface-container": "#eceeee",
+            "on-secondary": "#ffffff",
+            "secondary-fixed": "#d4e5ed",
+            "surface-container-high": "#e6e8e8",
+            "outline-variant": "#bdc9c6",
+            "surface-container-lowest": "#ffffff",
+            "surface-bright": "#f8fafa",
+            "inverse-surface": "#2e3131",
+            "on-background": "#191c1d",
+            "outline": "#6e7977",
+            "tertiary-container": "#905d15",
+            "error": "#ba1a1a",
+            "primary": "#005b54",
+            "negative": "#C04E4E",
+            "on-tertiary-container": "#ffe3c8"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "margin": "1rem",
+            "gutter-desktop": "1.5rem",
+            "space-lg": "1.5rem",
+            "gutter": "1rem",
+            "space-xl": "2rem",
+            "space-xs": "0.25rem",
+            "margin-desktop": "2rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "body-sm": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "title": ["Inter"],
+            "display": ["Inter"]
+          },
+          "fontSize": {
+            "body-sm": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "500" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-md": ["15px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+            "title": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+            "display": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        overscroll-behavior: none;
+        background-color: #f8fafa;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+      main > :first-child {
+        margin-top: 0 !important;
+      }
+      main > :last-child {
+        margin-bottom: 0 !important;
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background font-body-md text-body-md text-on-surface flex flex-col min-h-screen">
+<!-- Header with Brand Logo, Cash Pill, Notification Bell, User Avatar -->
+<header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+<div class="h-16 px-gutter flex items-center justify-between gap-space-sm">
+<!-- Brand Logo / Name -->
+<div class="flex items-center gap-space-xs shrink-0">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">query_stats</span>
+</div>
+<div class="flex flex-col">
+<span class="font-title text-title text-on-surface font-semibold tracking-tight leading-tight">MockFolio</span>
+<span class="font-label-sm text-[10px] uppercase text-primary font-semibold tracking-wider">Paper Trading</span>
+</div>
+</div>
+<!-- Cash Balance Pill -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low border border-border shrink min-w-0">
+<span class="material-symbols-outlined text-primary text-[15px] shrink-0">account_balance_wallet</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-on-surface-muted leading-none">Virtual Cash</span>
+<span class="font-label-sm text-[12px] font-semibold text-on-surface tabular-nums truncate leading-tight">₹1,04,250.00</span>
+</div>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-1 shrink-0">
+<button aria-label="Notifications" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors relative min-w-[40px]">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-negative"></span>
+</button>
+<button aria-label="User Profile" class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-title font-semibold overflow-hidden border border-border">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Slot -->
+<main class="flex flex-col relative w-full pt-16 pb-20 bg-background"><div class="flex flex-col w-full px-gutter pb-space-xl space-y-space-md">
+<!-- Top Bar / Screen Header -->
+<div class="flex flex-col pt-space-xs">
+<div class="flex items-center justify-between gap-space-sm mb-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Activity</span>
+<!-- Empty State Simulator Button -->
+<button aria-label="Toggle preview empty state" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface hover:bg-surface-variant transition-colors min-h-[36px]" id="toggle-empty-btn">
+<span class="material-symbols-outlined text-[16px] text-primary" id="toggle-icon">visibility_off</span>
+<span class="font-label-sm text-label-sm font-semibold" id="toggle-label">Preview Empty</span>
+</button>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Orders &amp; trades</h1>
+<p class="font-body-sm text-body-sm text-on-surface-muted mt-0.5">
+      A complete record of how your paper portfolio has changed.
+    </p>
+</div>
+<!-- Primary Content Container (Switchable with Empty State) -->
+<div class="flex flex-col space-y-space-md w-full" id="populated-state">
+<!-- Header Stat Card: Buys vs Sells Distribution -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Activity Ratio</span>
+<span class="font-headline-md text-headline-md text-on-surface tabular-nums">12 Trades</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Turnover</span>
+<span class="font-title text-title text-on-surface tabular-nums font-semibold">₹76,240.00</span>
+</div>
+</div>
+<!-- Dual Tone Bar -->
+<div class="w-full h-3 rounded-full bg-surface-container overflow-hidden flex items-center p-0.5">
+<div class="bg-positive h-full rounded-l-full" style="width: 67%" title="8 Buys (67%)"></div>
+<div class="w-1 h-full bg-surface"></div>
+<div class="bg-negative h-full rounded-r-full" style="width: 33%" title="4 Sells (33%)"></div>
+</div>
+<!-- Breakdown Metrics -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-positive"></span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">8 Buys <span class="text-on-surface-muted">(67%)</span></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-negative"></span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">4 Sells <span class="text-on-surface-muted">(33%)</span></span>
+</div>
+</div>
+<!-- Net Flow Context Pill & Educational Framing -->
+<div class="bg-surface-soft rounded-lg p-2.5 flex items-start gap-2.5 mt-1">
+<div class="w-7 h-7 rounded-full bg-primary-fixed/30 flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">info</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Net Deployed</span>
+<span class="font-body-sm text-body-sm font-semibold text-positive tabular-nums">+₹57,500.00</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-muted mt-0.5 leading-snug">
+            Learner buy pressure pushed prices up by an average of +0.02% across 8 simulated orders.
+          </p>
+</div>
+</div>
+</div>
+<!-- Segmented Navigation & Filters -->
+<div class="flex flex-col space-y-space-sm">
+<!-- Segmented View Toggle -->
+<div class="bg-surface-container-low p-1 rounded-xl flex items-center">
+<button class="flex-1 py-2 px-3 rounded-lg text-center font-title text-title font-semibold bg-surface text-primary shadow-sm transition-all min-h-[44px] flex items-center justify-center" id="tab-orders">
+          Order history
+        </button>
+<button class="flex-1 py-2 px-3 rounded-lg text-center font-title text-title font-medium text-on-surface-variant hover:text-on-surface transition-all min-h-[44px] flex items-center justify-center" id="tab-trades">
+          Trade ledger
+        </button>
+</div>
+<!-- Horizontal Scrollable Pill Filters -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-gutter px-gutter">
+<button class="status-pill px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider font-semibold shrink-0 min-h-[36px] flex items-center shadow-sm">
+          All (12)
+        </button>
+<button class="status-pill px-3.5 py-1.5 rounded-full bg-surface text-on-surface font-label-sm text-label-sm uppercase tracking-wider font-medium shrink-0 min-h-[36px] flex items-center hover:bg-surface-container">
+          Executed (10)
+        </button>
+<button class="status-pill px-3.5 py-1.5 rounded-full bg-surface text-on-surface font-label-sm text-label-sm uppercase tracking-wider font-medium shrink-0 min-h-[36px] flex items-center hover:bg-surface-container">
+          Pending (1)
+        </button>
+<button class="status-pill px-3.5 py-1.5 rounded-full bg-surface text-on-surface font-label-sm text-label-sm uppercase tracking-wider font-medium shrink-0 min-h-[36px] flex items-center hover:bg-surface-container">
+          Cancelled (1)
+        </button>
+<div class="w-px h-5 bg-surface-container-highest shrink-0"></div>
+<button class="side-pill px-3 py-1.5 rounded-full bg-surface text-positive font-label-sm text-label-sm uppercase tracking-wider font-semibold shrink-0 min-h-[36px] flex items-center hover:bg-surface-container">
+          Buys Only
+        </button>
+<button class="side-pill px-3 py-1.5 rounded-full bg-surface text-negative font-label-sm text-label-sm uppercase tracking-wider font-semibold shrink-0 min-h-[36px] flex items-center hover:bg-surface-container">
+          Sells Only
+        </button>
+</div>
+</div>
+<!-- Orders Section -->
+<div class="flex flex-col space-y-3 w-full" id="orders-view">
+<!-- Card 1: Reliance (Executed Buy) -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3">
+<!-- Row 1: Badges & Ticker -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">BUY</span>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface font-semibold truncate leading-tight">RELIANCE <span class="font-label-sm text-label-sm text-on-surface-muted font-normal">NSE</span></span>
+<span class="font-body-sm text-body-sm text-on-surface-muted truncate">Reliance Industries Ltd · 5 shares</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-positive font-label-sm text-label-sm font-semibold uppercase tracking-wider shrink-0">FILLED</span>
+</div>
+<!-- Row 2: Price Metrics & Impact -->
+<div class="bg-surface-soft rounded-lg p-2.5 flex items-center justify-between gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Fill Price</span>
+<span class="font-body-md text-body-md text-on-surface font-medium tabular-nums">₹2,944.80</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Sim. Brokerage</span>
+<span class="font-body-md text-body-md text-on-surface-muted tabular-nums">₹14.72</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Book Impact</span>
+<span class="font-body-sm text-body-sm font-medium text-positive tabular-nums">+₹0.30 (+0.010%)</span>
+</div>
+</div>
+<!-- Row 3: Meta Footnote -->
+<div class="flex items-center justify-between text-on-surface-muted font-body-sm text-body-sm pt-0.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">#ORD-98421</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Today, 14:22 IST</span>
+</div>
+</div>
+</div>
+<!-- Card 2: HDFC Bank (Executed Sell) -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3">
+<!-- Row 1: Badges & Ticker -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="px-2 py-0.5 rounded-full bg-negative text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">SELL</span>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface font-semibold truncate leading-tight">HDFCBANK <span class="font-label-sm text-label-sm text-on-surface-muted font-normal">NSE</span></span>
+<span class="font-body-sm text-body-sm text-on-surface-muted truncate">HDFC Bank Ltd · 10 shares</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-positive font-label-sm text-label-sm font-semibold uppercase tracking-wider shrink-0">FILLED</span>
+</div>
+<!-- Row 2: Price Metrics & Impact -->
+<div class="bg-surface-soft rounded-lg p-2.5 flex items-center justify-between gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Fill Price</span>
+<span class="font-body-md text-body-md text-on-surface font-medium tabular-nums">₹1,532.10</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Sim. Brokerage</span>
+<span class="font-body-md text-body-md text-on-surface-muted tabular-nums">₹15.32</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Book Impact</span>
+<span class="font-body-sm text-body-sm font-medium text-negative tabular-nums">−₹0.20 (−0.013%)</span>
+</div>
+</div>
+<!-- Row 3: Meta Footnote -->
+<div class="flex items-center justify-between text-on-surface-muted font-body-sm text-body-sm pt-0.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">#ORD-98418</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Today, 12:45 IST</span>
+</div>
+</div>
+</div>
+<!-- Card 3: TCS (Pending Limit Order) -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3">
+<!-- Row 1: Badges & Ticker -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">BUY</span>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface font-semibold truncate leading-tight">TCS <span class="font-label-sm text-label-sm text-on-surface-muted font-normal">NSE</span></span>
+<span class="font-body-sm text-body-sm text-on-surface-muted truncate">Tata Consultancy Services · 2 shares</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-tertiary font-label-sm text-label-sm font-semibold uppercase tracking-wider shrink-0">PENDING</span>
+</div>
+<!-- Row 2: Price Metrics & Impact -->
+<div class="bg-surface-soft rounded-lg p-2.5 flex items-center justify-between gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Trigger Limit</span>
+<span class="font-body-md text-body-md text-on-surface font-medium tabular-nums">₹3,880.00</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Sim. Est. Fee</span>
+<span class="font-body-md text-body-md text-on-surface-muted tabular-nums">₹7.76</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Order Status</span>
+<span class="font-body-sm text-body-sm font-medium text-tertiary">In Matching Queue</span>
+</div>
+</div>
+<!-- Row 3: Actions & Meta -->
+<div class="flex items-center justify-between pt-0.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">#ORD-98402</span>
+<button class="text-negative font-label-sm text-label-sm font-semibold uppercase tracking-wider px-2 py-1 rounded hover:bg-error-container/20 transition-colors min-h-[32px] flex items-center">
+            Cancel Order
+          </button>
+</div>
+</div>
+<!-- Card 4: INFOSYS (Cancelled Order) -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3 opacity-80">
+<!-- Row 1: Badges & Ticker -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="px-2 py-0.5 rounded-full bg-negative text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">SELL</span>
+<div class="flex flex-col min-w-0">
+<span class="font-title text-title text-on-surface font-semibold truncate leading-tight">INFY <span class="font-label-sm text-label-sm text-on-surface-muted font-normal">NSE</span></span>
+<span class="font-body-sm text-body-sm text-on-surface-muted truncate">Infosys Ltd · 8 shares</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-muted font-label-sm text-label-sm font-semibold uppercase tracking-wider shrink-0">CANCELLED</span>
+</div>
+<!-- Row 2: Price Metrics & Reason -->
+<div class="bg-surface-soft rounded-lg p-2.5 flex items-center justify-between gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Order Price</span>
+<span class="font-body-md text-body-md text-on-surface font-medium tabular-nums line-through">₹1,610.00</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Reason</span>
+<span class="font-body-sm text-body-sm text-on-surface-muted">Cancelled by User</span>
+</div>
+</div>
+<!-- Row 3: Meta Footnote -->
+<div class="flex items-center justify-between text-on-surface-muted font-body-sm text-body-sm pt-0.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">#ORD-98394</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Yesterday, 15:10 IST</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Trades Ledger View (Toggleable via Tab 2) -->
+<div class="hidden flex-col space-y-3 w-full" id="trades-view">
+<!-- Trade Item 1 -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">BUY</span>
+<span class="font-title text-title text-on-surface font-semibold">RELIANCE</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-muted">14:22:04 IST</span>
+</div>
+<div class="bg-surface-soft rounded-lg p-3 grid grid-cols-2 gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Gross Execution</span>
+<span class="font-title text-title font-semibold text-on-surface tabular-nums">₹14,724.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-muted">5 @ ₹2,944.80</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Sim. Fee</span>
+<span class="font-body-md text-body-md font-medium text-on-surface-muted tabular-nums">₹14.72</span>
+<span class="font-label-sm text-label-sm text-positive font-medium">+₹0.30 impact</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">TRD-772910</span>
+<button class="flex items-center gap-1 text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider hover:underline min-h-[36px]">
+<span class="material-symbols-outlined text-[16px]">receipt</span>
+<span>Contract Note</span>
+</button>
+</div>
+</div>
+<!-- Trade Item 2 -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-negative text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">SELL</span>
+<span class="font-title text-title text-on-surface font-semibold">HDFCBANK</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-muted">12:45:11 IST</span>
+</div>
+<div class="bg-surface-soft rounded-lg p-3 grid grid-cols-2 gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Gross Execution</span>
+<span class="font-title text-title font-semibold text-on-surface tabular-nums">₹15,321.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-muted">10 @ ₹1,532.10</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Sim. Fee</span>
+<span class="font-body-md text-body-md font-medium text-on-surface-muted tabular-nums">₹15.32</span>
+<span class="font-label-sm text-label-sm text-negative font-medium">−₹0.20 impact</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">TRD-772884</span>
+<button class="flex items-center gap-1 text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider hover:underline min-h-[36px]">
+<span class="material-symbols-outlined text-[16px]">receipt</span>
+<span>Contract Note</span>
+</button>
+</div>
+</div>
+<!-- Trade Item 3 -->
+<div class="bg-surface rounded-xl p-space-md shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shrink-0">BUY</span>
+<span class="font-title text-title text-on-surface font-semibold">TATAMOTORS</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-muted">10:15:30 IST</span>
+</div>
+<div class="bg-surface-soft rounded-lg p-3 grid grid-cols-2 gap-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Gross Execution</span>
+<span class="font-title text-title font-semibold text-on-surface tabular-nums">₹19,250.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-muted">20 @ ₹962.50</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-muted">Sim. Fee</span>
+<span class="font-body-md text-body-md font-medium text-on-surface-muted tabular-nums">₹19.25</span>
+<span class="font-label-sm text-label-sm text-positive font-medium">+₹0.45 impact</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">TRD-772801</span>
+<button class="flex items-center gap-1 text-primary font-label-sm text-label-sm font-semibold uppercase tracking-wider hover:underline min-h-[36px]">
+<span class="material-symbols-outlined text-[16px]">receipt</span>
+<span>Contract Note</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Paging Controls Bar -->
+<div class="bg-surface rounded-xl p-space-sm flex items-center justify-between shadow-sm">
+<span class="font-body-sm text-body-sm text-on-surface-muted pl-2">
+        Showing <span class="font-semibold text-on-surface tabular-nums">1–4</span> of <span class="font-semibold text-on-surface tabular-nums">12</span>
+</span>
+<div class="flex items-center gap-1">
+<button aria-label="Previous page" class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-muted/40 cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low text-primary flex items-center justify-center font-title text-title font-semibold">
+          1
+        </div>
+<button aria-label="Next page" class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Empty State Card (Hidden by default, toggleable via Preview Empty Button) -->
+<div class="hidden flex-col items-center justify-center text-center bg-surface rounded-xl p-space-xl shadow-sm space-y-4 my-auto" id="empty-state">
+<!-- Visual Playful Illustration / Placeholder -->
+<div class="w-20 h-20 rounded-full bg-surface-container flex items-center justify-center text-primary relative mb-1">
+<span class="material-symbols-outlined text-[38px]">receipt_long</span>
+<div class="w-3 h-3 rounded-full bg-primary-fixed-dim absolute top-3 right-3 animate-ping"></div>
+</div>
+<div class="space-y-1 max-w-[280px]">
+<h3 class="font-headline-md text-headline-md text-on-surface font-semibold">No activity yet</h3>
+<p class="font-body-sm text-body-sm text-on-surface-muted leading-relaxed">
+        Orders placed during market simulation hours will appear here along with live fill price impact.
+      </p>
+</div>
+<button class="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-title text-title font-semibold shadow-sm hover:bg-primary-dark active:scale-[0.98] transition-all min-h-[44px] flex items-center justify-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[18px]">add_chart</span>
+<span>Browse Market</span>
+</button>
+</div>
+</div>
+<script>
+  // Tab Switching Logic (Orders vs Trades)
+  const tabOrders = document.getElementById('tab-orders');
+  const tabTrades = document.getElementById('tab-trades');
+  const ordersView = document.getElementById('orders-view');
+  const tradesView = document.getElementById('trades-view');
+
+  tabOrders.addEventListener('click', () => {
+    tabOrders.classList.add('bg-surface', 'text-primary', 'shadow-sm', 'font-semibold');
+    tabOrders.classList.remove('text-on-surface-variant', 'font-medium');
+    tabTrades.classList.remove('bg-surface', 'text-primary', 'shadow-sm', 'font-semibold');
+    tabTrades.classList.add('text-on-surface-variant', 'font-medium');
+    
+    ordersView.classList.remove('hidden');
+    tradesView.classList.add('hidden');
+  });
+
+  tabTrades.addEventListener('click', () => {
+    tabTrades.classList.add('bg-surface', 'text-primary', 'shadow-sm', 'font-semibold');
+    tabTrades.classList.remove('text-on-surface-variant', 'font-medium');
+    tabOrders.classList.remove('bg-surface', 'text-primary', 'shadow-sm', 'font-semibold');
+    tabOrders.classList.add('text-on-surface-variant', 'font-medium');
+    
+    tradesView.classList.remove('hidden');
+    ordersView.classList.add('hidden');
+  });
+
+  // Empty State Toggle Micro-interaction
+  const toggleBtn = document.getElementById('toggle-empty-btn');
+  const toggleIcon = document.getElementById('toggle-icon');
+  const toggleLabel = document.getElementById('toggle-label');
+  const populatedState = document.getElementById('populated-state');
+  const emptyState = document.getElementById('empty-state');
+  let isEmpty = false;
+
+  toggleBtn.addEventListener('click', () => {
+    isEmpty = !isEmpty;
+    if (isEmpty) {
+      populatedState.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      emptyState.classList.add('flex');
+      toggleIcon.textContent = 'visibility';
+      toggleLabel.textContent = 'Show Activity';
+      toggleBtn.classList.add('bg-primary-container', 'text-on-primary');
+      toggleBtn.classList.remove('bg-surface-container-low', 'text-on-surface');
+      toggleIcon.classList.remove('text-primary');
+      toggleIcon.classList.add('text-on-primary');
+    } else {
+      emptyState.classList.add('hidden');
+      emptyState.classList.remove('flex');
+      populatedState.classList.remove('hidden');
+      toggleIcon.textContent = 'visibility_off';
+      toggleLabel.textContent = 'Preview Empty';
+      toggleBtn.classList.remove('bg-primary-container', 'text-on-primary');
+      toggleBtn.classList.add('bg-surface-container-low', 'text-on-surface');
+      toggleIcon.classList.add('text-primary');
+      toggleIcon.classList.remove('text-on-primary');
+    }
+  });
+
+  // Status pills quick toggle effect
+  document.querySelectorAll('.status-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      document.querySelectorAll('.status-pill').forEach(p => {
+        p.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+        p.classList.add('bg-surface', 'text-on-surface');
+      });
+      this.classList.remove('bg-surface', 'text-on-surface');
+      this.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+    });
+  });
+
+  // Side pills quick toggle effect
+  document.querySelectorAll('.side-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      const isSelected = this.classList.contains('bg-surface-container-high');
+      document.querySelectorAll('.side-pill').forEach(p => p.classList.remove('bg-surface-container-high'));
+      if (!isSelected) {
+        this.classList.add('bg-surface-container-high');
+      }
+    });
+  });
+</script></main>
+<!-- Bottom Tab Navigation Bar with Portfolio Active State Indicator -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(22,38,43,0.05)]" data-active-classes="text-primary font-semibold relative after:content-[''] after:absolute after:bottom-1 after:w-5 after:h-1 after:bg-primary after:rounded-full">
+<div class="h-16 px-space-xs flex items-center justify-around">
+<!-- Market Tab -->
+<a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="market" href="#">
+<span class="material-symbols-outlined text-[22px]">candlestick_chart</span>
+<span class="font-label-sm text-label-sm">Market</span>
+</a>
+<!-- Watchlist Tab -->
+<a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="watchlist" href="#">
+<span class="material-symbols-outlined text-[22px]">bookmark_border</span>
+<span class="font-label-sm text-label-sm">Watchlist</span>
+</a>
+<!-- Portfolio Tab (ACTIVE DEFAULT) -->
+<a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="portfolio" href="#">
+<span class="material-symbols-outlined text-[22px] [font-variation-settings:'FILL' 1]">pie_chart</span>
+<span class="font-label-sm text-label-sm">Portfolio</span>
+</a>
+<!-- Orders Tab -->
+<a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="orders" href="#">
+<span class="material-symbols-outlined text-[22px]">receipt_long</span>
+<span class="font-label-sm text-label-sm">Orders</span>
+</a>
+<!-- Profile Tab -->
+<a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-space-xs gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="profile" href="#">
+<span class="material-symbols-outlined text-[22px]">account_circle</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

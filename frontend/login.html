@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Sign in | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="auth-page">
+    <header class="auth-topbar">
+      <a class="brand" href="index.html"
+        ><span class="brand-mark">M</span><span>mockfolio</span></a
+      >
+      <p class="auth-topbar-link">
+        New to MockFolio? <a href="register.html">Create an account</a>
+      </p>
+    </header>
+    <main class="auth-grid">
+      <aside class="auth-hero" aria-hidden="true">
+        <div class="hero-chart-card">
+          <span class="eyebrow">HOW PRICES MOVE</span>
+          <h2>Two prices, one lesson.</h2>
+          <svg
+            class="hero-chart"
+            viewBox="0 0 384 140"
+            preserveAspectRatio="none"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+          >
+            <path
+              class="line-fill"
+              d="M6 100 C 50 90, 90 96, 130 78 S 210 40, 260 46 S 330 24, 378 20 L378 130 L6 130 Z"
+            />
+            <path
+              class="line-reference"
+              d="M6 108 C 60 104, 120 100, 180 90 S 300 66, 378 54"
+            />
+            <path
+              id="hero-path"
+              class="line-primary"
+              pathLength="1000"
+              d="M6 100 C 50 90, 90 96, 130 78 S 210 40, 260 46 S 330 24, 378 20"
+            />
+            <circle class="line-dot" r="5">
+              <animateMotion
+                dur="7s"
+                repeatCount="indefinite"
+                keyPoints="0;1;0"
+                keyTimes="0;0.5;1"
+                calcMode="linear"
+                begin="indefinite"
+              >
+                <mpath href="#hero-path" xlink:href="#hero-path" />
+              </animateMotion>
+            </circle>
+          </svg>
+          <div class="hero-legend">
+            <span><span class="dot"></span>MockFolio price</span>
+            <span><span class="dot ref"></span>Reference price</span>
+          </div>
+          <p class="hero-caption">
+            Your trades move the MockFolio price. It always drifts back
+            toward the reference price over time.
+          </p>
+        </div>
+        <ul class="trust-list">
+          <li>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+            <div>
+              <strong>Virtual money only</strong>
+              <small>Zero risk to real capital</small>
+            </div>
+          </li>
+          <li>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 12h4l2-7 4 14 3-9 2 4h5" />
+            </svg>
+            <div>
+              <strong>Simulated pricing</strong>
+              <small>Moves with sandbox trades</small>
+            </div>
+          </li>
+          <li>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 8l10-4 10 4-10 4-10-4Z" />
+              <path d="M6 10.5V16c0 1.1 2.7 2 6 2s6-.9 6-2v-5.5" />
+              <path d="M22 8v6" />
+            </svg>
+            <div>
+              <strong>Practice, not prediction</strong>
+              <small>Built for learning, not live trading</small>
+            </div>
+          </li>
+        </ul>
+      </aside>
+      <section class="auth-card">
+        <span class="eyebrow">WELCOME BACK</span>
+        <h1>Paper trade.<br /><em>Move the market.</em></h1>
+        <p class="muted">
+          Resume your paper trading desk. Your virtual cash and simulated
+          holdings are right where you left them.
+        </p>
+        <form id="login" novalidate>
+          <div class="field" style="--i: 0">
+            <label for="username">Username</label>
+            <input
+              id="username"
+              name="username"
+              autocomplete="username"
+              placeholder="e.g. ananya"
+              required
+            />
+          </div>
+          <div class="field" style="--i: 1">
+            <label for="password">Password</label>
+            <div class="input-with-action">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Your password"
+                required
+              />
+              <button
+                type="button"
+                class="field-action"
+                data-toggle-password="password"
+                aria-label="Show password"
+                aria-pressed="false"
+              >
+                <svg
+                  class="icon-eye"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  class="icon-eye-off"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 3l18 18" />
+                  <path
+                    d="M10.6 5.1A11 11 0 0 1 12 5c7 0 11 7 11 7a13.2 13.2 0 0 1-3.4 4M6.6 6.6C3.8 8.4 2 12 2 12s4 7 11 7c1.5 0 2.9-.3 4.1-.9"
+                  />
+                  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="primary-button full">
+            Sign in to desk
+          </button>
+        </form>
+        <p id="error" class="error" role="alert" aria-live="polite"></p>
+        <p class="auth-switch">
+          New to MockFolio? <a href="register.html">Create an account</a>
+        </p>
+      </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/auth-motion.js"></script>
+  </body>
+</html>

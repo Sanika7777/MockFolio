@@ -1,145 +1,115 @@
-# Mockfolio Database Setup
+# MockFolio
 
-Run these in order. Everything below is Ubuntu/WSL terminal commands unless
-it says "inside mysql shell."
+MockFolio is a small DBMS mini-project for multi-user paper trading. It uses virtual cash and a deliberately explainable market simulation: a filled BUY moves a stock's simulated price upward, while a SELL moves it downward. Reference prices remain the baseline.
 
----
+## Stack and structure
 
-## 1. Install MySQL on Ubuntu
+- Python, FastAPI, SQLAlchemy, PyMySQL, JWT, bcrypt
+- MySQL 8+ with InnoDB
+- Static HTML/CSS/vanilla JavaScript frontend
+- `backend/` API and trading service, `sql/` database demonstrations, `frontend/` browser UI, `tests/` unit checks
 
-```bash
-sudo apt update
-sudo apt install -y mysql-server
-sudo service mysql start
-```
+## Setup
 
-## 2. Clone the repo
-
-```bash
-cd ~
-git clone <REPO_URL> mockfolio
-cd mockfolio
-```
-
-## 3. Server config - vvv imp
-
-```bash
-sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-```
-
-Paste this under `[mysqld]`, save (`Ctrl+O`, `Enter`, `Ctrl+X`):
-
-```ini
-default_storage_engine     = InnoDB
-character_set_server       = utf8mb4
-collation_server            = utf8mb4_0900_ai_ci
-default_time_zone          = '+00:00'
-innodb_lock_wait_timeout   = 5
-innodb_print_all_deadlocks = ON
-innodb_deadlock_detect     = ON
-max_connections            = 200
-```
-
-```bash
-sudo service mysql restart
-```
-
-## 4. Create the database users
-
-```bash
-sudo mysql
-```
-
-Inside mysql shell — pick your own passwords:
+1. Install MySQL 8 and create a user, then run these commands in MySQL Workbench or the MySQL client:
 
 ```sql
-CREATE USER 'mf_migrate'@'%' IDENTIFIED BY 'your_password';
-GRANT ALL PRIVILEGES ON mockfolio.* TO 'mf_migrate'@'%';
-
-CREATE USER 'mf_app'@'%' IDENTIFIED BY 'your_password';
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON mockfolio.* TO 'mf_app'@'%';
-
-CREATE USER 'mf_ro'@'%' IDENTIFIED BY 'your_password';
-GRANT SELECT, SHOW VIEW ON mockfolio.* TO 'mf_ro'@'%';
-
-FLUSH PRIVILEGES;
-exit
+CREATE USER 'mockfolio'@'localhost' IDENTIFIED BY 'mockfolio';
+GRANT ALL PRIVILEGES ON mockfolio.* TO 'mockfolio'@'localhost';
+SOURCE sql/schema.sql;
+SOURCE sql/triggers.sql;
+SOURCE sql/views.sql;
+SOURCE sql/procedures.sql;
+SOURCE sql/seed.sql;
 ```
 
-`%` means the account accepts connections from any host, so one account per
-user is enough. Code is modular this way.
+2. Install Python dependencies:
 
-## 5. Set up your `.env`
-
-```bash
-cp .env.example .env
-nano .env
-```
-
-Fill in the passwords you just set in step 4. Save and exit.
-
-## 6. Build the database
-
-```bash
-mysql -h 127.0.0.1 -u mf_migrate -p < sql/schemas.sql
-mysql -h 127.0.0.1 -u mf_migrate -p mockfolio < sql/triggers.sql
-mysql -h 127.0.0.1 -u mf_migrate -p mockfolio < sql/seed.sql
-```
-
-**Always keep `-h 127.0.0.1` in every command.** Without it, the client can
-connect through a different path that checks a different host match than the
-`%` account you created, and you'll get an access-denied error even with the
-right password. Every command in this file already has it — don't drop it.
-
-Check it worked:
-
-```bash
-mysql -h 127.0.0.1 -u mf_migrate -p mockfolio -e "SHOW TABLES; SELECT COUNT(*) FROM users;"
-```
-
-## 7. Python
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
----
+Set `DATABASE_URL` and `JWT_SECRET` in `.env`. The default URL matches the sample MySQL user. `JWT_SECRET` must be a real value — the app refuses to start if it's unset or left as one of the placeholder strings from `.env.example`.
 
-## Resetting the database
+To provision the local developer account, also set `DEV_USERNAME`, `DEV_EMAIL`, and `DEV_PASSWORD`. The backend creates the account on startup if it does not exist and marks it `is_admin`; the password is never returned by an API or placed in frontend code.
 
-Every time you add or delete something in the database files, you need to
-drop the old database and rerun the whole thing from your mysql shell for it
-to actually flush the changes you made. Use these commands from the
-project's root directory (NOT inside mysql shell):
+Optional environment variables (all have working defaults): `CORS_ORIGINS` (comma-separated allowed origins, defaults to the two localhost dev URLs), `LOCK_WAIT_TIMEOUT` (seconds, default 5), `TX_ISOLATION` (`READ COMMITTED` / `REPEATABLE READ` [default] / `SERIALIZABLE` — anything else refuses to start), `MOCKFOLIO_LOCKING` and `MOCKFOLIO_ORDERING` (`on` [default] / `off`, used only by `scripts/concurrency_report.py`'s demos — never set `off` outside that script), and `TEST_DATABASE_URL` (a separate, disposable MySQL database — required only for `pytest tests/concurrency` and the `scripts/*.py` demos, and must not equal `DATABASE_URL`, since those tests truncate tables).
 
-**To drop database:**
-```bash
-mysql -h 127.0.0.1 -u mf_migrate -p -e "DROP DATABASE IF EXISTS mockfolio;"
+3. Run the API from the project root:
+
+```powershell
+uvicorn backend.main:app --reload
 ```
 
-**To execute all files:**
-```bash
-mysql -h 127.0.0.1 -u mf_migrate -p < ~/mockfolio/sql/schemas.sql && \
-mysql -h 127.0.0.1 -u mf_migrate -p mockfolio < ~/mockfolio/sql/triggers.sql && \
-mysql -h 127.0.0.1 -u mf_migrate -p mockfolio < ~/mockfolio/sql/seed.sql
+4. Serve the frontend with `python -m http.server 5500 -d frontend` and visit `http://127.0.0.1:5500/login.html`. The frontend uses a centralized API client in `frontend/js/api.js` and talks to `http://127.0.0.1:8000`.
+
+5. Run the unit checks:
+
+```powershell
+pytest
 ```
 
-You'll be asked for the `mf_migrate` password three times, once per file.
+The interactive API documentation is at `http://localhost:8000/docs`.
 
----
+## Price impact
 
-## Common errors
+For a trade, `impact = min(0.08 * sqrt(quantity / average_daily_volume), 0.05)`. BUY uses `price * (1 + impact)` and SELL uses `price * (1 - impact)`. Fill price is the resulting simulated price. Brokerage is 0.1% of transaction value. Price decay uses `price + (reference - price) * 0.03`; call `POST /simulation/decay` to demonstrate it.
 
-**`Access denied for user 'x'@'localhost'`** — you're missing `-h 127.0.0.1`
-on the command. Add it back.
+## BUY and SELL transaction flow
 
-**`Unknown database 'mockfolio'`** — the schema file never ran successfully,
-or it was dropped. Run the rebuild commands above.
+`backend/trading.py::execute_trade` locks the stock, then the account, then (SELL only) the holding — always in that order, via the single file allowed to take row locks, `backend/locks.py`. It validates cash/shares, then mutates cash/holding/stock price/trade together inside a SQL `SAVEPOINT` (`backend/transactions.py::savepoint`), after the `Order` row is created and flushed, so a failure in that inner block can be rolled back without discarding the order/lock work that came before it. `POST /trades/{side}` runs the whole thing through `execute_trade_tx`, which retries automatically on a real MySQL deadlock or lock-wait timeout (`backend/transactions.py::run_in_transaction`) with jittered exponential backoff, and never retries a business rejection. A rejected trade (insufficient cash or shares) still rolls back completely and writes no order row — by design, not a bug: there is no audit trail for a request that was never actually accepted.
 
-**`Table 'x' already exists`** — you ran a file twice without dropping first.
-Drop the database, then rerun.
+`client_order_key` makes repeated submissions idempotent, including under a real race: two simultaneous requests with the same key resolve to the same trade (never a raw 500), and reusing a key with a different quantity/side/stock/user is rejected with 409 rather than silently returning someone else's trade.
 
-**Anything else** — copy the full error text (not just the last line), and
-check it against the file and line number it names.
+The first-time-BUY path historically had a real gap-lock deadlock at REPEATABLE READ (fixed with `INSERT ... ON DUPLICATE KEY UPDATE` instead of `SELECT ... FOR UPDATE` + `INSERT`), and `POST /simulation/decay` (admin-only) locks all stocks in ascending `id` order so it can't deadlock against a trade or against itself. All of this — the lock order, the deadlock fix, the retry policy, the idempotency design, an isolation-level comparison, a lost-update demonstration, and a crash-recovery test, all with real numbers from real MySQL — is written up in `docs/TRANSACTION_CONTROL.md`.
+
+## API
+
+- `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+- `GET /stocks`, `GET /stocks/{id}`, `GET /stocks/{id}/history` (paginated, see below)
+- `POST /trades/buy`, `POST /trades/sell`
+- `GET /portfolio`, `GET /portfolio/summary`
+- `GET /orders`, `GET /trades` (paginated, see below)
+- `GET/POST/DELETE /watchlist`
+- `POST /simulation/decay` (admin-only)
+- Admin-only `GET /admin/summary`, `GET /admin/users` (paginated), `GET /admin/users/{id}`, `GET /admin/users/{id}/trades` (paginated), `GET /admin/users/{id}/orders` (paginated), `POST /admin/reset-market`, `POST /admin/reset-user/{id}`, and `GET /admin/tx-metrics` (deadlock/retry counters)
+
+Paginated endpoints accept `limit` (default 50, max 200 — a higher value is rejected with 422, not silently clamped) and `offset` query params, and still return a plain list by default so existing callers are unaffected.
+
+The frontend pages are `index.html` (market), `stock.html` (trade detail), `watchlist.html`, `portfolio.html`, `orders.html`, `profile.html`, `developer.html`, and `developer-user.html`. BUY and SELL confirmations use the authoritative backend response and refresh the simulated price/chart without a browser reload.
+
+## Theme and developer access
+
+The light/dark preference is stored in browser `localStorage` under `mockfolio-theme` with values `light` or `dark`. It applies before the stylesheet loads, persists across pages and refreshes, and updates the Chart.js axis styling when changed.
+
+The developer dashboard is available only to users whose database `is_admin` flag is true. The backend `require_admin` dependency protects every `/admin/*` route; hiding the navigation link is only a convenience. Developers can inspect safe user summaries, holdings, trades, and orders. This is local educational functionality, not a production administration system.
+
+## DBMS concepts demonstrated
+
+- Primary and foreign keys: every table in `sql/schema.sql`.
+- Candidate/unique keys: usernames, emails, one account per user, one holding per user/stock, and client order keys.
+- Constraints: nonnegative cash, positive holdings, enum sides, and foreign-key cascades.
+- 3NF normalization: users, accounts, stocks, holdings, orders, trades, and history separate facts; orders reference users/stocks instead of duplicating names.
+- ACID transactions, rollback, and savepoints: `backend/trading.py`, `backend/transactions.py`; procedures in `sql/procedures.sql`.
+- Row-level locking, in one canonical order: `backend/locks.py` is the only file that calls `with_for_update()`.
+- Deadlock retry with jittered backoff and metrics: `backend/transactions.py::run_in_transaction`, exposed at `GET /admin/tx-metrics`.
+- Triggers: `sql/triggers.sql` writes `HOLDING_CREATE` (INSERT), `HOLDING_CHANGE` (UPDATE), and `HOLDING_DELETE` (DELETE) rows to `audit_log` — full CRUD coverage on `holdings`, not just updates.
+- Views, joins, aggregation, and GROUP BY: `sql/views.sql` (`portfolio_view`, `account_summary_view`).
+- Indexes: lookup and composite indexes in `sql/schema.sql`, including `orders`/`trades` composites added after measuring a real `EXPLAIN` filesort (see `reports/index_evidence.md`).
+- Stored procedures: `reset_user_account` and `reset_market`.
+- Transaction isolation levels, configurable and demonstrably different in practice: see `docs/TRANSACTION_CONTROL.md`.
+
+## Demo flow
+
+Register two users, open RELIANCE at its reference price, BUY a visible quantity, and show the simulated price, deviation, and trade impact. Open a second browser session to show the shared changed price. SELL from the first user's holding, then show portfolio P&L and inspect `portfolio_view`, `audit_log`, and the reset procedures in Workbench.
+
+## Known limitations and future improvements
+
+This is an educational simulation, not a brokerage system. It has no live prices, WebSockets, payments, short selling, margin, or advanced orders. Price decay remains an explicit `POST /simulation/decay` operation (now admin-only) rather than a background scheduler. Chart.js is loaded from its public CDN. The admin endpoints remain API-only; the normal user shell does not expose admin controls.
+
+Transaction-control specific limitations (see `docs/TRANSACTION_CONTROL.md` for the full write-up): single MySQL node only, no replication or distributed transactions; the idempotency key is a single global unique column, not schema-enforced per user; the deadlock retry policy (3 attempts, exponential backoff with jitter) is a fixed constant, not tuned against real production traffic; and the crash-recovery demonstration kills the application process, not MySQL itself, so it proves application-level durability but says nothing about MySQL's own crash recovery.
+
+The app now refuses to start with an unset or placeholder `JWT_SECRET`, and CORS origins are read from the `CORS_ORIGINS` environment variable rather than hardcoded — see Setup below.

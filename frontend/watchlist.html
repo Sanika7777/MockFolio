@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Watchlist | MockFolio</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body data-page="watchlist">
+    <div id="app">
+      <main class="page">
+        <section class="page-intro compact-intro">
+          <span class="eyebrow">KEEP AN EYE ON IT</span>
+          <h1>Watchlist</h1>
+          <p>
+            Save the stocks you want to compare as the simulated market moves.
+          </p>
+          <div class="market-status">
+            <strong>Your list</strong
+            ><span id="watchlist-status-detail">Loading watchlist...</span>
+          </div>
+        </section>
+        <section class="toolbar">
+          <div>
+            <span class="eyebrow">TRACKED</span>
+            <h2>Your stocks</h2>
+          </div>
+          <div class="toolbar-actions">
+            <div class="search-field">
+              <svg
+                class="search-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                id="watchlist-search"
+                class="search"
+                placeholder="Search symbol or company"
+                aria-label="Search watchlist"
+              />
+            </div>
+          </div>
+        </section>
+        <div class="chip-group" role="group" aria-label="Filter watchlist">
+          <button type="button" class="chip active" data-chip="all">
+            All
+          </button>
+          <button type="button" class="chip" data-chip="gainers">
+            Gainers
+          </button>
+          <button type="button" class="chip" data-chip="lagging">
+            Lagging
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>MockFolio price</th>
+                <th>Reference price</th>
+                <th>Deviation</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="watchlist-table" data-cols="5"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <div id="toast-region" class="toast-region"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
