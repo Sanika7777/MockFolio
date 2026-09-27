@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI):
     logger.info("checking database connection")
     try:
         database.check_connection()
+        database.initialize_database()
     except RuntimeError:
         logger.exception("database startup check failed")
         raise

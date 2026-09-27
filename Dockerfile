@@ -11,6 +11,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
 
 COPY backend/ backend/
 COPY frontend/ frontend/
+COPY sql/ sql/
 
 EXPOSE 8000
 

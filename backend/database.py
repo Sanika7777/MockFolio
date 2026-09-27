@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -41,6 +42,66 @@ def _set_session_settings(dbapi_connection, connection_record):
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 Base = declarative_base()
 
+logger = logging.getLogger("mockfolio.database")
+
+MIGRATION_SCRIPTS = (
+    ("001", "schema.sql"),
+    ("002", "triggers.sql"),
+    ("003", "views.sql"),
+    ("004", "procedures.sql"),
+    ("005", "seed.sql"),
+)
+MIGRATION_LOCK = "mockfolio.schema_migrations"
+
+
+def _split_mysql_script(script: str):
+    """Yield executable statements from a script containing MySQL DELIMITER directives."""
+    delimiter = ";"
+    statement = []
+    quote = None
+    escaped = False
+
+    for line in script.splitlines(keepends=True):
+        if not "".join(statement).strip() and line.strip().upper().startswith("DELIMITER "):
+            delimiter = line.strip().split(None, 1)[1]
+            statement = []
+            continue
+
+        index = 0
+        while index < len(line):
+            character = line[index]
+            if quote:
+                statement.append(character)
+                if escaped:
+                    escaped = False
+                elif character == "\\":
+                    escaped = True
+                elif character == quote:
+                    quote = None
+                index += 1
+                continue
+
+            if character in ("'", '"', "`"):
+                quote = character
+                statement.append(character)
+                index += 1
+                continue
+
+            if line.startswith(delimiter, index):
+                sql = "".join(statement).strip()
+                if sql:
+                    yield sql
+                statement = []
+                index += len(delimiter)
+                continue
+
+            statement.append(character)
+            index += 1
+
+    sql = "".join(statement).strip()
+    if sql:
+        yield sql
+
 
 def check_connection() -> None:
     """Fail startup early when the configured database is unreachable."""
@@ -49,6 +110,48 @@ def check_connection() -> None:
             connection.execute(text("SELECT 1"))
     except Exception as exc:
         raise RuntimeError("Could not connect to DATABASE_URL") from exc
+
+
+def initialize_database() -> None:
+    """Apply the bundled database scripts once, in dependency order."""
+    sql_directory = Path(__file__).resolve().parent.parent / "sql"
+    try:
+        with engine.begin() as connection:
+            acquired = connection.scalar(
+                text("SELECT GET_LOCK(:lock_name, :timeout)"),
+                {"lock_name": MIGRATION_LOCK, "timeout": 60},
+            )
+            if acquired != 1:
+                raise RuntimeError("Could not acquire the database initialization lock")
+
+            try:
+                migrations_table_exists = connection.scalar(
+                    text(
+                        "SELECT COUNT(*) FROM information_schema.tables "
+                        "WHERE table_schema = DATABASE() AND table_name = 'schema_migrations'"
+                    )
+                )
+                for version, filename in MIGRATION_SCRIPTS:
+                    migration_applied = (
+                        connection.scalar(
+                            text("SELECT COUNT(*) FROM schema_migrations WHERE version = :version"),
+                            {"version": version},
+                        )
+                        if migrations_table_exists
+                        else False
+                    )
+                    if migration_applied:
+                        logger.info("database migration %s already applied; skipping %s", version, filename)
+                        continue
+
+                    script_path = sql_directory / filename
+                    logger.info("applying database migration %s (%s)", version, filename)
+                    for statement in _split_mysql_script(script_path.read_text(encoding="utf-8")):
+                        connection.exec_driver_sql(statement)
+            finally:
+                connection.execute(text("SELECT RELEASE_LOCK(:lock_name)"), {"lock_name": MIGRATION_LOCK})
+    except Exception as exc:
+        raise RuntimeError("Could not initialize the database from sql migration scripts") from exc
 
 def get_db():
     db = SessionLocal()
