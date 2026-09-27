@@ -1,5 +1,7 @@
 (() => {
-  const API_BASE = "";
+  const configuredBase = window.MOCKFOLIO_API_BASE || "";
+  const isStandaloneDevServer = ["5500", "5501"].includes(location.port);
+  const API_BASE = configuredBase || (isStandaloneDevServer ? "http://127.0.0.1:8000" : "");
   const formatINR = (value) => {
     const amount = Number(value || 0);
     return `${amount < 0 ? "-" : ""}₹${Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

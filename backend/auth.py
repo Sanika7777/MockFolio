@@ -1,10 +1,11 @@
 import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 import bcrypt
 from dotenv import load_dotenv
 from jose import JWTError, jwt
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 _PLACEHOLDER_JWT_SECRETS = {"change-this-development-secret", "replace-with-a-long-random-development-secret"}
 

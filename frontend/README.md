@@ -4,9 +4,9 @@ Plain HTML + CSS + vanilla JS + Chart.js. No build step, no framework, no bundle
 
 ## Running it
 
-The backend must already be running at `http://127.0.0.1:8000` (see the repo's
-setup guide). Serve this folder as static files, **on port 5500 exactly** —
-the backend's CORS only allows `http://127.0.0.1:5500` / `http://localhost:5500`:
+The backend serves the frontend at `http://127.0.0.1:8000` by default (see the
+repo's setup guide). For a standalone frontend server, use **port 5500** so the
+API client automatically targets the backend:
 
 ```
 python -m http.server 5500 -d frontend

@@ -71,11 +71,11 @@ MockFolio/
 
 ## 2. How the frontend talks to the backend (the contract)
 
-**Serving:** the frontend is static files. The backend is at `http://127.0.0.1:8000` (constant `API_BASE` in `api.js`). The backend's CORS only allows origins `http://127.0.0.1:5500` and `http://localhost:5500`. Serve the frontend with:
+**Serving:** the backend serves the frontend at `http://127.0.0.1:8000` in the normal setup. For a separate static server, serve the frontend on port 5500; `api.js` then targets the backend automatically. Set `CORS_ORIGINS` to the frontend origin when using a separate server:
 ```
 python -m http.server 5500 -d frontend
 ```
-**Use port 5500 exactly.** Any other port and every API call is blocked by the browser.
+**Use port 5500 exactly for the automatic local API target.** Other frontend origins require a matching `CORS_ORIGINS` value and an explicit `window.MOCKFOLIO_API_BASE` override if needed.
 
 **Auth:** login/register return `{ "access_token": "..." }`. It is stored in `localStorage["token"]`. Every request sends `Authorization: Bearer <token>`. A **401** clears the token and redirects to `login.html`. `app.js` redirects to `login.html` immediately if there is no token.
 

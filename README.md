@@ -36,15 +36,15 @@ Set `DATABASE_URL` and `JWT_SECRET` in `.env`. The default URL matches the sampl
 
 To provision the local developer account, also set `DEV_USERNAME`, `DEV_EMAIL`, and `DEV_PASSWORD`. The backend creates the account on startup if it does not exist and marks it `is_admin`; the password is never returned by an API or placed in frontend code.
 
-Optional environment variables (all have working defaults): `CORS_ORIGINS` (comma-separated allowed origins, defaults to the two localhost dev URLs), `LOCK_WAIT_TIMEOUT` (seconds, default 5), `TX_ISOLATION` (`READ COMMITTED` / `REPEATABLE READ` [default] / `SERIALIZABLE` — anything else refuses to start), `MOCKFOLIO_LOCKING` and `MOCKFOLIO_ORDERING` (`on` [default] / `off`, used only by `scripts/concurrency_report.py`'s demos — never set `off` outside that script), and `TEST_DATABASE_URL` (a separate, disposable MySQL database — required only for `pytest tests/concurrency` and the `scripts/*.py` demos, and must not equal `DATABASE_URL`, since those tests truncate tables).
+Optional environment variables (all have working defaults): `CORS_ORIGINS` (comma-separated allowed origins, empty for same-origin by default), `LOCK_WAIT_TIMEOUT` (seconds, default 5), `TX_ISOLATION` (`READ COMMITTED` / `REPEATABLE READ` [default] / `SERIALIZABLE` — anything else refuses to start), `MOCKFOLIO_LOCKING` and `MOCKFOLIO_ORDERING` (`on` [default] / `off`, used only by `scripts/concurrency_report.py`'s demos — never set `off` outside that script), and `TEST_DATABASE_URL` (a separate, disposable MySQL database — required only for `pytest tests/concurrency` and the `scripts/*.py` demos, and must not equal `DATABASE_URL`, since those tests truncate tables).
 
-3. Run the API from the project root:
+3. Run the API and frontend from the project root with one command:
 
 ```powershell
-uvicorn backend.main:app --reload
+python -m uvicorn backend.main:app --reload
 ```
 
-4. Serve the frontend with `python -m http.server 5500 -d frontend` and visit `http://127.0.0.1:5500/login.html`. The frontend uses a centralized API client in `frontend/js/api.js` and talks to `http://127.0.0.1:8000`.
+Visit `http://127.0.0.1:8000/login.html`. The API serves the frontend in production and development. If you prefer the standalone frontend server, run `python -m http.server 5500 -d frontend`; the API client automatically targets port 8000 in that mode.
 
 5. Run the unit checks:
 
