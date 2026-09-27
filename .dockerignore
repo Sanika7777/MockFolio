@@ -9,7 +9,6 @@ scripts
 design
 docs
 reports
-sql
 *.md
 *.docx
 .env
