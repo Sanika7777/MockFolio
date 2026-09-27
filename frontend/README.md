@@ -40,15 +40,16 @@ frontend/
 ## Design tokens (`css/tokens.css`)
 
 Maps 1:1 to `../DESIGN.md`'s `colors` block. The variable names are the
-*existing* app's names, not DESIGN.md's — e.g. DESIGN.md's `neutral` is this
+_existing_ app's names, not DESIGN.md's — e.g. DESIGN.md's `neutral` is this
 app's `--bg`, `on-surface` is `--text`, `on-surface-muted` is `--muted`.
 Everything else keeps DESIGN.md's own name (`--primary`, `--positive`, …).
 
 Two tokens exist only in the app, not DESIGN.md's `colors` block:
+
 - `--reference` — the dashed grey reference-price line's colour, used on the
   stock chart and the auth pages' hero illustration.
 - `--on-primary` — text colour on filled teal/red buttons and badges. It's
-  white in light mode; in dark mode the teal/red fills are *light*, so it
+  white in light mode; in dark mode the teal/red fills are _light_, so it
   flips to the dark background colour there (`#101719`) — check `tokens.css`
   before assuming white always works on a filled colour.
 - `--chart-1` … `--chart-5` — the donut/multi-series palette from
@@ -87,13 +88,13 @@ Dark mode is a tuned palette, not an inversion — see the values already in
 
 ## Things that are easy to get wrong here
 
-- **Duplicate function names** silently use the *last* definition — there
+- **Duplicate function names** silently use the _last_ definition — there
   was a `loadDeveloperUser()` defined twice for a while; only the second one
   ever ran. If a page's behaviour doesn't match the code you're reading,
   grep for a second `function` with the same name before assuming a bug
   elsewhere.
 - **`renderStats()`** takes an array of `{ label, value, valueTone?,
-  caption?, chip?, chipTone? }` objects, not a raw API response — build the
+caption?, chip?, chipTone? }` objects, not a raw API response — build the
   array with `summaryStats(summary, holdingsCount)` for the usual 4-stat set,
   or your own array for something else.
 - **`bindWatchButtons()`** re-renders the whole page (`loadMarket()` /

@@ -1,0 +1,17 @@
+.git
+.venv
+.venv_linux
+__pycache__
+*.pyc
+.pytest_cache
+tests
+scripts
+design
+docs
+reports
+sql
+*.md
+*.docx
+.env
+.env.*
+!/.env.example

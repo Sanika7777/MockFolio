@@ -1,7 +1,8 @@
 (() => {
   const configuredBase = window.MOCKFOLIO_API_BASE || "";
   const isStandaloneDevServer = ["5500", "5501"].includes(location.port);
-  const API_BASE = configuredBase || (isStandaloneDevServer ? "http://127.0.0.1:8000" : "");
+  const API_BASE =
+    configuredBase || (isStandaloneDevServer ? "http://127.0.0.1:8000" : "");
   const formatINR = (value) => {
     const amount = Number(value || 0);
     return `${amount < 0 ? "-" : ""}₹${Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -78,7 +79,8 @@
     me: () => request("/auth/me"),
     stocks: () => request("/instruments"),
     stock: (id) => request(`/instruments/${id}`),
-    history: (id, isAdjusted = 1) => request(`/instruments/${id}/candles?is_adjusted=${isAdjusted}`),
+    history: (id, isAdjusted = 1) =>
+      request(`/instruments/${id}/candles?is_adjusted=${isAdjusted}`),
     portfolio: () => request("/portfolio"),
     summary: () => request("/portfolio/summary"),
     orders: () => request("/orders"),
@@ -92,7 +94,8 @@
         body: JSON.stringify(data),
       }),
     resetMarket: () => request("/admin/reset-market", { method: "POST" }),
-    resetUser: (id) => request(`/admin/reset-account/${id}`, { method: "POST" }),
+    resetUser: (id) =>
+      request(`/admin/reset-account/${id}`, { method: "POST" }),
     adminUsers: () => request("/admin/users"),
     adminSummary: () => request("/admin/summary"),
     adminUser: (id) => request(`/admin/users/${id}`),
@@ -100,7 +103,10 @@
     adminUserOrders: (id) => request(`/admin/users/${id}/orders`),
     adminSettings: () => request("/admin/settings"),
     updateSetting: (key, value) =>
-      request(`/admin/settings/${key}`, { method: "PUT", body: JSON.stringify({ value: String(value) }) }),
+      request(`/admin/settings/${key}`, {
+        method: "PUT",
+        body: JSON.stringify({ value: String(value) }),
+      }),
     txMetrics: () => request("/admin/tx-metrics"),
   };
 })();
