@@ -549,6 +549,34 @@ def admin_settings_update(key: str, data: SettingUpdate, user: User = Depends(re
     return settings_store.all_settings()
 
 
+# One row per account with its user, value and activity counts; shared by the list and the detail page.
+ADMIN_ACCOUNT_SQL = """
+    SELECT v.*, u.email, u.role, u.created_at,
+           (SELECT COUNT(*) FROM trades t WHERE t.account_id = v.account_id) AS trade_count,
+           (SELECT COUNT(*) FROM orders o WHERE o.account_id = v.account_id) AS order_count
+    FROM v_account_value v JOIN users u ON u.user_id = v.user_id"""
+
+
+def admin_account_json(r) -> dict:
+    return {
+        "id": r["account_id"],
+        "account_id": r["account_id"],
+        "user_id": r["user_id"],
+        "username": r["username"],
+        "email": r["email"],
+        "is_admin": r["role"] == "ADMIN",
+        "created_at": r["created_at"],
+        "cash_balance": r["cash_balance"],
+        "starting_cash": r["starting_cash"],
+        "portfolio_value": r["holdings_value"],
+        "total_account_value": r["total_account_value"],
+        "unrealised_pnl": r["unrealised_pnl"],
+        "realised_pl": r["realised_pl"],
+        "trade_count": r["trade_count"],
+        "order_count": r["order_count"],
+    }
+
+
 @app.get("/admin/users")
 def admin_users(
     user: User = Depends(require_admin),
@@ -557,22 +585,25 @@ def admin_users(
     offset: int = Query(0, ge=0),
 ):
     rows = db.execute(
-        text("SELECT * FROM v_account_value ORDER BY username LIMIT :l OFFSET :o"),
+        text(
+            f"{ADMIN_ACCOUNT_SQL} ORDER BY v.username LIMIT :l OFFSET :o"
+        ),
         {"l": limit, "o": offset},
     ).mappings().all()
-    return [dict(r) for r in rows]
+    return [admin_account_json(r) for r in rows]
 
 
 @app.get("/admin/summary")
 def admin_summary(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     row = db.execute(
         text(
-            "SELECT (SELECT COUNT(*) FROM users) AS users, "
-            "(SELECT COUNT(*) FROM orders) AS orders, "
-            "(SELECT COUNT(*) FROM trades) AS trades, "
+            "SELECT (SELECT COUNT(*) FROM users) AS total_users, "
+            "(SELECT COUNT(*) FROM orders) AS total_orders, "
+            "(SELECT COUNT(*) FROM trades) AS total_trades, "
             "(SELECT COALESCE(SUM(cash_balance), 0) FROM accounts) AS total_cash, "
             "(SELECT COALESCE(SUM(realised_pl), 0) FROM accounts) AS total_realised_pl, "
-            "(SELECT COUNT(*) FROM instruments WHERE is_active = 1) AS instruments"
+            "(SELECT COUNT(*) FROM instruments WHERE is_active = 1) AS active_stocks, "
+            "(SELECT setting_value FROM settings WHERE setting_key = 'starting_cash') AS starting_cash"
         )
     ).mappings().first()
     return dict(row)
@@ -580,15 +611,19 @@ def admin_summary(user: User = Depends(require_admin), db: Session = Depends(get
 
 @app.get("/admin/users/{account_id}")
 def admin_user_detail(account_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    row = db.execute(
-        text("SELECT * FROM v_account_value WHERE account_id = :a"), {"a": account_id}
-    ).mappings().first()
+    row = db.execute(text(f"{ADMIN_ACCOUNT_SQL} WHERE v.account_id = :a"), {"a": account_id}).mappings().first()
     if not row:
         raise HTTPException(status_code=404, detail="Account not found")
     holdings = db.execute(
         text("SELECT * FROM v_portfolio_summary WHERE account_id = :a ORDER BY symbol"), {"a": account_id}
     ).mappings().all()
-    return dict(row, holdings=[dict(h) for h in holdings])
+    account = admin_account_json(row)
+    user_fields = ("user_id", "username", "email", "is_admin", "created_at")
+    return {
+        "user": {"id": row["user_id"], **{k: account[k] for k in user_fields}},
+        "account": account,
+        "holdings": [dict(h) for h in holdings],
+    }
 
 
 @app.get("/admin/users/{account_id}/trades")
