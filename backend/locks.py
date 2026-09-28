@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .models import Account, Holding, PriceState
+from .models import Account, Holding, Order, PriceState
 
 
 def _env_flag(name: str, default: bool) -> bool:
@@ -25,6 +25,11 @@ def lock_price_state(db: Session, instrument_id: int) -> PriceState | None:
 
 def lock_account(db: Session, account_id: int) -> Account | None:
     return db.scalar(_maybe_locked(select(Account).where(Account.account_id == account_id)))
+
+
+def lock_order(db: Session, order_id: int) -> Order | None:
+    # Always taken last, after stock -> account -> holding, so it cannot invert that order.
+    return db.scalar(_maybe_locked(select(Order).where(Order.order_id == order_id)))
 
 
 def lock_holding(db: Session, account_id: int, instrument_id: int) -> Holding | None:

@@ -11,6 +11,7 @@
   let stockChart;
   let stockPoll;
   let refreshStock;
+  let refreshDesk;
   let currentUser;
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -25,6 +26,12 @@
         : "neutral";
   const signed = (value) =>
     `${Number(value || 0) >= 0 ? "+" : ""}${money(value)}`;
+  // The API sends naive UTC timestamps; without a zone the browser would read them as local time.
+  const utcDate = (value) => new Date(/Z|[+-]\d\d:?\d\d$/.test(String(value)) ? value : `${value}Z`);
+  const stamp = (value) =>
+    utcDate(value).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  // price_impact is a fraction of price (0.0056 = 0.56%), not rupees.
+  const impactPct = (value) => `${Number(value || 0) >= 0 ? "+" : ""}${(Number(value || 0) * 100).toFixed(2)}%`;
   const percent = (value) =>
     `${Number(value || 0) >= 0 ? "+" : ""}${Number(value || 0).toFixed(2)}%`;
   const escapeHTML = (value) =>
@@ -111,6 +118,8 @@
     developer: '<path d="M7 8l-3.5 4L7 16"/><path d="M17 8l3.5 4L17 16"/><path d="M14 6l-4 12"/>',
     sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>',
     moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>',
+    user: '<circle cx="12" cy="8.5" r="3.8"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
     logout:
       '<path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M15 16l4-4-4-4"/><path d="M19 12H9"/>',
     warning:
@@ -131,7 +140,7 @@
     const developerLink = user.is_admin
       ? `<a class="${active("developer")}" href="developer.html">Developer</a>`
       : "";
-    const header = `<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>mockfolio</span></a><nav class="desktop-nav"><a class="${active("market")}" href="index.html">Market</a><a class="${active("watchlist")}" href="watchlist.html">Watchlist</a><a class="${active("portfolio")}" href="portfolio.html">Portfolio</a><a class="${active("orders")}" href="orders.html">Orders</a>${developerLink}</nav><div class="top-actions"><button class="theme-toggle icon-button" id="theme-toggle" title="Switch theme" aria-label="Switch theme">${svgIcon(ICONS.sun, "icon-sun")}${svgIcon(ICONS.moon, "icon-moon")}</button><a class="nav-avatar" href="profile.html" title="Open profile" aria-label="Open profile">${avatarInitial}</a><button class="logout-button" id="logout">${svgIcon(ICONS.logout)}<span>Logout</span></button></div></header>`;
+    const header = `<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>mockfolio</span></a><nav class="desktop-nav"><a class="${active("market")}" href="index.html">Market</a><a class="${active("watchlist")}" href="watchlist.html">Watchlist</a><a class="${active("portfolio")}" href="portfolio.html">Portfolio</a><a class="${active("orders")}" href="orders.html">Orders</a>${developerLink}</nav><div class="top-actions"><div class="account-menu"><button class="nav-avatar" id="account-button" aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown" title="Account menu">${avatarInitial}</button><div class="account-dropdown" id="account-dropdown" role="menu" hidden><div class="account-dropdown-head"><span class="nav-avatar static" aria-hidden="true">${avatarInitial}</span><div><strong>${escapeHTML(user.username)}</strong><small>${escapeHTML(user.email || "")}</small></div></div><a role="menuitem" href="portfolio.html">${svgIcon(ICONS.portfolio)}Portfolio</a><a role="menuitem" href="profile.html">${svgIcon(ICONS.user)}Account info</a><a role="menuitem" href="settings.html">${svgIcon(ICONS.settings)}Settings</a><button role="menuitemcheckbox" class="theme-toggle" id="theme-toggle" aria-checked="false">${svgIcon(ICONS.moon, "icon-moon")}${svgIcon(ICONS.sun, "icon-sun")}<span id="theme-toggle-label">Dark mode</span><i class="switch" aria-hidden="true"></i></button><button role="menuitem" class="danger-item" id="logout">${svgIcon(ICONS.logout)}Log out</button></div></div></div></header>`;
     const showNotice = user.is_admin && page !== "profile";
     const onDeveloperPage = page === "developer" || page === "developer-user";
     const noticeTag = showNotice && !onDeveloperPage ? "a" : "div";
@@ -173,19 +182,31 @@
       location.href = "login.html";
     };
     $("#theme-toggle").onclick = () => window.MockfolioTheme.toggle();
+    const menuButton = $("#account-button");
+    const menu = $("#account-dropdown");
+    const setMenu = (open) => {
+      menu.hidden = !open;
+      menuButton.setAttribute("aria-expanded", String(open));
+    };
+    menuButton.onclick = (event) => {
+      event.stopPropagation();
+      setMenu(menu.hidden);
+    };
+    menu.onclick = (event) => event.stopPropagation();
+    document.addEventListener("click", () => setMenu(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !menu.hidden) {
+        setMenu(false);
+        menuButton.focus();
+      }
+    });
     updateThemeToggle();
   }
 
   function updateThemeToggle() {
     const dark = window.MockfolioTheme.current() === "dark";
     const toggle = $("#theme-toggle");
-    if (toggle) {
-      toggle.title = dark ? "Switch to light mode" : "Switch to dark mode";
-      toggle.setAttribute(
-        "aria-label",
-        dark ? "Switch to light mode" : "Switch to dark mode",
-      );
-    }
+    if (toggle) toggle.setAttribute("aria-checked", String(dark));
   }
 
   function renderStats(items) {
@@ -327,6 +348,35 @@
       moversCard("FURTHEST FROM REAL PRICE", by((s) => Math.abs(gap(s)), -1), gap);
   }
 
+  // TradingView symbol for a stock. Free TradingView widgets aren't licensed for NSE data, so they use
+  // the same company's BSE listing; the base comes from the Yahoo ticker (TATAMOTORS now trades as TMPV).
+  const tvSymbol = (stock) => `BSE:${(stock.yf_ticker || stock.symbol).split(".")[0]}`;
+
+  // Real NSE prices straight from TradingView. Clicking a symbol opens its MockFolio page (largeChartUrl).
+  function renderTickerTape() {
+    const host = $("#ticker-tape");
+    if (!host || !stocks.length) return;
+    const config = {
+      symbols: [
+        { proName: "BSE:SENSEX", title: "SENSEX" },
+        ...stocks.map((s) => ({ proName: tvSymbol(s), title: s.symbol })),
+      ],
+      showSymbolLogo: true,
+      isTransparent: true,
+      displayMode: "adaptive",
+      colorTheme: window.MockfolioTheme.current() === "dark" ? "dark" : "light",
+      locale: "en",
+      largeChartUrl: `${location.origin}${location.pathname.replace(/[^/]*$/, "")}stock.html`,
+    };
+    host.innerHTML = `<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div><span class="ticker-tape-label">Real prices · TradingView</span>`;
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+    script.async = true;
+    script.textContent = JSON.stringify(config);
+    host.firstElementChild.appendChild(script);
+  }
+  window.addEventListener("mockfolio-theme-change", () => page === "market" && renderTickerTape());
+
   let marketPoll;
   async function loadMarket() {
     loading("#market-table", "Loading market...");
@@ -339,6 +389,7 @@
       ]);
       stocks = stocksData;
       watchlist = watchlistData;
+      renderTickerTape();
       let sortKey = "symbol";
       let sortDir = 1;
       let sector = "All";
@@ -422,6 +473,8 @@
     return `<div class="panel value-card"><div class="panel-heading"><div><span class="eyebrow">PERFORMANCE</span><h2>Portfolio value</h2></div><div class="value-card-figure"><strong id="value-now">₹0</strong><em id="value-change" class="neutral"></em></div></div><div class="value-chart" id="value-chart" role="img" aria-label="Portfolio value over time against your starting cash"></div><p class="chart-caption" id="value-caption">Cash plus holdings at the MockFolio price, replayed from your trades. Green above your starting cash, red below.</p></div>`;
   }
 
+  let valueChart;
+  let portfolioPoll;
   async function renderValueChart(summary) {
     const host = $("#value-chart");
     if (!host || !window.MockfolioCharts) return;
@@ -437,14 +490,18 @@
         host.innerHTML = `<div class="empty-state compact"><strong>No trades yet</strong><span>Your value chart starts with your first trade.</span></div>`;
         return;
       }
-      window.MockfolioCharts.createValueChart(host, { baseline: start }).setData(points);
+      if (!valueChart || !host.contains(valueChart.element)) {
+        host.innerHTML = "";
+        valueChart = window.MockfolioCharts.createValueChart(host, { baseline: start });
+      }
+      valueChart.setData(points);
     } catch (error) {
       host.innerHTML = `<div class="error-state">${escapeHTML(error.message)}</div>`;
     }
   }
 
-  async function loadPortfolio() {
-    loading("#portfolio-table", "Loading portfolio...");
+  async function loadPortfolio(live = false) {
+    if (!live) loading("#portfolio-table", "Loading portfolio...");
     try {
       const [summary, holdings] = await Promise.all([
         api.summary(),
@@ -453,7 +510,7 @@
       renderStats(summaryStats(summary, holdings.length));
       const chartsHost = $("#portfolio-charts");
       if (chartsHost) {
-        chartsHost.innerHTML = valueChartCard();
+        if (!live) chartsHost.innerHTML = valueChartCard();
         renderValueChart(summary);
       }
       $("#portfolio-table").innerHTML = holdings.length
@@ -464,11 +521,20 @@
             )
             .join("")
         : `<tr><td colspan="7"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>`;
+      if (live) return;
       staggerRows("#portfolio-table");
+      // Prices tick and pending orders fill in the background, so keep the page current.
+      clearInterval(portfolioPoll);
+      portfolioPoll = setInterval(() => document.hidden || loadPortfolio(true), 10000);
     } catch (error) {
       $("#portfolio-table").innerHTML =
         `<tr><td colspan="7"><div class="error-state">${escapeHTML(error.message)}</div></td></tr>`;
     }
+  }
+
+  function orderTypeLabel(order) {
+    if (order.parent_order_id) return order.order_type === "STOPLOSS" ? "Stop-loss exit" : "Target exit";
+    return { MARKET: "Market", LIMIT: "Limit", STOPLOSS: "Stop" }[order.order_type] || order.order_type;
   }
 
   async function loadOrders() {
@@ -495,15 +561,29 @@
         ? orders
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Limit price">${item.limit_price ? money(item.limit_price) : "—"}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
+                `<tr><td data-label="Date">${stamp(item.created_at)}</td><td data-label="Stock"><a href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong></a></td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Type">${orderTypeLabel(item)}</td><td data-label="Quantity">${item.quantity}</td><td data-label="Price">${item.limit_price ? money(item.limit_price) : item.trigger_price ? `trigger ${money(item.trigger_price)}` : "Market"}</td><td data-label="Stop-loss / Target">${item.stop_loss || item.target_price ? `${item.stop_loss ? money(item.stop_loss) : "—"} / ${item.target_price ? money(item.target_price) : "—"}` : "—"}</td><td data-label="Status"><span class="badge status-${item.status.toLowerCase()}" title="${escapeHTML(item.reject_reason || "")}">${item.status}</span>${item.reject_reason ? `<small>${escapeHTML(item.reject_reason)}</small>` : ""}</td><td data-label="">${item.status === "PENDING" ? `<button type="button" class="ghost-button" data-cancel-order="${item.order_id}">Cancel</button>` : ""}</td></tr>`,
             )
             .join("")
-        : `<tr><td colspan="6"><div class="empty-state"><strong>No orders yet</strong><span>Your completed orders will appear here.</span></div></td></tr>`;
+        : `<tr><td colspan="9"><div class="empty-state"><strong>No orders yet</strong><span>Your orders will appear here.</span></div></td></tr>`;
+      $$("[data-cancel-order]").forEach(
+        (button) =>
+          (button.onclick = async () => {
+            button.disabled = true;
+            try {
+              await api.cancelOrder(button.dataset.cancelOrder);
+              toast("Order cancelled");
+              await loadOrders();
+            } catch (error) {
+              toast(error.message, "error");
+              button.disabled = false;
+            }
+          }),
+      );
       $("#trades-table").innerHTML = trades.length
         ? trades
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.executed_at).toLocaleString("en-IN")}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td></tr>`,
+                `<tr><td data-label="Date">${stamp(item.executed_at)}</td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${impactPct(item.price_impact)}</td></tr>`,
             )
             .join("")
         : `<tr><td colspan="7"><div class="empty-state"><strong>No trades yet</strong><span>Execute a trade to see its price impact here.</span></div></td></tr>`;
@@ -596,7 +676,7 @@
       const profileRow = (label, value) =>
         `<div><span>${label}</span><strong>${value}</strong></div>`;
       $("#profile-content").innerHTML =
-        `<section class="profile-hero"><div><span class="eyebrow">PROFILE / ACCOUNT</span><h1>Hi, ${escapeHTML(user.name || user.username)}</h1><p>Your paper-trading account.</p></div>${user.is_admin ? '<span class="account-status"><strong>Developer Account</strong><small>Trading disabled</small></span>' : ""}</section><section class="portfolio-summary panel"><span class="eyebrow">PORTFOLIO</span><strong class="portfolio-total">${money(summary.total_account_value)}</strong><span class="summary-label">Total account value</span><div class="summary-metrics"><div><span>Invested</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)} <small>(${percent(pnlPercent)})</small></strong></div></div></section><section class="profile-metrics"><div><span>Available cash</span><strong>${money(summary.cash_balance)}</strong></div><div><span>Invested value</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>Total P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)}</strong></div></section><section class="profile-section">${valueChartCard()}</section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">YOUR BOOK</span><h2>Your holdings</h2></div></div><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg. price</th><th>Simulated price</th><th>Current value</th><th>P&L</th></tr></thead><tbody>${holdings.length ? holdings.map((item) => `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Qty">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Avg. price">${money(item.avg_price)}</td><td data-label="Simulated price">${money(item.adjusted_price)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong></td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>'}</tbody></table></div></section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent activity</h2></div></div><div class="table-wrap"><table><thead><tr><th>Side</th><th>Stock</th><th>Quantity</th><th>Fill price</th><th>Price impact</th><th>Date</th></tr></thead><tbody>${activity.length ? activity.map((item) => `<tr><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Date">${new Date(item.executed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>No recent activity</strong></div></td></tr>'}</tbody></table></div></section><section class="profile-section account-section"><div class="section-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Account information</h2></div></div><div class="account-grid panel">${profileRow("Username", escapeHTML(user.username))}${profileRow("Email", escapeHTML(user.email))}${profileRow("Account type", user.is_admin ? "Developer · Trading disabled" : "Standard user")}${profileRow("Member since", new Date(user.created_at).toLocaleDateString("en-IN"))}</div></section>`;
+        `<section class="profile-hero"><div><span class="eyebrow">PROFILE / ACCOUNT</span><h1>Hi, ${escapeHTML(user.name || user.username)}</h1><p>Your paper-trading account.</p></div>${user.is_admin ? '<span class="account-status"><strong>Developer Account</strong><small>Trading disabled</small></span>' : ""}</section><section class="portfolio-summary panel"><span class="eyebrow">PORTFOLIO</span><strong class="portfolio-total">${money(summary.total_account_value)}</strong><span class="summary-label">Total account value</span><div class="summary-metrics"><div><span>Invested</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)} <small>(${percent(pnlPercent)})</small></strong></div></div></section><section class="profile-metrics"><div><span>Available cash</span><strong>${money(summary.cash_balance)}</strong></div><div><span>Invested value</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>Total P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)}</strong></div></section><section class="profile-section">${valueChartCard()}</section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">YOUR BOOK</span><h2>Your holdings</h2></div></div><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg. price</th><th>Simulated price</th><th>Current value</th><th>P&L</th></tr></thead><tbody>${holdings.length ? holdings.map((item) => `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Qty">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Avg. price">${money(item.avg_price)}</td><td data-label="Simulated price">${money(item.adjusted_price)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong></td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>'}</tbody></table></div></section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent activity</h2></div></div><div class="table-wrap"><table><thead><tr><th>Side</th><th>Stock</th><th>Quantity</th><th>Fill price</th><th>Price impact</th><th>Date</th></tr></thead><tbody>${activity.length ? activity.map((item) => `<tr><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${impactPct(item.price_impact)}</td><td data-label="Date">${utcDate(item.executed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>No recent activity</strong></div></td></tr>'}</tbody></table></div></section><section class="profile-section account-section"><div class="section-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Account information</h2></div></div><div class="account-grid panel">${profileRow("Username", escapeHTML(user.username))}${profileRow("Email", escapeHTML(user.email))}${profileRow("Account type", user.is_admin ? "Developer · Trading disabled" : "Standard user")}${profileRow("Member since", utcDate(user.created_at).toLocaleDateString("en-IN"))}</div></section>`;
       renderValueChart(summary);
     } catch (error) {
       $("#profile-content").innerHTML =
@@ -630,7 +710,19 @@
   }
 
   async function loadStock() {
-    const id = new URLSearchParams(location.search).get("id");
+    const params = new URLSearchParams(location.search);
+    let id = params.get("id");
+    if (!id && params.get("tvwidgetsymbol")) {
+      // Arrived from a TradingView widget click: map "NSE:RELIANCE" back to our instrument.
+      const wanted = params.get("tvwidgetsymbol").toUpperCase();
+      const match = (await api.stocks()).find((s) => tvSymbol(s) === wanted || s.symbol === wanted.split(":").pop());
+      if (!match) {
+        $("#stock-content").innerHTML = `<div class="error-state">${escapeHTML(wanted)} isn't traded on MockFolio. <a href="index.html">Back to market</a></div>`;
+        return;
+      }
+      id = String(match.instrument_id);
+      history.replaceState(null, "", `stock.html?id=${id}`);
+    }
     try {
       const [stockData, watchlistData] = await Promise.all([api.stock(id), api.watchlist()]);
       let stock = stockData;
@@ -639,7 +731,7 @@
       const isAdmin = Boolean(currentUser?.is_admin);
       const tradePanel = isAdmin
         ? `<aside class="panel trade-panel read-only-panel"><span class="eyebrow">DEVELOPER ACCOUNT</span><h2>Trading disabled</h2><p class="helper">Developer accounts can inspect the simulated market but cannot place BUY or SELL orders.</p></aside>`
-        : `<aside class="panel trade-panel"><div class="panel-heading"><div><span class="eyebrow">SIMULATED ORDER DESK</span><h2>Trade ${escapeHTML(stock.symbol)}</h2></div><span class="paper-mode-pill">${svgIcon(ICONS.lock)} Paper mode</span></div><div class="segmented"><button class="active" data-side="BUY">${svgIcon(ICONS.plusCircle)}Buy</button><button data-side="SELL">${svgIcon(ICONS.minusCircle)}Sell</button></div><label for="quantity">Quantity (shares)</label><div class="quantity-stepper"><button type="button" id="qty-decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" step="1" value="10" inputmode="numeric" /><button type="button" id="qty-increase" aria-label="Increase quantity">+</button></div><div class="estimate"><div><span>Current price</span><strong id="estimate-price">${money(stock.adjusted_price)}</strong></div><div><span>Estimated amount</span><strong id="estimate-value">${money(stock.adjusted_price * 10)}</strong></div><div><span>Brokerage (0.1%)</span><strong id="estimate-brokerage">${money(stock.adjusted_price * 10 * 0.001)}</strong></div><div class="estimate-total"><span>Estimated total</span><strong id="estimate-total">${money(stock.adjusted_price * 10 * 1.001)}</strong></div></div><button class="primary-button full" id="trade-button">Buy stock</button><div id="trade-feedback" class="trade-feedback hidden"></div><p class="helper">Your fill price is determined by the server. A trade changes the shared simulated market price.</p></aside>`;
+        : orderDeskHTML(stock);
       const intervalButtons = INTERVALS.map(
         (item, i) => `<button type="button" data-interval="${item.minutes}" class="${i === 0 ? "active" : ""}" aria-pressed="${i === 0}">${item.label}</button>`,
       ).join("");
@@ -695,8 +787,9 @@
             api.history(stock.instrument_id, 1, interval.minutes, 2),
             api.history(stock.instrument_id, 0, interval.minutes, 2),
           ]);
-          stock = fresh;
+          Object.assign(stock, fresh);
           $("#stock-price").textContent = money(stock.adjusted_price);
+          refreshDesk?.();
           renderQuote(stock);
           if (adjTail.length) $("#chart-empty").classList.add("hidden");
           stockChart?.update(adjTail, rawTail);
@@ -714,101 +807,226 @@
     }
   }
 
-  function bindTrade(stock) {
+  function orderDeskHTML(stock) {
+    const field = (id, label, hint) =>
+      `<div class="desk-field" id="${id}-wrap"><label for="${id}">${label}</label><div class="price-input"><span>₹</span><input id="${id}" type="number" min="0.05" step="0.05" inputmode="decimal" /></div>${hint ? `<small id="${id}-hint">${hint}</small>` : ""}</div>`;
+    return `<aside class="panel trade-panel order-desk" data-side="BUY"><div class="panel-heading"><div><span class="eyebrow">ORDER DESK</span><h2>${escapeHTML(stock.symbol)}</h2></div><span class="paper-mode-pill">${svgIcon(ICONS.lock)} Paper mode</span></div>
+      <div class="segmented side-switch"><button class="active" data-side="BUY">${svgIcon(ICONS.plusCircle)}Buy</button><button data-side="SELL">${svgIcon(ICONS.minusCircle)}Sell</button></div>
+      <div class="order-types" role="radiogroup" aria-label="Order type"><button type="button" role="radio" aria-checked="true" class="active" data-type="MARKET">Market</button><button type="button" role="radio" aria-checked="false" data-type="LIMIT">Limit</button><button type="button" role="radio" aria-checked="false" data-type="STOPLOSS">Stop</button></div>
+      <div class="desk-row"><div class="desk-field"><label for="quantity">Quantity</label><div class="quantity-stepper"><button type="button" id="qty-decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" step="1" value="10" inputmode="numeric" /><button type="button" id="qty-increase" aria-label="Increase quantity">+</button></div><small id="holding-hint"></small></div></div>
+      ${field("limit-price", "Limit price", "Fills at this price or better.")}
+      ${field("trigger-price", "Trigger price", "Becomes a market order once the price reaches this.")}
+      <div class="bracket" id="bracket"><label class="check"><input type="checkbox" id="use-sl" /> Stop-loss</label>${field("stop-loss", "Exit if price falls to", "")}<label class="check"><input type="checkbox" id="use-target" /> Target</label>${field("target-price", "Take profit at", "")}<div class="rr" id="risk-reward"></div></div>
+      <div class="estimate"><div><span id="estimate-price-label">Market price</span><strong id="estimate-price">${money(stock.adjusted_price)}</strong></div><div><span>Order value</span><strong id="estimate-value"></strong></div><div><span id="estimate-brokerage-label">Brokerage</span><strong id="estimate-brokerage"></strong></div><div class="estimate-total"><span>Total</span><strong id="estimate-total"></strong></div><div><span id="funds-label">Available cash</span><strong id="funds"></strong></div></div>
+      <button class="primary-button full" id="trade-button">Buy ${escapeHTML(stock.symbol)}</button>
+      <div id="trade-feedback" class="trade-feedback hidden"></div>
+      <p class="helper" id="desk-helper">Market orders fill now at the MockFolio price, which your own order nudges. Limit and stop orders wait and are checked every tick.</p>
+      <div class="open-orders" id="open-orders"></div>
+    </aside>`;
+  }
+
+  async function bindTrade(stock) {
     let side = "BUY";
+    let type = "MARKET";
+    let cash = 0;
+    let held = 0;
+    let brokeragePct = 0.0003;
     const quantity = $("#quantity");
-    const clampQuantity = () => {
-      const value = Math.max(1, Math.round(Number(quantity.value) || 1));
-      quantity.value = String(value);
-      return value;
+    const num = (id) => Number($(id).value) || 0;
+    const desk = $(".order-desk");
+    const qty = () => Math.max(1, Math.round(Number(quantity.value) || 1));
+
+    const loadAccount = async () => {
+      const [summary, holdings, settings] = await Promise.all([api.summary(), api.portfolio(), api.settings().catch(() => [])]);
+      cash = Number(summary.cash_balance);
+      held = Number(holdings.find((h) => h.instrument_id === stock.instrument_id)?.quantity || 0);
+      const b = settings.find?.((item) => item.key === "brokerage_pct");
+      if (b) brokeragePct = Number(b.value);
+      $("#estimate-brokerage-label").textContent = `Brokerage (${(brokeragePct * 100).toFixed(2)}%)`;
+      update();
     };
-    const updateEstimate = () => {
-      const amount =
-        Number(stock.adjusted_price) * Number(quantity.value || 0);
-      $("#estimate-price").textContent = money(stock.adjusted_price);
+
+    // The price this order is expected to execute at, used for the estimate and the stop/target checks.
+    const entry = () => (type === "LIMIT" ? num("#limit-price") : type === "STOPLOSS" ? num("#trigger-price") : Number(stock.adjusted_price));
+
+    function update() {
+      desk.dataset.side = side;
+      $("#limit-price-wrap").hidden = type !== "LIMIT";
+      $("#trigger-price-wrap").hidden = type !== "STOPLOSS";
+      $("#bracket").hidden = side !== "BUY";
+      $("#stop-loss-wrap").hidden = !$("#use-sl").checked;
+      $("#target-price-wrap").hidden = !$("#use-target").checked;
+      const price = entry();
+      const amount = price * qty();
+      const brokerage = amount * brokeragePct;
+      $("#estimate-price-label").textContent = type === "MARKET" ? "Market price" : type === "LIMIT" ? "Limit price" : "Trigger price";
+      $("#estimate-price").textContent = price ? money(price) : "—";
       $("#estimate-value").textContent = money(amount);
-      $("#estimate-brokerage").textContent = money(amount * 0.001);
-      $("#estimate-total").textContent = money(
-        side === "BUY" ? amount * 1.001 : amount * 0.999,
-      );
+      $("#estimate-brokerage").textContent = money(brokerage);
+      $("#estimate-total").textContent = money(side === "BUY" ? amount + brokerage : amount - brokerage);
+      $("#funds-label").textContent = side === "BUY" ? "Available cash" : "Shares you hold";
+      $("#funds").textContent = side === "BUY" ? money(cash) : held.toLocaleString("en-IN");
+      $("#funds").className = side === "BUY" ? (amount + brokerage > cash ? "negative" : "") : qty() > held ? "negative" : "";
+      $("#holding-hint").textContent =
+        side === "BUY" ? `Max ≈ ${Math.max(0, Math.floor(cash / (Number(stock.adjusted_price) * (1 + brokeragePct)))).toLocaleString("en-IN")} shares` : held ? `You can sell up to ${held}` : "You don't hold this stock";
+
+      const sl = $("#use-sl").checked ? num("#stop-loss") : 0;
+      const tg = $("#use-target").checked ? num("#target-price") : 0;
+      const pct = (v) => (price ? ((v - price) / price) * 100 : 0);
+      if ($("#stop-loss-hint")) $("#stop-loss-hint").textContent = sl ? `${percent(pct(sl))} · risk ${money((price - sl) * qty())}` : "";
+      if ($("#target-price-hint")) $("#target-price-hint").textContent = tg ? `${percent(pct(tg))} · reward ${money((tg - price) * qty())}` : "";
+      const rr = $("#risk-reward");
+      rr.innerHTML = sl && tg && price > sl ? `Risk : reward <strong>1 : ${((tg - price) / (price - sl)).toFixed(2)}</strong>` : "";
+
+      const verb = side === "BUY" ? "Buy" : "Sell";
+      $("#trade-button").textContent = type === "MARKET" ? `${verb} ${stock.symbol}` : `Place ${type === "LIMIT" ? "limit" : "stop"} ${verb.toLowerCase()}`;
+    }
+
+    const prefill = () => {
+      const p = Number(stock.adjusted_price);
+      const round = (v) => (Math.round(v * 20) / 20).toFixed(2);
+      if (!$("#limit-price").value) $("#limit-price").value = round(p);
+      if (!$("#trigger-price").value) $("#trigger-price").value = round(side === "BUY" ? p * 1.01 : p * 0.99);
+      if (!$("#stop-loss").value) $("#stop-loss").value = round(p * 0.98);
+      if (!$("#target-price").value) $("#target-price").value = round(p * 1.04);
     };
-    $$("[data-side]").forEach(
+
+    $$(".side-switch [data-side]").forEach(
       (button) =>
         (button.onclick = () => {
           side = button.dataset.side;
-          $$("[data-side]").forEach((item) =>
-            item.classList.toggle("active", item === button),
-          );
-          $("#trade-button").textContent =
-            `${side === "BUY" ? "Buy" : "Sell"} stock`;
-          updateEstimate();
+          $$(".side-switch [data-side]").forEach((item) => item.classList.toggle("active", item === button));
+          $("#trigger-price").value = "";
+          prefill();
+          update();
         }),
     );
-    quantity.oninput = updateEstimate;
+    $$("[data-type]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          type = button.dataset.type;
+          $$("[data-type]").forEach((item) => {
+            item.classList.toggle("active", item === button);
+            item.setAttribute("aria-checked", String(item === button));
+          });
+          update();
+        }),
+    );
+    ["#quantity", "#limit-price", "#trigger-price", "#stop-loss", "#target-price"].forEach((id) => ($(id).oninput = update));
+    ["#use-sl", "#use-target"].forEach((id) => ($(id).onchange = update));
     $("#qty-decrease").onclick = () => {
-      quantity.value = String(Math.max(1, clampQuantity() - 1));
-      updateEstimate();
+      quantity.value = String(Math.max(1, qty() - 1));
+      update();
     };
     $("#qty-increase").onclick = () => {
-      quantity.value = String(clampQuantity() + 1);
-      updateEstimate();
+      quantity.value = String(qty() + 1);
+      update();
     };
-    $("#trade-button").onclick = async () => {
-      const amount = Number(quantity.value);
-      if (!Number.isInteger(amount) || amount <= 0) {
-        toast("Enter a quantity greater than zero.", "error");
-        return;
+
+    async function renderOpenOrders() {
+      try {
+        const pending = (await api.orders()).filter((o) => o.status === "PENDING" && o.instrument_id === stock.instrument_id);
+        stockChart?.setOrderLines?.(pending);
+        $("#open-orders").innerHTML = pending.length
+          ? `<span class="eyebrow">OPEN ORDERS</span>${pending
+              .map((o) => {
+                const level = o.order_type === "LIMIT" ? o.limit_price : o.trigger_price;
+                const label = o.parent_order_id ? (o.order_type === "STOPLOSS" ? "Stop-loss" : "Target") : `${o.order_type === "LIMIT" ? "Limit" : "Stop"} ${o.side.toLowerCase()}`;
+                return `<div class="open-order"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><div><strong>${label}</strong><small>${o.quantity} @ ${money(level)}</small></div><button type="button" class="ghost-button" data-cancel="${o.order_id}">Cancel</button></div>`;
+              })
+              .join("")}`
+          : "";
+        $$("[data-cancel]").forEach(
+          (b) =>
+            (b.onclick = async () => {
+              b.disabled = true;
+              try {
+                await api.cancelOrder(b.dataset.cancel);
+                toast("Order cancelled");
+              } catch (error) {
+                toast(error.message, "error");
+              }
+              renderOpenOrders();
+            }),
+        );
+      } catch {
+        // open orders are a convenience; the Orders page is the record
       }
+    }
+
+    $("#trade-button").onclick = async () => {
+      const amount = qty();
       const button = $("#trade-button");
+      const feedback = $("#trade-feedback");
+      feedback.classList.add("hidden");
+      const bracket =
+        side === "BUY"
+          ? {
+              stop_loss: $("#use-sl").checked ? num("#stop-loss") || undefined : undefined,
+              target_price: $("#use-target").checked ? num("#target-price") || undefined : undefined,
+            }
+          : {};
       button.disabled = true;
       button.classList.add("is-loading");
-      button.textContent = "Executing...";
-      $("#trade-feedback")?.classList.add("hidden");
+      button.textContent = "Placing…";
       try {
-        const result = await api.trade(side, {
-          instrument_id: stock.instrument_id,
-          quantity: amount,
-          client_order_id: crypto.randomUUID(),
-        });
-        const impact = Number(result.price_impact);
-        const arrow = impact > 0 ? "↑" : impact < 0 ? "↓" : "–";
-        $("#trade-result").className = "trade-result visible";
-        $("#trade-result").innerHTML =
-          `<span class="success-mark">${svgIcon(ICONS.check)}</span><div><span class="eyebrow">TRADE EXECUTED</span><h2>${side} ${escapeHTML(stock.symbol)}</h2><div class="result-grid"><div><span>Fill price</span><strong>${money(result.exec_price)}</strong></div><div><span>Total cost</span><strong>${money(result.total_value)}</strong></div><div><span>Brokerage</span><strong>${money(result.brokerage)}</strong></div><div><span>Price impact</span><strong class="${tone(impact)}">${signed(impact)}</strong></div><div><span>New deviation</span><strong class="${tone(result.deviation_after_trade)}">${signed(result.deviation_after_trade)}</strong></div></div><div class="impact-story"><span>Before ${money(result.pre_trade_price)}</span><b>${arrow} ${side} IMPACT ${signed(impact)}</b><span>After ${money(result.exec_price)}</span></div></div>`;
-        toast("Trade executed successfully", "success");
-        const previousPrice = Number(stock.adjusted_price);
-        stock = await api.stock(stock.instrument_id);
-        updateEstimate();
+        if (type === "MARKET") {
+          const result = await api.trade(side, {
+            instrument_id: stock.instrument_id,
+            quantity: amount,
+            client_order_id: crypto.randomUUID(),
+            ...bracket,
+          });
+          const impact = Number(result.price_impact);
+          const exits = [bracket.stop_loss && `stop-loss ${money(bracket.stop_loss)}`, bracket.target_price && `target ${money(bracket.target_price)}`].filter(Boolean);
+          $("#trade-result").className = "trade-result visible";
+          $("#trade-result").innerHTML = `<span class="success-mark">${svgIcon(ICONS.check)}</span><div><span class="eyebrow">ORDER EXECUTED</span><h2>${side} ${amount} ${escapeHTML(stock.symbol)}</h2><div class="result-grid"><div><span>Fill price</span><strong>${money(result.exec_price)}</strong></div><div><span>${side === "BUY" ? "Total cost" : "Proceeds"}</span><strong>${money(result.total_value)}</strong></div><div><span>Brokerage</span><strong>${money(result.brokerage)}</strong></div><div><span>Your price impact</span><strong class="${tone(impact)}">${impactPct(impact)}</strong></div>${result.realised_pl != null ? `<div><span>Realised P&L</span><strong class="${tone(result.realised_pl)}">${signed(result.realised_pl)}</strong></div>` : ""}</div>${exits.length ? `<p class="helper">Exit orders placed: ${exits.join(" and ")}. Whichever hits first cancels the other.</p>` : ""}</div>`;
+          toast(`${side === "BUY" ? "Bought" : "Sold"} ${amount} ${stock.symbol} at ${money(result.exec_price)}`, "success");
+        } else {
+          await api.placeOrder({
+            instrument_id: stock.instrument_id,
+            side,
+            order_type: type,
+            quantity: amount,
+            limit_price: type === "LIMIT" ? num("#limit-price") : undefined,
+            trigger_price: type === "STOPLOSS" ? num("#trigger-price") : undefined,
+            client_order_id: crypto.randomUUID(),
+            ...bracket,
+          });
+          toast(`${type === "LIMIT" ? "Limit" : "Stop"} ${side.toLowerCase()} placed · waiting for ${money(entry())}`, "success");
+        }
+        const previous = Number(stock.adjusted_price);
+        Object.assign(stock, await api.stock(stock.instrument_id));
         const priceEl = $("#stock-price");
-        if (priceEl) {
-          tweenNumber(
-            priceEl,
-            previousPrice,
-            Number(stock.adjusted_price),
-            money,
-          );
-          const flashClass =
-            Number(stock.adjusted_price) >= previousPrice
-              ? "price-flash-up"
-              : "price-flash-down";
+        if (priceEl && type === "MARKET") {
+          tweenNumber(priceEl, previous, Number(stock.adjusted_price), money);
+          const flash = Number(stock.adjusted_price) >= previous ? "price-flash-up" : "price-flash-down";
           priceEl.classList.remove("price-flash-up", "price-flash-down");
           void priceEl.offsetWidth;
-          priceEl.classList.add(flashClass);
-          setTimeout(() => priceEl.classList.remove(flashClass), 650);
+          priceEl.classList.add(flash);
+          setTimeout(() => priceEl.classList.remove(flash), 650);
         }
         refreshStock?.();
+        await Promise.all([loadAccount(), renderOpenOrders()]);
       } catch (error) {
-        const feedback = $("#trade-feedback");
-        if (feedback) {
-          feedback.className = "trade-feedback error visible";
-          feedback.innerHTML = `<strong>${side === "SELL" ? "Sell unavailable" : "Order unavailable"}</strong><span>${escapeHTML(error.message)}</span>`;
-        }
+        feedback.className = "trade-feedback error visible";
+        feedback.innerHTML = `<strong>Order not placed</strong><span>${escapeHTML(error.message)}</span>`;
         toast(error.message, "error");
       } finally {
         button.disabled = false;
         button.classList.remove("is-loading");
-        button.textContent = `${side === "BUY" ? "Buy" : "Sell"} stock`;
+        update();
       }
+    };
+
+    prefill();
+    update();
+    await Promise.all([loadAccount(), renderOpenOrders()]);
+    // Keep the desk honest while it's open: fills, cash and the market price change underneath it.
+    refreshDesk = () => {
+      $("#estimate-price") && type === "MARKET" && update();
+      renderOpenOrders();
+      loadAccount();
     };
   }
 
@@ -850,7 +1068,7 @@
           ? filtered
               .map(
                 (item) =>
-                  `<tr><td data-label="Username"><a class="user-name-link" href="developer-user.html?id=${item.id}">${escapeHTML(item.username)}</a>${item.is_admin ? '<span class="badge admin">ADMIN</span>' : ""}</td><td data-label="Email">${escapeHTML(item.email)}</td><td data-label="Joined">${new Date(item.created_at).toLocaleDateString("en-IN")}</td><td data-label="Cash balance">${money(item.cash_balance)}</td><td data-label="Portfolio">${money(item.portfolio_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}">${signed(item.unrealised_pnl)}</td><td data-label="Trades">${item.trade_count}</td></tr>`,
+                  `<tr><td data-label="Username"><a class="user-name-link" href="developer-user.html?id=${item.id}">${escapeHTML(item.username)}</a>${item.is_admin ? '<span class="badge admin">ADMIN</span>' : ""}</td><td data-label="Email">${escapeHTML(item.email)}</td><td data-label="Joined">${utcDate(item.created_at).toLocaleDateString("en-IN")}</td><td data-label="Cash balance">${money(item.cash_balance)}</td><td data-label="Portfolio">${money(item.portfolio_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}">${signed(item.unrealised_pnl)}</td><td data-label="Trades">${item.trade_count}</td></tr>`,
               )
               .join("")
           : `<tr><td colspan="7"><div class="empty-state"><strong>No users found.</strong></div></td></tr>`;
@@ -923,7 +1141,7 @@
         ? trades
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.executed_at).toLocaleString("en-IN")}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Before">${money(item.pre_trade_price)}</td><td data-label="After">${money(item.exec_price)}</td></tr>`,
+                `<tr><td data-label="Date">${stamp(item.executed_at)}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Brokerage">${money(item.brokerage)}</td><td data-label="Impact" class="${tone(item.price_impact)}">${impactPct(item.price_impact)}</td><td data-label="Before">${money(item.pre_trade_price)}</td><td data-label="After">${money(item.exec_price)}</td></tr>`,
             )
             .join("")
         : '<tr><td colspan="9"><div class="empty-state"><strong>This user has not made any trades yet.</strong></div></td></tr>';
@@ -931,7 +1149,7 @@
         ? orders
             .map(
               (item) =>
-                `<tr><td data-label="Date">${new Date(item.created_at).toLocaleString("en-IN")}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Limit price">${item.limit_price ? money(item.limit_price) : "—"}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
+                `<tr><td data-label="Date">${stamp(item.created_at)}</td><td data-label="Stock">${escapeHTML(item.symbol)}</td><td data-label="Type"><span class="badge ${item.order_type.toLowerCase()}">${item.order_type}</span></td><td data-label="Quantity">${item.quantity}</td><td data-label="Limit price">${item.limit_price ? money(item.limit_price) : "—"}</td><td data-label="Status"><span class="badge filled">${item.status}</span></td></tr>`,
             )
             .join("")
         : '<tr><td colspan="6"><div class="empty-state"><strong>No orders yet.</strong></div></td></tr>';
@@ -949,7 +1167,7 @@
         adminSummaryCard("Order count", orders.length),
       ].join("");
       $("#developer-user-content").innerHTML =
-        `<section class="user-hero panel"><span class="avatar">${escapeHTML(user.username[0]?.toUpperCase())}</span><div><span class="eyebrow">USER PROFILE</span><h1>${escapeHTML(user.username)}</h1><p>${escapeHTML(user.email)}</p></div></section><section class="profile-grid panel profile-table">${row("User ID", user.id)}${row("Username", escapeHTML(user.username))}${row("Name", escapeHTML(user.username))}${row("Email", escapeHTML(user.email))}${row("Account type", user.is_admin ? "Developer / Admin" : "Standard user")}${row("Joined", new Date(user.created_at).toLocaleString("en-IN"))}</section><section class="section-heading spaced"><div><span class="eyebrow">ACCOUNT SUMMARY</span><h2>Account overview</h2></div></section><section class="stats">${accountStats}</section><section class="section-heading spaced"><div><span class="eyebrow">CURRENT HOLDINGS</span><h2>Positions</h2></div></section><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Quantity</th><th>Average buy</th><th>Current price</th><th>P&L</th></tr></thead><tbody>${holdings}</tbody></table></div><section class="section-heading spaced"><div><span class="eyebrow">TRADES</span><h2>Trade history</h2></div></section><div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Side</th><th>Quantity</th><th>Fill price</th><th>Brokerage</th><th>Impact</th><th>Before</th><th>After</th></tr></thead><tbody>${tradeRows}</tbody></table></div><section class="section-heading spaced"><div><span class="eyebrow">ORDERS</span><h2>Order history</h2></div></section><div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Type</th><th>Quantity</th><th>Requested price</th><th>Status</th></tr></thead><tbody>${orderRows}</tbody></table></div><section class="panel system-controls"><div><span class="eyebrow">ADMINISTRATIVE CONTROLS</span><h2>Reset this account</h2><p class="helper">Liquidates all open holdings, clears any orders, and restores ${escapeHTML(user.username)}'s balance to ₹1,00,000 virtual cash. This cannot be undone.</p></div><button class="ghost-button danger" id="open-reset-account">${svgIcon(ICONS.warning)}Reset account</button></section><dialog class="confirm-dialog" id="reset-account-dialog"><div class="confirm-dialog-icon warning">${svgIcon(ICONS.warning)}</div><h3>Reset ${escapeHTML(user.username)}'s account?</h3><p class="helper">This liquidates ${detail.holdings.length} holding${detail.holdings.length === 1 ? "" : "s"}, clears any open orders, and sets virtual cash back to ₹1,00,000. This cannot be undone.</p><div class="confirm-dialog-actions"><button type="button" class="ghost-button" id="reset-account-cancel">Cancel</button><button type="button" class="primary-button danger" id="reset-account-confirm">Reset account</button></div></dialog>`;
+        `<section class="user-hero panel"><span class="avatar">${escapeHTML(user.username[0]?.toUpperCase())}</span><div><span class="eyebrow">USER PROFILE</span><h1>${escapeHTML(user.username)}</h1><p>${escapeHTML(user.email)}</p></div></section><section class="profile-grid panel profile-table">${row("User ID", user.id)}${row("Username", escapeHTML(user.username))}${row("Name", escapeHTML(user.username))}${row("Email", escapeHTML(user.email))}${row("Account type", user.is_admin ? "Developer / Admin" : "Standard user")}${row("Joined", utcDate(user.created_at).toLocaleString("en-IN"))}</section><section class="section-heading spaced"><div><span class="eyebrow">ACCOUNT SUMMARY</span><h2>Account overview</h2></div></section><section class="stats">${accountStats}</section><section class="section-heading spaced"><div><span class="eyebrow">CURRENT HOLDINGS</span><h2>Positions</h2></div></section><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Quantity</th><th>Average buy</th><th>Current price</th><th>P&L</th></tr></thead><tbody>${holdings}</tbody></table></div><section class="section-heading spaced"><div><span class="eyebrow">TRADES</span><h2>Trade history</h2></div></section><div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Side</th><th>Quantity</th><th>Fill price</th><th>Brokerage</th><th>Impact</th><th>Before</th><th>After</th></tr></thead><tbody>${tradeRows}</tbody></table></div><section class="section-heading spaced"><div><span class="eyebrow">ORDERS</span><h2>Order history</h2></div></section><div class="table-wrap"><table><thead><tr><th>Date</th><th>Stock</th><th>Type</th><th>Quantity</th><th>Requested price</th><th>Status</th></tr></thead><tbody>${orderRows}</tbody></table></div><section class="panel system-controls"><div><span class="eyebrow">ADMINISTRATIVE CONTROLS</span><h2>Reset this account</h2><p class="helper">Liquidates all open holdings, clears any orders, and restores ${escapeHTML(user.username)}'s balance to ₹1,00,000 virtual cash. This cannot be undone.</p></div><button class="ghost-button danger" id="open-reset-account">${svgIcon(ICONS.warning)}Reset account</button></section><dialog class="confirm-dialog" id="reset-account-dialog"><div class="confirm-dialog-icon warning">${svgIcon(ICONS.warning)}</div><h3>Reset ${escapeHTML(user.username)}'s account?</h3><p class="helper">This liquidates ${detail.holdings.length} holding${detail.holdings.length === 1 ? "" : "s"}, clears any open orders, and sets virtual cash back to ₹1,00,000. This cannot be undone.</p><div class="confirm-dialog-actions"><button type="button" class="ghost-button" id="reset-account-cancel">Cancel</button><button type="button" class="primary-button danger" id="reset-account-confirm">Reset account</button></div></dialog>`;
       const resetAccountDialog = $("#reset-account-dialog");
       $("#open-reset-account").onclick = () => openConfirmDialog(resetAccountDialog);
       $("#reset-account-cancel").onclick = () => resetAccountDialog.close();
@@ -975,6 +1193,48 @@
     }
   }
 
+  async function loadSettings() {
+    const host = $("#settings-content");
+    try {
+      const settings = await api.settings();
+      const editable = settings.some((item) => item.editable);
+      const note = editable
+        ? `<div class="settings-note">${svgIcon(ICONS.warning)}<span>These apply to <strong>every</strong> account immediately. Changes take up to 15 seconds to reach the price engine.</span></div>`
+        : `<div class="settings-note">${svgIcon(ICONS.lock)}<span>These values are shared by everyone trading in this market, so only admins can change them. Here's what each one does.</span></div>`;
+      host.innerHTML =
+        note +
+        `<div class="settings-grid">${settings
+          .map(
+            (item) =>
+              `<form class="panel setting-card" data-key="${escapeHTML(item.key)}"><div class="setting-head"><label for="setting-${escapeHTML(item.key)}">${escapeHTML(item.label)}</label><code>${escapeHTML(item.key)}</code></div><p>${escapeHTML(item.description)}</p><div class="setting-row">${
+                item.editable
+                  ? `<input id="setting-${escapeHTML(item.key)}" type="number" step="any" min="${item.min}" max="${item.max}" value="${escapeHTML(item.value)}" required /><button class="primary-button" type="submit">Save</button>`
+                  : `<strong id="setting-${escapeHTML(item.key)}" class="setting-value">${escapeHTML(item.value)}</strong>`
+              }</div><small class="setting-range">Allowed: ${item.min} – ${Number(item.max).toLocaleString("en-IN")}</small></form>`,
+          )
+          .join("")}</div>`;
+      $$(".setting-card").forEach(
+        (form) =>
+          (form.onsubmit = async (event) => {
+            event.preventDefault();
+            const input = form.querySelector("input");
+            const button = form.querySelector("button");
+            button.disabled = true;
+            try {
+              await api.updateSetting(form.dataset.key, input.value);
+              toast(`${form.querySelector("label").textContent} updated`, "success");
+            } catch (error) {
+              toast(error.message, "error");
+            } finally {
+              button.disabled = false;
+            }
+          }),
+      );
+    } catch (error) {
+      host.innerHTML = `<div class="error-state">${escapeHTML(error.message)}</div>`;
+    }
+  }
+
   async function start() {
     try {
       const user = await api.me();
@@ -986,6 +1246,7 @@
       if (page === "watchlist") await loadWatchlist();
       if (page === "profile") await loadProfile(user);
       if (page === "stock") await loadStock();
+      if (page === "settings") await loadSettings();
       if (page === "developer") await loadDeveloper();
       if (page === "developer-user") await loadDeveloperUser();
     } catch (error) {

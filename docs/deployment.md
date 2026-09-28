@@ -65,7 +65,7 @@ them **in this order**:
 ```bash
 H=<public host>; P=<public port>; U=root; PW=<password>; DB=railway
 
-for f in schema triggers views procedures seed; do
+for f in schema triggers views procedures seed migrate_006_orders; do
   echo "applying $f"
   mysql -h "$H" -P "$P" -u "$U" -p"$PW" "$DB" < "sql/$f.sql"
 done
@@ -84,7 +84,12 @@ SELECT COUNT(*) AS non_innodb FROM information_schema.tables
 WHERE table_schema='$DB' AND table_type='BASE TABLE' AND engine <> 'InnoDB';"
 ```
 
-Expect `10 / 10 / 30 / 8`, `triggers_present = 4`, `non_innodb = 0`.
+Expect `10 / 10 / 30 / 9`, `triggers_present = 4`, `non_innodb = 0`.
+
+**Upgrading an existing database?** Only run the new file, once:
+`mysql -h "$H" -P "$P" -u "$U" -p"$PW" "$DB" < sql/migrate_006_orders.sql`. It adds
+stop-loss / target columns to `orders` and the `crowd_noise_pct` setting, and is
+safe to re-run.
 
 `accounts = 10` with no accounts in `seed.sql` is the point: the
 `trg_users_ai_account` trigger creates them. If accounts is 0, the trigger did

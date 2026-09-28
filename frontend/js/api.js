@@ -94,6 +94,10 @@
         method: "POST",
         body: JSON.stringify(data),
       }),
+    placeOrder: (data) =>
+      request("/orders", { method: "POST", body: JSON.stringify(data) }),
+    cancelOrder: (id) => request(`/orders/${id}/cancel`, { method: "POST" }),
+    settings: () => request("/settings"),
     resetMarket: () => request("/admin/reset-market", { method: "POST" }),
     resetUser: (id) =>
       request(`/admin/reset-account/${id}`, { method: "POST" }),

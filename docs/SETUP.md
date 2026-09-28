@@ -16,7 +16,7 @@ it `sql/triggers.sql` fails with `ERROR 1419`. Then load the schema in order
 (the files carry no `USE`, so the database name goes on the command line):
 
 ```bash
-for f in schema triggers views procedures seed; do
+for f in schema triggers views procedures seed migrate_006_orders; do
   mysql -u mf_migrate -p mockfolio < "sql/$f.sql"
 done
 ```

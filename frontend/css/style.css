@@ -2582,3 +2582,375 @@ body[data-page="stock"] .page {
 .screener .day-range {
   width: 120px;
 }
+
+/* ---------- Account menu (avatar dropdown) ---------- */
+.account-menu {
+  position: relative;
+}
+button.nav-avatar {
+  cursor: pointer;
+  padding: 0;
+}
+.nav-avatar.static {
+  flex: none;
+  pointer-events: none;
+}
+.account-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 60;
+  width: 260px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.account-dropdown[hidden] {
+  display: none;
+}
+.account-dropdown-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.account-dropdown-head strong {
+  display: block;
+  font-size: 14px;
+}
+.account-dropdown-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-dropdown a,
+.account-dropdown button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.account-dropdown a:hover,
+.account-dropdown button:hover,
+.account-dropdown a:focus-visible,
+.account-dropdown button:focus-visible {
+  background: var(--surface-soft);
+  outline: none;
+}
+.account-dropdown svg {
+  width: 17px;
+  height: 17px;
+  color: var(--muted);
+  flex: none;
+}
+.account-dropdown .theme-toggle .icon-sun,
+:root[data-theme="dark"] .account-dropdown .theme-toggle .icon-moon {
+  display: none;
+}
+:root[data-theme="dark"] .account-dropdown .theme-toggle .icon-sun {
+  display: block;
+}
+.account-dropdown .switch {
+  margin-left: auto;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.18s;
+}
+.account-dropdown .switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform 0.18s;
+}
+.theme-toggle[aria-checked="true"] .switch {
+  background: var(--primary);
+}
+.theme-toggle[aria-checked="true"] .switch::after {
+  transform: translateX(14px);
+}
+.account-dropdown .danger-item {
+  color: var(--negative);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  margin-top: 4px;
+}
+.account-dropdown .danger-item svg {
+  color: var(--negative);
+}
+
+/* ---------- Order desk ---------- */
+.order-desk[data-side="SELL"] #trade-button {
+  background: var(--negative);
+  border-color: var(--negative);
+  color: #fff;
+}
+.order-desk .segmented {
+  margin-bottom: 14px;
+}
+.order-desk[data-side="SELL"] .side-switch button.active {
+  color: var(--negative);
+}
+.order-types {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.order-types button {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.order-types button.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--tint-primary);
+}
+.desk-field {
+  margin-bottom: 14px;
+}
+.desk-field[hidden] {
+  display: none;
+}
+.desk-field small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+  min-height: 1em;
+}
+.price-input {
+  position: relative;
+  margin-top: 8px;
+}
+.price-input span {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-weight: 700;
+}
+.trade-panel .price-input input {
+  margin-top: 0;
+  padding-left: 28px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.bracket {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px 12px 2px;
+  margin-bottom: 4px;
+}
+.bracket[hidden] {
+  display: none;
+}
+.trade-panel .bracket label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.trade-panel .bracket label.check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+.bracket .desk-field {
+  margin-left: 24px;
+}
+.bracket .desk-field label {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 12px;
+}
+#stop-loss-hint {
+  color: var(--negative);
+}
+#target-price-hint {
+  color: var(--positive);
+}
+.rr {
+  font-size: 13px;
+  color: var(--muted);
+  padding-bottom: 10px;
+}
+.rr:empty {
+  display: none;
+}
+.open-orders {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.open-orders:empty {
+  display: none;
+}
+.open-order {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.open-order:last-child {
+  border-bottom: 0;
+}
+.open-order div {
+  flex: 1;
+}
+.open-order strong {
+  display: block;
+  font-size: 13px;
+}
+.open-order small {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.open-order .ghost-button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.badge.status-pending {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
+}
+.badge.status-filled {
+  background: var(--tint-primary);
+  color: var(--positive);
+}
+.badge.status-rejected,
+.badge.status-cancelled {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+/* ---------- Settings ---------- */
+.settings-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.settings-note svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--warning);
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.setting-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.setting-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+.setting-head label {
+  font-weight: 750;
+  font-size: 15px;
+}
+.setting-head code {
+  font-size: 11px;
+  color: var(--muted);
+}
+.setting-card p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 8px 0 14px;
+  flex: 1;
+}
+.setting-row {
+  display: flex;
+  gap: 8px;
+}
+.setting-row input {
+  flex: 1;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.setting-value {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.setting-range {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+/* ---------- TradingView ticker tape ---------- */
+.ticker-tape {
+  position: relative;
+  margin: -34px 0 28px;
+  min-height: 46px;
+  border-bottom: 1px solid var(--border);
+}
+.ticker-tape-label {
+  position: absolute;
+  right: 0;
+  bottom: -20px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.stock-grid {
+  align-items: start;
+}
+/* An iframe whose color-scheme differs from the page gets an opaque backdrop; let the widget stay transparent. */
+.ticker-tape iframe {
+  color-scheme: normal;
+}
+table:has(#orders-table) th,
+table:has(#orders-table) td {
+  padding: 14px 12px;
+}

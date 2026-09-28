@@ -17,6 +17,20 @@ class TradeRequest(BaseModel):
     instrument_id: int
     quantity: int = Field(gt=0)
     client_order_id: str | None = Field(default=None, max_length=36)
+    stop_loss: Decimal | None = Field(default=None, gt=0)
+    target_price: Decimal | None = Field(default=None, gt=0)
+
+
+class OrderRequest(BaseModel):
+    instrument_id: int
+    side: str = Field(pattern="^(BUY|SELL)$")
+    order_type: str = Field(pattern="^(LIMIT|STOPLOSS)$")
+    quantity: int = Field(gt=0)
+    limit_price: Decimal | None = Field(default=None, gt=0)
+    trigger_price: Decimal | None = Field(default=None, gt=0)
+    stop_loss: Decimal | None = Field(default=None, gt=0)
+    target_price: Decimal | None = Field(default=None, gt=0)
+    client_order_id: str | None = Field(default=None, max_length=36)
 
 
 class SettingUpdate(BaseModel):

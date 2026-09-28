@@ -77,6 +77,24 @@
     let intervalLabel = "1m";
     let series = {};
     let data = { adjusted: [], raw: [] };
+    let orders = [];
+    let orderLines = [];
+
+    // Pending limit / stop / target orders drawn as labelled price lines, like TradingView's order lines.
+    function drawOrderLines() {
+      orderLines.forEach(([s, line]) => s.removePriceLine(line));
+      orderLines = [];
+      const host = series.candles || series.mockfolio;
+      if (!host) return;
+      orders.forEach((o) => {
+        const price = Number(o.order_type === "LIMIT" ? o.limit_price : o.trigger_price);
+        if (!price) return;
+        const isStop = o.order_type === "STOPLOSS";
+        const title = o.parent_order_id ? (isStop ? `SL ${o.quantity}` : `TGT ${o.quantity}`) : `${o.side} ${o.order_type === "LIMIT" ? "LMT" : "STP"} ${o.quantity}`;
+        const color = o.parent_order_id ? (isStop ? TV.down : TV.up) : o.side === "BUY" ? "#2962ff" : "#ff9800";
+        orderLines.push([host, host.createPriceLine({ price, color, lineWidth: 1, lineStyle: LWC.LineStyle.Dashed, axisLabelVisible: true, title })]);
+      });
+    }
 
     const candleOpts = () => ({
       upColor: TV.up, downColor: TV.down, borderVisible: false, wickUpColor: TV.up, wickDownColor: TV.down,
@@ -86,6 +104,7 @@
     function build() {
       Object.values(series).forEach((s) => chart.removeSeries(s));
       series = {};
+      orderLines = [];
       if (mode === "candles") {
         series.candles = chart.addSeries(LWC.CandlestickSeries, candleOpts());
         series.volume = chart.addSeries(LWC.HistogramSeries, {
@@ -103,6 +122,7 @@
       }
       applyTheme();
       fill();
+      drawOrderLines();
     }
 
     const candleBar = (c) => ({ time: toTime(c.bucket_start), open: +c.open, high: +c.high, low: +c.low, close: +c.close });
@@ -199,6 +219,10 @@
         }
         showLegend();
       },
+      setOrderLines(list) {
+        orders = list;
+        drawOrderLines();
+      },
       applyTheme,
       get mode() {
         return mode;
@@ -238,6 +262,7 @@
       baseLine.applyOptions({ color: token("--reference") });
     }
     const api = {
+      element: container.firstElementChild,
       setData(points) {
         const rows = points.map((p) => ({ time: toTime(p.time), value: +p.value }));
         s.setData(rows.filter((p, i) => i === 0 || p.time > rows[i - 1].time));

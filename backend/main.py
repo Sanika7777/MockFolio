@@ -18,9 +18,9 @@ from .auth import create_access_token, get_user_id, hash_password, verify_passwo
 from . import database
 from .database import get_db
 from .models import Account, Candle, Instrument, Order, PriceState, Trade, User, Watchlist
-from .schemas import LoginRequest, RegisterRequest, SettingUpdate, TokenResponse, TradeRequest, TradeResponse
+from .schemas import LoginRequest, OrderRequest, RegisterRequest, SettingUpdate, TokenResponse, TradeRequest, TradeResponse
 from .simulation import run_decay_tx, start_worker, stop_worker
-from .trading import IdempotencyConflict, TradingError, execute_trade_tx
+from .trading import IdempotencyConflict, TradingError, cancel_order_tx, execute_trade_tx, place_order_tx
 from .transactions import get_metrics
 
 logging.basicConfig(
@@ -151,6 +151,7 @@ def instrument_json(i: Instrument, p: PriceState) -> dict:
         "company_name": i.company_name,
         "sector": i.sector,
         "exchange": i.exchange,
+        "yf_ticker": i.yf_ticker,
         "raw_price": p.raw_price,
         "adjusted_price": p.adjusted_price,
         "prev_close": p.prev_close,
@@ -300,12 +301,79 @@ def candles(
 @app.post("/trades/{side}", response_model=TradeResponse)
 def place_trade(side: str, data: TradeRequest, account: Account = Depends(current_account)):
     try:
-        trade = execute_trade_tx(account.account_id, data.instrument_id, data.quantity, side.upper(), data.client_order_id)
+        trade = execute_trade_tx(
+            account.account_id,
+            data.instrument_id,
+            data.quantity,
+            side.upper(),
+            data.client_order_id,
+            stop_loss=data.stop_loss,
+            target_price=data.target_price,
+        )
     except IdempotencyConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except TradingError as exc:
         raise HTTPException(status_code=REJECTION_CODES.get(exc.code, 422), detail=str(exc)) from exc
     return trade_json(trade)
+
+
+def order_json(o: Order, symbol: str) -> dict:
+    return {
+        "order_id": o.order_id,
+        "instrument_id": o.instrument_id,
+        "symbol": symbol,
+        "side": o.side,
+        "order_type": o.order_type,
+        "quantity": o.quantity,
+        "limit_price": o.limit_price,
+        "trigger_price": o.trigger_price,
+        "stop_loss": o.stop_loss,
+        "target_price": o.target_price,
+        "parent_order_id": o.parent_order_id,
+        "status": o.status,
+        "reject_reason": o.reject_reason,
+        "created_at": o.created_at,
+        "updated_at": o.updated_at,
+    }
+
+
+@app.post("/orders", status_code=201)
+def place_order(data: OrderRequest, account: Account = Depends(current_account), db: Session = Depends(get_db)):
+    try:
+        order = place_order_tx(
+            account.account_id,
+            data.instrument_id,
+            data.side,
+            data.quantity,
+            data.order_type,
+            limit_price=data.limit_price,
+            trigger_price=data.trigger_price,
+            stop_loss=data.stop_loss,
+            target_price=data.target_price,
+            client_order_id=data.client_order_id,
+        )
+    except TradingError as exc:
+        raise HTTPException(status_code=REJECTION_CODES.get(exc.code, 422), detail=str(exc)) from exc
+    except IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="Duplicate order id") from exc
+    return order_json(order, db.get(Instrument, order.instrument_id).symbol)
+
+
+@app.post("/orders/{order_id}/cancel", status_code=204)
+def cancel_order(order_id: int, account: Account = Depends(current_account)):
+    try:
+        cancel_order_tx(account.account_id, order_id)
+    except TradingError as exc:
+        raise HTTPException(status_code=404 if exc.code == "NOT_FOUND" else 409, detail=str(exc)) from exc
+
+
+@app.get("/settings")
+def public_settings(user: User = Depends(current_user)):
+    values = settings_store.all_settings()
+    return [
+        {"key": k, "label": label, "description": desc, "value": values.get(k), "min": lo, "max": hi, "editable": user.is_admin}
+        for k, (label, desc, lo, hi) in settings_store.META.items()
+    ]
 
 
 @app.get("/portfolio")
@@ -366,20 +434,7 @@ def orders(
     if status:
         stmt = stmt.where(Order.status == status.upper())
     rows = db.execute(stmt.order_by(Order.created_at.desc()).limit(limit).offset(offset)).all()
-    return [
-        {
-            "order_id": o.order_id,
-            "symbol": symbol,
-            "side": o.side,
-            "order_type": o.order_type,
-            "quantity": o.quantity,
-            "limit_price": o.limit_price,
-            "status": o.status,
-            "reject_reason": o.reject_reason,
-            "created_at": o.created_at,
-        }
-        for o, symbol in rows
-    ]
+    return [order_json(o, symbol) for o, symbol in rows]
 
 
 @app.get("/trades")
@@ -447,6 +502,8 @@ def admin_settings_update(key: str, data: SettingUpdate, user: User = Depends(re
         settings_store.update(key, data.value)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Unknown setting {key}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return settings_store.all_settings()
 
 
@@ -527,20 +584,7 @@ def admin_user_orders(
         .limit(limit)
         .offset(offset)
     ).all()
-    return [
-        {
-            "order_id": o.order_id,
-            "symbol": symbol,
-            "side": o.side,
-            "order_type": o.order_type,
-            "quantity": o.quantity,
-            "limit_price": o.limit_price,
-            "status": o.status,
-            "reject_reason": o.reject_reason,
-            "created_at": o.created_at,
-        }
-        for o, symbol in rows
-    ]
+    return [order_json(o, symbol) for o, symbol in rows]
 
 
 @app.get("/admin/tx-metrics")
