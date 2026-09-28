@@ -1,5 +1,7 @@
 # MockFolio
 
+https://github.com/user-attachments/assets/b5912bf8-7270-4e3f-b2ad-5161b7688fe2
+
 MockFolio is a small DBMS mini-project for multi-user paper trading. It uses virtual cash and a deliberately explainable market simulation: a filled BUY moves a stock's simulated price upward, while a SELL moves it downward. Reference prices remain the baseline.
 
 ## Stack and structure
