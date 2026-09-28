@@ -3107,3 +3107,50 @@ table:has(#orders-table) td {
     display: none;
   }
 }
+.tv-financials {
+  margin-top: 10px;
+  height: 560px;
+}
+.tv-profile {
+  margin-top: 10px;
+  height: 560px;
+}
+.real-market-grid.wide-first {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+.tv-economic-map {
+  height: 560px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.tv-economic-map tv-economic-map {
+  display: block;
+  height: 100%;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 14px 0 32px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pager:empty {
+  display: none;
+}
+.pager span {
+  margin-right: auto;
+}
+@media (max-width: 850px) {
+  .real-market-grid.wide-first {
+    grid-template-columns: 1fr;
+  }
+}
+
+.screener .sector-tag {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -12,9 +12,38 @@
   // Where a click on a symbol inside a widget should land: our stock page (?tvwidgetsymbol=BSE:XYZ).
   const chartUrl = () => `${location.origin}${location.pathname.replace(/[^/]*$/, "")}stock.html`;
 
+  function track(entry) {
+    mounted.forEach((other) => other.host === entry.host && mounted.delete(other));
+    mounted.add(entry);
+    entry.render();
+    return entry;
+  }
+
+  // Newer widgets (e.g. the Economic Map) ship as web components: <tv-economic-map theme="dark">.
+  const loadedModules = new Set();
+  function embedComponent(host, tag, attrs) {
+    if (!host) return null;
+    const src = `https://widgets.tradingview-widget.com/w/en/${tag}.js`;
+    if (!loadedModules.has(src)) {
+      loadedModules.add(src);
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = src;
+      document.head.appendChild(script);
+    }
+    return track({
+      host,
+      render() {
+        const el = document.createElement(tag);
+        Object.entries(attrs(theme())).forEach(([k, v]) => v !== false && v != null && el.setAttribute(k, v === true ? "" : v));
+        host.replaceChildren(el);
+      },
+    });
+  }
+
   function embed(host, widget, config) {
     if (!host) return null;
-    const entry = {
+    return track({
       host,
       render() {
         host.innerHTML =
@@ -25,16 +54,12 @@
         script.textContent = JSON.stringify(config(theme()));
         host.firstElementChild.appendChild(script);
       },
-    };
-    mounted.forEach((other) => other.host === host && mounted.delete(other));
-    mounted.add(entry);
-    entry.render();
-    return entry;
+    });
   }
 
   window.addEventListener("mockfolio-theme-change", () =>
     mounted.forEach((entry) => (entry.host.isConnected ? entry.render() : mounted.delete(entry))),
   );
 
-  window.MockfolioTV = { embed, symbol, chartUrl };
+  window.MockfolioTV = { embed, embedComponent, symbol, chartUrl };
 })();

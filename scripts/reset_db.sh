@@ -31,7 +31,7 @@ run() { mysql --defaults-extra-file=<(printf '[client]\nuser=%s\npassword=%s\n' 
 echo "resetting database: $TARGET"
 run -e "DROP DATABASE IF EXISTS \`$TARGET\`; CREATE DATABASE \`$TARGET\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
-for f in schema triggers views procedures seed migrate_006_orders; do
+for f in schema triggers views procedures seed migrate_006_orders migrate_007_universe; do
   echo "  applying sql/$f.sql"
   run "$TARGET" < "sql/$f.sql" > /dev/null
 done

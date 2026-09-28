@@ -65,7 +65,7 @@ them **in this order**:
 ```bash
 H=<public host>; P=<public port>; U=root; PW=<password>; DB=railway
 
-for f in schema triggers views procedures seed migrate_006_orders; do
+for f in schema triggers views procedures seed migrate_006_orders migrate_007_universe; do
   echo "applying $f"
   mysql -h "$H" -P "$P" -u "$U" -p"$PW" "$DB" < "sql/$f.sql"
 done
@@ -90,6 +90,19 @@ Expect `10 / 10 / 30 / 9`, `triggers_present = 4`, `non_innodb = 0`.
 `mysql -h "$H" -P "$P" -u "$U" -p"$PW" "$DB" < sql/migrate_006_orders.sql`. It adds
 stop-loss / target columns to `orders` and the `crowd_noise_pct` setting, and is
 safe to re-run.
+
+**Upgrading to the NIFTY 500 universe (migration 007)**, from the project root:
+
+```bash
+mysql -h "$H" -P "$P" -u "$U" -p"$PW" "$DB" < sql/migrate_007_universe.sql
+DATABASE_URL="mysql+pymysql://$U:$PW@$H:$P/$DB" .venv/bin/python scripts/import_nifty500.py
+```
+
+The migration marks the existing 30 stocks as core (always live). The importer adds
+the rest of the NIFTY 500 with real Yahoo prices and NSE industry sectors; it is safe
+to re-run and never touches existing prices, trades or candles. Only core stocks and
+stocks someone holds, watches, has an order in, or opened in the last 15 minutes are
+ticked live; the rest refresh in the background about every 12 minutes.
 
 `accounts = 10` with no accounts in `seed.sql` is the point: the
 `trg_users_ai_account` trigger creates them. If accounts is 0, the trigger did

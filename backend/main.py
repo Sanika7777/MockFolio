@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from . import settings_store
 from .charts import INTERVALS, ist_day_start_utc, portfolio_history, resample
+from .market_data import fetch_quotes
 from .auth import create_access_token, get_user_id, hash_password, verify_password
 from . import database
 from .database import get_db
@@ -160,6 +161,7 @@ def instrument_json(i: Instrument, p: PriceState) -> dict:
         "deviation": p.adjusted_price - p.raw_price,
         "deviation_percentage": (p.adjusted_price - p.raw_price) / p.raw_price * 100 if p.raw_price else 0,
         "avg_daily_vol": i.avg_daily_vol,
+        "is_core": bool(i.is_core),
     }
 
 
@@ -223,17 +225,54 @@ def day_stats(db: Session) -> dict[int, dict]:
     return {r["instrument_id"]: dict(r) for r in rows}
 
 
-def with_day_stats(item: dict, stats: dict | None) -> dict:
+def with_day_stats(item: dict, stats: dict | None, p: PriceState) -> dict:
+    """Day change is measured like a real exchange: against the previous close when Yahoo gave us one,
+    otherwise against today's first MockFolio candle (simulated mode)."""
     price = item["adjusted_price"]
-    day_open = stats["day_open"] if stats else price
+    base = p.market_prev_close or (stats["day_open"] if stats else price)
+    highs = [x for x in (price, stats and stats["day_high"], p.market_day_high) if x]
+    lows = [x for x in (price, stats and stats["day_low"], p.market_day_low) if x]
+    paper = int(stats["day_volume"]) if stats else 0
     item.update(
-        day_open=day_open,
-        day_high=max(stats["day_high"], price) if stats else price,
-        day_low=min(stats["day_low"], price) if stats else price,
-        day_volume=stats["day_volume"] if stats else 0,
-        day_change_percentage=(price - day_open) / day_open * 100 if day_open else 0,
+        day_open=stats["day_open"] if stats else base,
+        prev_close=base,
+        day_high=max(highs),
+        day_low=min(lows),
+        day_volume=p.market_volume if p.market_volume is not None else paper,
+        paper_volume=paper,
+        day_change_percentage=(price - base) / base * 100 if base else 0,
     )
     return item
+
+
+def touch(db: Session, instrument_id: int) -> None:
+    """Mark a stock as in use so the tick worker keeps it live for the next 15 minutes."""
+    db.execute(text("UPDATE price_state SET touched_at = UTC_TIMESTAMP(3) WHERE instrument_id = :i"), {"i": instrument_id})
+    db.commit()
+
+
+def refresh_if_stale(db: Session, i: Instrument, p: PriceState) -> None:
+    """An idle stock may be minutes old: fetch its real price before anyone looks at it or trades it."""
+    if os.getenv("MARKET_DATA_SOURCE", "simulated").strip().lower() != "yahoo" or not i.yf_ticker:
+        return
+    if p.last_tick_at and (utcnow() - p.last_tick_at).total_seconds() < 60:
+        return
+    try:
+        q = fetch_quotes([i.yf_ticker]).get(i.yf_ticker)
+    except Exception as exc:
+        logger.warning("on-demand quote for %s failed: %s", i.symbol, exc)
+        return
+    if not q:
+        return
+    db.execute(
+        text(
+            "UPDATE price_state SET raw_price = :price, last_tick_at = UTC_TIMESTAMP(3), market_prev_close = :pc, "
+            "market_day_high = :hi, market_day_low = :lo, market_volume = :vol WHERE instrument_id = :i"
+        ),
+        {"price": q["price"], "pc": q["prev_close"], "hi": q["day_high"], "lo": q["day_low"], "vol": q["volume"], "i": i.instrument_id},
+    )
+    db.commit()
+    db.refresh(p)
 
 
 @app.get("/instruments")
@@ -245,7 +284,7 @@ def instruments(db: Session = Depends(get_db)):
         .order_by(Instrument.symbol)
     ).all()
     stats = day_stats(db)
-    return [with_day_stats(instrument_json(i, p), stats.get(i.instrument_id)) for i, p in rows]
+    return [with_day_stats(instrument_json(i, p), stats.get(i.instrument_id), p) for i, p in rows]
 
 
 @app.get("/instruments/{instrument_id}")
@@ -258,7 +297,9 @@ def instrument_detail(instrument_id: int, db: Session = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail="Instrument not found")
     i, p = row
-    return with_day_stats(dict(instrument_json(i, p), daily_sigma=i.daily_sigma), day_stats(db).get(i.instrument_id))
+    touch(db, i.instrument_id)
+    refresh_if_stale(db, i, p)
+    return with_day_stats(dict(instrument_json(i, p), daily_sigma=i.daily_sigma), day_stats(db).get(i.instrument_id), p)
 
 
 @app.get("/instruments/{instrument_id}/candles")
@@ -271,6 +312,7 @@ def candles(
 ):
     if interval not in INTERVALS:
         raise HTTPException(status_code=422, detail=f"interval must be one of {INTERVALS}")
+    touch(db, instrument_id)
     rows = db.scalars(
         select(Candle)
         .where(Candle.instrument_id == instrument_id, Candle.is_adjusted == is_adjusted)

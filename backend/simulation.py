@@ -22,20 +22,32 @@ _worker_started = threading.Lock()
 _stop = threading.Event()
 
 
+ACTIVE_WINDOW_MIN = 15
+SWEEP_EVERY_S = 30  # one Yahoo batch of idle stocks per 30 s -> all ~470 idle stocks about every 12 minutes
+
+# A stock is "active" (ticked every few seconds, with candles) when it's a core stock or someone is using it.
+ACTIVE_SQL = f"""
+    i.is_active = 1 AND (
+        i.is_core = 1
+        OR COALESCE(p.touched_at, '1970-01-01') > UTC_TIMESTAMP() - INTERVAL {ACTIVE_WINDOW_MIN} MINUTE
+        OR EXISTS (SELECT 1 FROM holdings h WHERE h.instrument_id = i.instrument_id AND h.quantity > 0)
+        OR EXISTS (SELECT 1 FROM watchlist w WHERE w.instrument_id = i.instrument_id)
+        OR EXISTS (SELECT 1 FROM orders o WHERE o.instrument_id = i.instrument_id AND o.status = 'PENDING')
+    )"""
+
+_sweep_cursor = 0
+_last_sweep = float("-inf")
+
+
 def _snapshot() -> list[dict]:
     db = database.SessionLocal()
     try:
         rows = db.execute(
-            select(
-                Instrument.instrument_id,
-                Instrument.angel_token,
-                Instrument.yf_ticker,
-                Instrument.daily_sigma,
-                PriceState.raw_price,
+            text(
+                "SELECT i.instrument_id, i.angel_token, i.yf_ticker, i.daily_sigma, p.raw_price "
+                "FROM instruments i JOIN price_state p ON p.instrument_id = i.instrument_id "
+                f"WHERE {ACTIVE_SQL} ORDER BY i.instrument_id"
             )
-            .join(PriceState, PriceState.instrument_id == Instrument.instrument_id)
-            .where(Instrument.is_active == 1)
-            .order_by(Instrument.instrument_id)
         ).all()
         return [
             {
@@ -127,6 +139,8 @@ def run_tick_once(source) -> int:
         for row in instruments
     }
     updated = _apply(quotes, [row["instrument_id"] for row in instruments], tau, crowd)
+    _store_market_stats(getattr(source, "last_meta", {}))
+    _sweep_idle(source)
     try:
         filled = process_pending_orders()
         if filled:
@@ -134,6 +148,56 @@ def run_tick_once(source) -> int:
     except Exception as exc:
         logger.warning("pending order sweep failed: %s", exc)
     return updated
+
+
+def _store_market_stats(meta: dict[int, dict], with_price: bool = False) -> None:
+    """Save real-market day stats (previous close, day range, volume); idle stocks also get their price."""
+    if not meta:
+        return
+    db = database.SessionLocal()
+    try:
+        for instrument_id, q in meta.items():
+            db.execute(
+                text(
+                    "UPDATE price_state SET market_prev_close = :pc, market_day_high = :hi, market_day_low = :lo, "
+                    "market_volume = :vol" + (", raw_price = :price, last_tick_at = UTC_TIMESTAMP(3)" if with_price else "")
+                    + " WHERE instrument_id = :i"
+                ),
+                {"pc": q["prev_close"], "hi": q["day_high"], "lo": q["day_low"], "vol": q["volume"], "price": q["price"], "i": instrument_id},
+            )
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("storing market stats failed: %s", exc)
+    finally:
+        db.close()
+
+
+def _sweep_idle(source) -> None:
+    """Refresh one batch of idle stocks' real prices, round-robin, without candles or crowd noise."""
+    global _sweep_cursor, _last_sweep
+    if not hasattr(source, "fetch") or time.monotonic() - _last_sweep < SWEEP_EVERY_S:
+        return
+    _last_sweep = time.monotonic()
+    db = database.SessionLocal()
+    try:
+        idle = f"i.yf_ticker IS NOT NULL AND i.is_active = 1 AND NOT ({ACTIVE_SQL})"
+        query = (
+            "SELECT i.instrument_id, i.yf_ticker FROM instruments i JOIN price_state p ON p.instrument_id = i.instrument_id "
+            f"WHERE {idle} AND i.instrument_id > :c ORDER BY i.instrument_id LIMIT 20"
+        )
+        rows = db.execute(text(query), {"c": _sweep_cursor}).mappings().all()
+        if not rows:  # wrapped around
+            rows = db.execute(text(query), {"c": 0}).mappings().all()
+    finally:
+        db.close()
+    if not rows:
+        return
+    _sweep_cursor = rows[-1]["instrument_id"]
+    try:
+        _store_market_stats(source.fetch([dict(r) for r in rows]), with_price=True)
+    except Exception as exc:
+        logger.warning("idle sweep failed: %s", exc)
 
 
 def _loop():

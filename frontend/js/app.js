@@ -358,7 +358,7 @@
     TV.embed(host.querySelector(".ticker-tape-widget"), "ticker-tape", (colorTheme) => ({
       symbols: [
         { proName: "BSE:SENSEX", title: "SENSEX" },
-        ...stocks.map((s) => ({ proName: tvSymbol(s), title: s.symbol })),
+        ...stocks.filter((s) => s.is_core).map((s) => ({ proName: tvSymbol(s), title: s.symbol })),
       ],
       showSymbolLogo: true,
       isTransparent: true,
@@ -418,6 +418,8 @@
       let sortKey = "symbol";
       let sortDir = 1;
       let sector = "All";
+      let pageIndex = 0;
+      const PAGE_SIZE = 50;
       const sectors = ["All", ...new Set(stocks.map((s) => s.sector).filter(Boolean))].sort((a, b) =>
         a === "All" ? -1 : b === "All" ? 1 : a.localeCompare(b),
       );
@@ -442,8 +444,23 @@
             const y = key(b);
             return sortDir * (typeof x === "string" ? x.localeCompare(y) : x - y);
           });
-        $("#market-table").innerHTML = filtered.length
-          ? filtered.map((stock) => screenerRow(stock, watchIds.has(stock.instrument_id))).join("")
+        const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        pageIndex = Math.min(pageIndex, pages - 1);
+        const first = pageIndex * PAGE_SIZE;
+        const shown = filtered.slice(first, first + PAGE_SIZE);
+        $("#screener-pager").innerHTML = filtered.length > PAGE_SIZE
+          ? `<span>${first + 1}–${first + shown.length} of ${filtered.length}</span><button type="button" class="ghost-button" data-page="-1" ${pageIndex === 0 ? "disabled" : ""}>← Previous</button><button type="button" class="ghost-button" data-page="1" ${pageIndex >= pages - 1 ? "disabled" : ""}>Next →</button>`
+          : "";
+        $$("[data-page]").forEach(
+          (button) =>
+            (button.onclick = () => {
+              pageIndex += Number(button.dataset.page);
+              render(false);
+              $("#mockfolio-screener").scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth" });
+            }),
+        );
+        $("#market-table").innerHTML = shown.length
+          ? shown.map((stock) => screenerRow(stock, watchIds.has(stock.instrument_id))).join("")
           : `<tr><td colspan="8"><div class="empty-state compact"><strong>${query ? "No stocks match your search." : mode === "watchlist" ? "No stocks in your watchlist." : "No stocks available."}</strong><span>${query ? "Try a different symbol or company name." : "Try another sector or filter."}</span></div></td></tr>`;
         $$("[data-sort]").forEach((th) =>
           th.setAttribute("aria-sort", th.dataset.sort === sortKey ? (sortDir > 0 ? "ascending" : "descending") : "none"),
@@ -454,13 +471,18 @@
         if (animate) staggerRows("#market-table");
       };
       render(true);
-      $("#market-status-detail").textContent = `${stocks.length} active stocks · updates every 10s`;
-      $("#stock-search").oninput = () => render(false);
-      $("#market-filter").onchange = () => render(false);
+      $("#market-status-detail").textContent = `NIFTY 500 · ${stocks.length} stocks · updates every 10s`;
+      const refilter = () => {
+        pageIndex = 0;
+        render(false);
+      };
+      $("#stock-search").oninput = refilter;
+      $("#market-filter").onchange = refilter;
       $$("[data-sector]").forEach(
         (chip) =>
           (chip.onclick = () => {
             sector = chip.dataset.sector;
+            pageIndex = 0;
             $$("[data-sector]").forEach((c) => {
               c.classList.toggle("active", c === chip);
               c.setAttribute("aria-pressed", String(c === chip));
@@ -475,6 +497,7 @@
             // Numbers start high-to-low, names A-Z; a second click flips it.
             sortDir = next === sortKey ? -sortDir : next === "symbol" ? 1 : -1;
             sortKey = next;
+            pageIndex = 0;
             render(false);
           }),
       );
@@ -772,7 +795,7 @@
   }
 
   function realMarketSections(title) {
-    return `<section class="real-market-grid"><div class="panel tv-widget-panel"><span class="eyebrow">REAL MARKET SNAPSHOT</span><div class="tv-symbol-info" id="tv-symbol-info"></div></div><div class="panel tv-widget-panel"><span class="eyebrow">TECHNICAL RATING · ${escapeHTML(title)}</span><div class="tv-stock-news" id="tv-technicals"></div></div></section>`;
+    return `<section class="real-market-grid wide-first"><div class="panel tv-widget-panel"><span class="eyebrow">FUNDAMENTALS · ${escapeHTML(title)}</span><div class="tv-financials" id="tv-financials"></div></div><div class="panel tv-widget-panel"><span class="eyebrow">COMPANY PROFILE</span><div class="tv-profile" id="tv-profile"></div></div></section><section class="real-market-grid"><div class="panel tv-widget-panel"><span class="eyebrow">REAL MARKET SNAPSHOT</span><div class="tv-symbol-info" id="tv-symbol-info"></div></div><div class="panel tv-widget-panel"><span class="eyebrow">TECHNICAL RATING · ${escapeHTML(title)}</span><div class="tv-stock-news" id="tv-technicals"></div></div></section>`;
   }
 
   // Advanced Real-Time Chart, symbol snapshot and news for one TradingView symbol.
@@ -830,6 +853,24 @@
       locale: "en",
       colorTheme,
       isTransparent: true,
+    }));
+    TV.embed($("#tv-financials"), "financials", (colorTheme) => ({
+      isTransparent: true,
+      largeChartUrl: "",
+      displayMode: "regular",
+      width: "100%",
+      height: "100%",
+      colorTheme,
+      symbol,
+      locale: "en",
+    }));
+    TV.embed($("#tv-profile"), "symbol-profile", (colorTheme) => ({
+      width: "100%",
+      height: "100%",
+      isTransparent: true,
+      colorTheme,
+      symbol,
+      locale: "en",
     }));
     // TradingView's news widget has no stories for Indian stocks, so the per-stock panel is its technical rating.
     TV.embed($("#tv-technicals"), "technical-analysis", (colorTheme) => ({
@@ -1422,7 +1463,34 @@
     ["cn", "China"],
     ["jp", "Japan"],
   ];
+  const MAP_REGIONS = [
+    ["", "World"],
+    ["asia", "Asia"],
+    ["europe", "Europe"],
+    ["north-america", "North America"],
+    ["africa", "Africa"],
+    ["oceania", "Oceania"],
+  ];
+  function loadEconomyMap() {
+    let region = "asia";
+    $("#map-controls").innerHTML = `<div><span class="eyebrow">WORLD ECONOMICS</span><h2>Economic map</h2></div><div class="chip-group" role="group" aria-label="Region">${MAP_REGIONS.map(([code, name]) => `<button type="button" class="chip${code === region ? " active" : ""}" aria-pressed="${code === region}" data-region="${code}">${name}</button>`).join("")}</div>`;
+    const draw = () => TV?.embedComponent($("#tv-economic-map"), "tv-economic-map", (theme) => ({ theme, region: region || null, transparent: true }));
+    $$("[data-region]").forEach(
+      (chip) =>
+        (chip.onclick = () => {
+          region = chip.dataset.region;
+          $$("[data-region]").forEach((c) => {
+            c.classList.toggle("active", c === chip);
+            c.setAttribute("aria-pressed", String(c === chip));
+          });
+          draw();
+        }),
+    );
+    draw();
+  }
+
   function loadEconomy() {
+    loadEconomyMap();
     const picked = new Set(["in", "us"]);
     $("#economy-controls").innerHTML = `<div class="chip-group" role="group" aria-label="Countries">${COUNTRIES.map(([code, name]) => `<button type="button" class="chip${picked.has(code) ? " active" : ""}" aria-pressed="${picked.has(code)}" data-country="${code}">${name}</button>`).join("")}</div><div class="toolbar-actions"><label class="sr-only" for="economy-importance">Importance</label><select id="economy-importance"><option value="-1,0,1">All events</option><option value="0,1" selected>Medium & high impact</option><option value="1">High impact only</option></select></div>`;
     const draw = () =>

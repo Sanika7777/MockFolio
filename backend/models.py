@@ -63,6 +63,7 @@ class Instrument(Base):
     tick_size: Mapped[Decimal] = mapped_column(Numeric(10, 4))
     lot_size: Mapped[int] = mapped_column(Integer)
     is_active: Mapped[int] = mapped_column(SmallInteger)
+    is_core: Mapped[int] = mapped_column(SmallInteger, default=0)
     kappa_override: Mapped[Decimal | None] = mapped_column(Numeric(12, 4))
     price = relationship("PriceState", back_populates="instrument", uselist=False)
 
@@ -81,6 +82,11 @@ class PriceState(Base):
     last_tick_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     last_decay_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    touched_at: Mapped[datetime | None] = mapped_column(DateTime)
+    market_prev_close: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    market_day_high: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    market_day_low: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    market_volume: Mapped[int | None] = mapped_column(BigInteger)
     instrument = relationship("Instrument", back_populates="price")
 
 
