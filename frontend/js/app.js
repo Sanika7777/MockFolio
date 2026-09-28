@@ -140,7 +140,7 @@
     const developerLink = user.is_admin
       ? `<a class="${active("developer")}" href="developer.html">Developer</a>`
       : "";
-    const header = `<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>mockfolio</span></a><nav class="desktop-nav"><a class="${active("market")}" href="index.html">Market</a><a class="${active("watchlist")}" href="watchlist.html">Watchlist</a><a class="${active("portfolio")}" href="portfolio.html">Portfolio</a><a class="${active("orders")}" href="orders.html">Orders</a>${developerLink}</nav><div class="top-actions"><div class="account-menu"><button class="nav-avatar" id="account-button" aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown" title="Account menu">${avatarInitial}</button><div class="account-dropdown" id="account-dropdown" role="menu" hidden><div class="account-dropdown-head"><span class="nav-avatar static" aria-hidden="true">${avatarInitial}</span><div><strong>${escapeHTML(user.username)}</strong><small>${escapeHTML(user.email || "")}</small></div></div><a role="menuitem" href="portfolio.html">${svgIcon(ICONS.portfolio)}Portfolio</a><a role="menuitem" href="profile.html">${svgIcon(ICONS.user)}Account info</a><a role="menuitem" href="settings.html">${svgIcon(ICONS.settings)}Settings</a><button role="menuitemcheckbox" class="theme-toggle" id="theme-toggle" aria-checked="false">${svgIcon(ICONS.moon, "icon-moon")}${svgIcon(ICONS.sun, "icon-sun")}<span id="theme-toggle-label">Dark mode</span><i class="switch" aria-hidden="true"></i></button><button role="menuitem" class="danger-item" id="logout">${svgIcon(ICONS.logout)}Log out</button></div></div></div></header>`;
+    const header = `<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>mockfolio</span></a><nav class="desktop-nav"><a class="${active("market")}" href="index.html">Market</a><a class="${active("watchlist")}" href="watchlist.html">Watchlist</a><a class="${active("portfolio")}" href="portfolio.html">Portfolio</a><a class="${active("orders")}" href="orders.html">Orders</a><a class="${active("news")}" href="news.html">News</a><a class="${active("economy")}" href="economy.html">Economy</a>${developerLink}</nav><div class="top-actions"><div class="account-menu"><button class="nav-avatar" id="account-button" aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown" title="Account menu">${avatarInitial}</button><div class="account-dropdown" id="account-dropdown" role="menu" hidden><div class="account-dropdown-head"><span class="nav-avatar static" aria-hidden="true">${avatarInitial}</span><div><strong>${escapeHTML(user.username)}</strong><small>${escapeHTML(user.email || "")}</small></div></div><a role="menuitem" href="portfolio.html">${svgIcon(ICONS.portfolio)}Portfolio</a><a role="menuitem" href="profile.html">${svgIcon(ICONS.user)}Account info</a><a role="menuitem" href="settings.html">${svgIcon(ICONS.settings)}Settings</a><a role="menuitem" class="menu-mobile-only" href="news.html">${svgIcon(ICONS.orders)}News</a><a role="menuitem" class="menu-mobile-only" href="economy.html">${svgIcon(ICONS.market)}Economic calendar</a><button role="menuitemcheckbox" class="theme-toggle" id="theme-toggle" aria-checked="false">${svgIcon(ICONS.moon, "icon-moon")}${svgIcon(ICONS.sun, "icon-sun")}<span id="theme-toggle-label">Dark mode</span><i class="switch" aria-hidden="true"></i></button><button role="menuitem" class="danger-item" id="logout">${svgIcon(ICONS.logout)}Log out</button></div></div></div></header>`;
     const showNotice = user.is_admin && page !== "profile";
     const onDeveloperPage = page === "developer" || page === "developer-user";
     const noticeTag = showNotice && !onDeveloperPage ? "a" : "div";
@@ -278,20 +278,20 @@
         (button.onclick = async () => {
           const id = Number(button.dataset.watch);
           try {
-            if (watchlist.some((item) => item.id === id)) {
+            if (watchlist.some((item) => item.instrument_id === id)) {
               await api.removeWatchlist(id);
-              watchlist = watchlist.filter((item) => item.id !== id);
+              watchlist = watchlist.filter((item) => item.instrument_id !== id);
               toast("Removed from watchlist");
             } else {
               await api.addWatchlist(id);
-              watchlist.push(stocks.find((item) => item.id === id) || { id });
+              watchlist.push(stocks.find((item) => item.instrument_id === id) || { instrument_id: id });
               toast("Added to watchlist", "success");
             }
             if (page === "watchlist") await loadWatchlist();
             else {
               // Any other page with a star button (e.g. the stock detail
               // page): just update this button, no list to re-render.
-              const nowStarred = watchlist.some((item) => item.id === id);
+              const nowStarred = watchlist.some((item) => item.instrument_id === id);
               button.classList.toggle("is-watched", nowStarred);
               button.setAttribute("aria-pressed", String(nowStarred));
               button.title = nowStarred
@@ -348,15 +348,14 @@
       moversCard("FURTHEST FROM REAL PRICE", by((s) => Math.abs(gap(s)), -1), gap);
   }
 
-  // TradingView symbol for a stock. Free TradingView widgets aren't licensed for NSE data, so they use
-  // the same company's BSE listing; the base comes from the Yahoo ticker (TATAMOTORS now trades as TMPV).
-  const tvSymbol = (stock) => `BSE:${(stock.yf_ticker || stock.symbol).split(".")[0]}`;
+  const TV = window.MockfolioTV;
+  const tvSymbol = (stock) => TV?.symbol(stock) || `BSE:${stock.symbol}`;
 
-  // Real NSE prices straight from TradingView. Clicking a symbol opens its MockFolio page (largeChartUrl).
+  // Real prices straight from TradingView. Clicking a symbol opens its MockFolio page (largeChartUrl).
   function renderTickerTape() {
     const host = $("#ticker-tape");
-    if (!host || !stocks.length) return;
-    const config = {
+    if (!host || !stocks.length || !TV) return;
+    TV.embed(host.querySelector(".ticker-tape-widget"), "ticker-tape", (colorTheme) => ({
       symbols: [
         { proName: "BSE:SENSEX", title: "SENSEX" },
         ...stocks.map((s) => ({ proName: tvSymbol(s), title: s.symbol })),
@@ -364,18 +363,43 @@
       showSymbolLogo: true,
       isTransparent: true,
       displayMode: "adaptive",
-      colorTheme: window.MockfolioTheme.current() === "dark" ? "dark" : "light",
+      colorTheme,
       locale: "en",
-      largeChartUrl: `${location.origin}${location.pathname.replace(/[^/]*$/, "")}stock.html`,
-    };
-    host.innerHTML = `<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div><span class="ticker-tape-label">Real prices · TradingView</span>`;
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.async = true;
-    script.textContent = JSON.stringify(config);
-    host.firstElementChild.appendChild(script);
+      largeChartUrl: TV.chartUrl(),
+    }));
   }
-  window.addEventListener("mockfolio-theme-change", () => page === "market" && renderTickerTape());
+
+  // The whole Indian market from TradingView, as a second tab next to MockFolio's own screener.
+  function initScreenerTabs() {
+    let mounted = false;
+    $$("[data-screener-tab]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          const real = button.dataset.screenerTab === "real";
+          $$("[data-screener-tab]").forEach((b) => {
+            b.classList.toggle("active", b === button);
+            b.setAttribute("aria-selected", String(b === button));
+          });
+          $("#mockfolio-screener").hidden = real;
+          $("#tv-screener").hidden = !real;
+          if (real && !mounted && TV) {
+            mounted = true;
+            TV.embed($("#tv-screener"), "screener", (colorTheme) => ({
+              width: "100%",
+              height: "100%",
+              defaultColumn: "overview",
+              defaultScreen: "most_capitalized",
+              market: "india",
+              showToolbar: true,
+              colorTheme,
+              isTransparent: true,
+              locale: "en",
+              largeChartUrl: TV.chartUrl(),
+            }));
+          }
+        }),
+    );
+  }
 
   let marketPoll;
   async function loadMarket() {
@@ -390,6 +414,7 @@
       stocks = stocksData;
       watchlist = watchlistData;
       renderTickerTape();
+      initScreenerTabs();
       let sortKey = "symbol";
       let sortDir = 1;
       let sector = "All";
@@ -402,7 +427,7 @@
 
       const render = (animate) => {
         const query = $("#stock-search").value.trim().toLowerCase();
-        const watchIds = new Set(watchlist.map((item) => item.id));
+        const watchIds = new Set(watchlist.map((item) => item.instrument_id));
         const mode = $("#market-filter").value;
         const key = SCREENER_SORTS[sortKey];
         const filtered = stocks
@@ -643,6 +668,22 @@
             render(false);
           }),
       );
+      TV?.embed($("#tv-watchlist"), "market-quotes", (colorTheme) => ({
+        width: "100%",
+        height: "100%",
+        symbolsGroups: [
+          {
+            name: "Your watchlist",
+            symbols: watchlist.map((stock) => ({ name: tvSymbol(stock), displayName: stock.symbol })),
+          },
+        ],
+        showSymbolLogo: true,
+        isTransparent: true,
+        colorTheme,
+        locale: "en",
+        largeChartUrl: TV.chartUrl(),
+      }));
+      $("#tv-watchlist-section")?.removeAttribute("hidden");
       if (statusDetail) {
         const avgDrift =
           watchlist.reduce(
@@ -709,6 +750,108 @@
     if ($("#tv-stats")) $("#tv-stats").innerHTML = quoteStats(stock);
   }
 
+  // Real-market chart ranges. TradingView widgets take a range plus a bar interval.
+  const RANGES = [
+    { label: "1D", range: "1D", interval: "1" },
+    { label: "1W", range: "5D", interval: "5" },
+    { label: "1M", range: "1M", interval: "30" },
+    { label: "6M", range: "6M", interval: "D" },
+    { label: "1Y", range: "12M", interval: "D" },
+    { label: "5Y", range: "60M", interval: "W" },
+  ];
+  const MORE_RANGES = [
+    { label: "3M", range: "3M", interval: "60" },
+    { label: "YTD", range: "YTD", interval: "D" },
+    { label: "All", range: "ALL", interval: "M" },
+  ];
+
+  function rangeToolbar() {
+    const button = (r, i) =>
+      `<button type="button" data-range="${r.label}" class="${r.label === "1Y" ? "active" : ""}" aria-pressed="${r.label === "1Y"}">${r.label}</button>`;
+    return `<div class="tv-toolbar"><div class="tv-group" role="group" aria-label="Date range">${RANGES.map(button).join("")}</div><div class="range-more"><button type="button" class="range-more-toggle" id="range-more-toggle" aria-haspopup="true" aria-expanded="false">More ▾</button><div class="range-more-menu" id="range-more-menu" hidden>${MORE_RANGES.map(button).join("")}</div></div><span class="tv-toolbar-note">Real BSE prices · drawing tools and indicators on the left</span></div>`;
+  }
+
+  function realMarketSections(title) {
+    return `<section class="real-market-grid"><div class="panel tv-widget-panel"><span class="eyebrow">REAL MARKET SNAPSHOT</span><div class="tv-symbol-info" id="tv-symbol-info"></div></div><div class="panel tv-widget-panel"><span class="eyebrow">TECHNICAL RATING · ${escapeHTML(title)}</span><div class="tv-stock-news" id="tv-technicals"></div></div></section>`;
+  }
+
+  // Advanced Real-Time Chart, symbol snapshot and news for one TradingView symbol.
+  function mountRealMarket(symbol) {
+    if (!TV) return;
+    let current = RANGES.find((r) => r.label === "1Y");
+    const drawChart = () =>
+      TV.embed($("#tv-advanced"), "advanced-chart", (theme) => ({
+        autosize: true,
+        symbol,
+        interval: current.interval,
+        range: current.range,
+        timezone: "Asia/Kolkata",
+        theme,
+        style: "1",
+        locale: "en",
+        allow_symbol_change: false,
+        hide_side_toolbar: false,
+        withdateranges: false,
+        save_image: true,
+        calendar: false,
+        details: false,
+        support_host: "https://www.tradingview.com",
+      }));
+    drawChart();
+    $$("[data-range]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          current = [...RANGES, ...MORE_RANGES].find((r) => r.label === button.dataset.range);
+          $$("[data-range]").forEach((b) => {
+            b.classList.toggle("active", b === button);
+            b.setAttribute("aria-pressed", String(b === button));
+          });
+          const inMore = MORE_RANGES.includes(current);
+          $("#range-more-toggle").classList.toggle("active", inMore);
+          $("#range-more-toggle").textContent = `${inMore ? current.label : "More"} ▾`;
+          $("#range-more-menu").hidden = true;
+          drawChart();
+        }),
+    );
+    const toggle = $("#range-more-toggle");
+    toggle.onclick = (event) => {
+      event.stopPropagation();
+      const open = $("#range-more-menu").hidden;
+      $("#range-more-menu").hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+    };
+    document.addEventListener("click", () => {
+      $("#range-more-menu") && ($("#range-more-menu").hidden = true);
+      toggle.setAttribute("aria-expanded", "false");
+    });
+    TV.embed($("#tv-symbol-info"), "symbol-info", (colorTheme) => ({
+      symbol,
+      width: "100%",
+      locale: "en",
+      colorTheme,
+      isTransparent: true,
+    }));
+    // TradingView's news widget has no stories for Indian stocks, so the per-stock panel is its technical rating.
+    TV.embed($("#tv-technicals"), "technical-analysis", (colorTheme) => ({
+      interval: "1D",
+      width: "100%",
+      height: "100%",
+      isTransparent: true,
+      symbol,
+      showIntervalTabs: true,
+      displayMode: "single",
+      locale: "en",
+      colorTheme,
+    }));
+  }
+
+  // A symbol clicked in a TradingView widget that MockFolio doesn't list: show it, but it can't be traded here.
+  function renderRealOnly(symbol) {
+    const name = symbol.split(":").pop();
+    $("#stock-content").innerHTML = `<header class="tv-header"><div class="tv-symbol"><span class="tv-avatar" aria-hidden="true">${escapeHTML(name[0] || "?")}</span><div><h1>${escapeHTML(name)} <span class="tv-exchange">${escapeHTML(symbol.split(":")[0])}</span></h1><p>Real market view · not tradable on MockFolio</p></div></div></header><div class="settings-note">${svgIcon(ICONS.lock)}<span>MockFolio simulates 30 NIFTY stocks. ${escapeHTML(name)} isn't one of them, so you can research it here but not trade it. <a href="index.html">Browse tradable stocks</a></span></div><section class="panel tv-chart-panel"><div id="real-pane">${rangeToolbar()}<div class="tv-advanced" id="tv-advanced"></div></div></section>${realMarketSections(name)}`;
+    mountRealMarket(symbol);
+  }
+
   async function loadStock() {
     const params = new URLSearchParams(location.search);
     let id = params.get("id");
@@ -717,7 +860,7 @@
       const wanted = params.get("tvwidgetsymbol").toUpperCase();
       const match = (await api.stocks()).find((s) => tvSymbol(s) === wanted || s.symbol === wanted.split(":").pop());
       if (!match) {
-        $("#stock-content").innerHTML = `<div class="error-state">${escapeHTML(wanted)} isn't traded on MockFolio. <a href="index.html">Back to market</a></div>`;
+        renderRealOnly(wanted);
         return;
       }
       id = String(match.instrument_id);
@@ -727,7 +870,7 @@
       const [stockData, watchlistData] = await Promise.all([api.stock(id), api.watchlist()]);
       let stock = stockData;
       watchlist = watchlistData;
-      const starred = watchlist.some((item) => item.id === stock.instrument_id);
+      const starred = watchlist.some((item) => item.instrument_id === stock.instrument_id);
       const isAdmin = Boolean(currentUser?.is_admin);
       const tradePanel = isAdmin
         ? `<aside class="panel trade-panel read-only-panel"><span class="eyebrow">DEVELOPER ACCOUNT</span><h2>Trading disabled</h2><p class="helper">Developer accounts can inspect the simulated market but cannot place BUY or SELL orders.</p></aside>`
@@ -737,8 +880,21 @@
       ).join("");
       $("#stock-content").innerHTML =
         `<header class="tv-header"><div class="tv-symbol"><span class="tv-avatar" aria-hidden="true">${escapeHTML(stock.symbol[0])}</span><div><h1>${escapeHTML(stock.symbol)} <span class="tv-exchange">${escapeHTML(stock.exchange || "NSE")}</span></h1><p>${escapeHTML(stock.company_name)} · ${escapeHTML(stock.sector || "")}</p></div><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><div class="tv-quote"><strong id="stock-price">${money(stock.adjusted_price)}</strong><em id="stock-change"></em><span class="tv-quote-label">MockFolio price · <span class="tv-live-dot"></span> live</span></div><div class="tv-stats" id="tv-stats"></div></header>` +
-        `<div class="stock-grid"><section class="panel tv-chart-panel"><div class="tv-toolbar"><div class="tv-group" role="group" aria-label="Interval">${intervalButtons}</div><span class="tv-divider"></span><div class="tv-group" role="group" aria-label="Chart type"><button type="button" data-chart-view="candles" class="active" aria-pressed="true">${svgIcon(ICONS.candles)}Candles</button><button type="button" data-chart-view="line" aria-pressed="false">${svgIcon(ICONS.lines)}MockFolio vs Real</button></div></div><div class="tv-chart-wrap"><div id="tv-chart" role="img" aria-label="Price chart for ${escapeHTML(stock.symbol)}"></div><div class="tv-legend" id="tv-legend"></div><div id="chart-empty" class="tv-empty hidden">No price history yet. Candles appear as the market ticks.</div></div><p class="chart-caption" id="chart-caption">${CHART_CAPTIONS.candles}</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
+        `<div class="stock-grid"><section class="panel tv-chart-panel"><div class="chart-tabs" role="tablist" aria-label="Chart"><button type="button" role="tab" class="active" aria-selected="true" data-chart-tab="real">Real market · TradingView</button><button type="button" role="tab" aria-selected="false" data-chart-tab="mockfolio">MockFolio price</button></div><div id="real-pane">${rangeToolbar()}<div class="tv-advanced" id="tv-advanced"></div></div><div id="mockfolio-pane" hidden><div class="tv-toolbar"><div class="tv-group" role="group" aria-label="Interval">${intervalButtons}</div><span class="tv-divider"></span><div class="tv-group" role="group" aria-label="Chart type"><button type="button" data-chart-view="candles" class="active" aria-pressed="true">${svgIcon(ICONS.candles)}Candles</button><button type="button" data-chart-view="line" aria-pressed="false">${svgIcon(ICONS.lines)}MockFolio vs Real</button></div></div><div class="tv-chart-wrap"><div id="tv-chart" role="img" aria-label="Price chart for ${escapeHTML(stock.symbol)}"></div><div class="tv-legend" id="tv-legend"></div><div id="chart-empty" class="tv-empty hidden">No price history yet. Candles appear as the market ticks.</div></div><p class="chart-caption" id="chart-caption">${CHART_CAPTIONS.candles}</p></div></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>${realMarketSections(stock.symbol)}`;
       renderQuote(stock);
+      mountRealMarket(tvSymbol(stock));
+      $$("[data-chart-tab]").forEach(
+        (button) =>
+          (button.onclick = () => {
+            const real = button.dataset.chartTab === "real";
+            $$("[data-chart-tab]").forEach((b) => {
+              b.classList.toggle("active", b === button);
+              b.setAttribute("aria-selected", String(b === button));
+            });
+            $("#real-pane").hidden = !real;
+            $("#mockfolio-pane").hidden = real;
+          }),
+      );
 
       let interval = INTERVALS[0];
       stockChart = window.MockfolioCharts?.createStockChart($("#tv-chart"), {
@@ -1235,6 +1391,65 @@
     }
   }
 
+  // TradingView's Top Stories feed is curated per market; it carries no stories for individual Indian stocks.
+  function loadNews() {
+    const controls = $("#news-controls");
+    controls.innerHTML = `<div><span class="eyebrow">FEED</span><h2>Top stories</h2></div><div class="toolbar-actions"><label class="sr-only" for="news-feed">News feed</label><select id="news-feed"><option value="all">All markets</option><option value="market:stock">Stocks</option><option value="market:index">Indices</option><option value="market:economic">Economy</option><option value="market:forex">Currencies</option><option value="market:futures">Commodities & futures</option></select></div>`;
+    const draw = () => {
+      const [mode, value] = $("#news-feed").value.split(/:(.*)/);
+      $("#news-controls h2").textContent = $("#news-feed").selectedOptions[0].textContent;
+      TV?.embed($("#tv-news"), "timeline", (colorTheme) => ({
+        feedMode: mode === "all" ? "all_symbols" : mode,
+        ...(mode === "market" ? { market: value } : {}),
+        ...(mode === "symbol" ? { symbol: value } : {}),
+        isTransparent: true,
+        displayMode: "regular",
+        width: "100%",
+        height: "100%",
+        colorTheme,
+        locale: "en",
+      }));
+    };
+    $("#news-feed").onchange = draw;
+    draw();
+  }
+
+  const COUNTRIES = [
+    ["in", "India"],
+    ["us", "United States"],
+    ["eu", "Euro area"],
+    ["gb", "United Kingdom"],
+    ["cn", "China"],
+    ["jp", "Japan"],
+  ];
+  function loadEconomy() {
+    const picked = new Set(["in", "us"]);
+    $("#economy-controls").innerHTML = `<div class="chip-group" role="group" aria-label="Countries">${COUNTRIES.map(([code, name]) => `<button type="button" class="chip${picked.has(code) ? " active" : ""}" aria-pressed="${picked.has(code)}" data-country="${code}">${name}</button>`).join("")}</div><div class="toolbar-actions"><label class="sr-only" for="economy-importance">Importance</label><select id="economy-importance"><option value="-1,0,1">All events</option><option value="0,1" selected>Medium & high impact</option><option value="1">High impact only</option></select></div>`;
+    const draw = () =>
+      TV?.embed($("#tv-economy"), "events", (colorTheme) => ({
+        colorTheme,
+        isTransparent: true,
+        width: "100%",
+        height: "100%",
+        locale: "en",
+        importanceFilter: $("#economy-importance").value,
+        countryFilter: [...picked].join(","),
+      }));
+    $$("[data-country]").forEach(
+      (chip) =>
+        (chip.onclick = () => {
+          const code = chip.dataset.country;
+          if (picked.has(code) && picked.size === 1) return; // keep at least one country
+          picked.has(code) ? picked.delete(code) : picked.add(code);
+          chip.classList.toggle("active", picked.has(code));
+          chip.setAttribute("aria-pressed", String(picked.has(code)));
+          draw();
+        }),
+    );
+    $("#economy-importance").onchange = draw;
+    draw();
+  }
+
   async function start() {
     try {
       const user = await api.me();
@@ -1247,6 +1462,8 @@
       if (page === "profile") await loadProfile(user);
       if (page === "stock") await loadStock();
       if (page === "settings") await loadSettings();
+      if (page === "news") loadNews();
+      if (page === "economy") loadEconomy();
       if (page === "developer") await loadDeveloper();
       if (page === "developer-user") await loadDeveloperUser();
     } catch (error) {

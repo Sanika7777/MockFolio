@@ -14,7 +14,10 @@
   <body data-page="market">
     <div id="app">
       <main class="page">
-        <section class="ticker-tape" id="ticker-tape" aria-label="Real NSE prices from TradingView"></section>
+        <section class="ticker-tape" id="ticker-tape" aria-label="Real prices from TradingView">
+          <div class="ticker-tape-widget"></div>
+          <span class="ticker-tape-label">Real prices · TradingView</span>
+        </section>
         <section class="page-intro market-intro">
           <span class="eyebrow">SIMULATED MARKET</span>
           <h1>Explore stocks.</h1>
@@ -29,6 +32,12 @@
         </section>
         <section class="stats" id="stats"></section>
         <section class="movers" id="movers" aria-label="Market movers"></section>
+        <div class="screener-tabs" role="tablist" aria-label="Screener">
+          <button type="button" role="tab" class="active" aria-selected="true" data-screener-tab="mockfolio">MockFolio stocks</button>
+          <button type="button" role="tab" aria-selected="false" data-screener-tab="real">Whole Indian market · TradingView</button>
+        </div>
+        <div class="tv-screener" id="tv-screener" hidden></div>
+        <div id="mockfolio-screener">
         <section class="toolbar">
           <div>
             <span class="eyebrow">SCREENER</span>
@@ -80,6 +89,7 @@
             <tbody id="market-table" data-cols="8"></tbody>
           </table>
         </div>
+        </div>
         <section class="price-explainer">
           <div>
             <strong>Real price</strong
@@ -94,6 +104,7 @@
     </div>
     <div id="toast-region" class="toast-region"></div>
     <script src="js/api.js"></script>
+    <script src="js/tradingview.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

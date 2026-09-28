@@ -2954,3 +2954,156 @@ table:has(#orders-table) th,
 table:has(#orders-table) td {
   padding: 14px 12px;
 }
+
+/* ---------- TradingView widgets ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.tradingview-widget-container,
+.tradingview-widget-container__widget {
+  width: 100%;
+  height: 100%;
+}
+.tv-widget-panel iframe,
+.tv-advanced iframe,
+.tv-screener iframe {
+  color-scheme: normal;
+}
+.screener-tabs,
+.chart-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 22px;
+}
+.chart-tabs {
+  margin: 0;
+  padding: 0 10px;
+}
+.screener-tabs button,
+.chart-tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 14px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.screener-tabs button.active,
+.chart-tabs button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.tv-screener {
+  height: 640px;
+  margin-bottom: 40px;
+}
+.tv-advanced {
+  height: clamp(420px, 66vh, 660px);
+}
+.tv-toolbar-note {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+.range-more {
+  position: relative;
+}
+.range-more-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.range-more-toggle:hover,
+.range-more-toggle.active {
+  background: var(--tint-primary);
+  color: var(--primary);
+}
+.range-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+.range-more-menu[hidden] {
+  display: none;
+}
+.range-more-menu button {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.range-more-menu button:hover,
+.range-more-menu button.active {
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+.real-market-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+.tv-widget-panel {
+  padding: 18px 18px 8px;
+  min-width: 0;
+}
+.tv-symbol-info {
+  margin-top: 10px;
+  min-height: 190px;
+}
+.tv-stock-news {
+  margin-top: 10px;
+  height: 380px;
+}
+.tv-feed {
+  height: 760px;
+  padding: 8px;
+}
+.feed-toolbar {
+  flex-wrap: wrap;
+}
+.feed-toolbar .chip-group {
+  margin: 0;
+}
+.tv-watchlist {
+  height: 420px;
+  padding: 8px;
+}
+.menu-mobile-only {
+  display: none !important;
+}
+@media (max-width: 850px) {
+  .menu-mobile-only {
+    display: flex !important;
+  }
+  .real-market-grid {
+    grid-template-columns: 1fr;
+  }
+  .tv-toolbar-note {
+    display: none;
+  }
+}

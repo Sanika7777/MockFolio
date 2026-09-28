@@ -33,6 +33,10 @@ frontend/
 │   │                      (TradingView-default candles + volume, or MockFolio
 │   │                      vs real price lines) and the portfolio value chart.
 │   │                      Re-themes itself on light/dark toggle.
+│   ├── tradingview.js     embeds TradingView widgets (Advanced Chart, ticker
+│   │                      tape, screener, quotes, news, economic calendar).
+│   │                      Real-market data only; symbols use the BSE listing
+│   │                      because free widgets aren't licensed for NSE.
 │   ├── auth.js            login/register form submission
 │   ├── auth-motion.js     decorative motion for the auth pages only (password
 │   │                      toggles, strength meter, count-up, hero chart)
