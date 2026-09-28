@@ -12,6 +12,8 @@
   let allocationChart, investedChart, pnlChart;
   let lastHoldings, lastCashBalance;
   let currentUser;
+  let redrawCandleChart = () => {};
+  let candleResizeHandler;
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const money = api.formatINR;
@@ -183,6 +185,7 @@
       );
     }
     if (priceChart) applyChartTheme();
+    redrawCandleChart();
     if (allocationChart) renderAllocationChart(lastHoldings, lastCashBalance);
     if (investedChart) renderInvestedVsCurrentChart(lastHoldings);
     if (pnlChart) renderPnlByHoldingChart(lastHoldings);
@@ -501,20 +504,25 @@
     }
   }
 
-  function drawChart(history) {
-    if (!history.length) {
+  function drawChart(adjustedHistory, referenceHistory) {
+    if (!adjustedHistory.length) {
       $("#price-chart").classList.add("hidden");
       $("#chart-empty").classList.remove("hidden");
       return;
     }
     $("#price-chart").classList.remove("hidden");
     $("#chart-empty").classList.add("hidden");
-    const points = history.slice().reverse();
+    // /instruments/{id}/candles returns candles already ordered oldest to
+    // newest (see backend main.py), and adjusted/reference candles are
+    // upserted together for the same bucket_start (simulation.py), so the
+    // two series line up 1:1 by index with no reversal needed.
+    const points = adjustedHistory;
+    const refPoints = referenceHistory;
     priceChart = new Chart($("#price-chart"), {
       type: "line",
       data: {
         labels: points.map((item) =>
-          new Date(item.recorded_at).toLocaleTimeString("en-IN", {
+          new Date(item.bucket_start).toLocaleTimeString("en-IN", {
             hour: "2-digit",
             minute: "2-digit",
           }),
@@ -522,14 +530,14 @@
         datasets: [
           {
             label: "MockFolio Price",
-            data: points.map((item) => item.adjusted_price),
+            data: points.map((item) => item.close),
             fill: true,
             tension: 0.25,
             pointRadius: 2,
           },
           {
             label: "Reference Price",
-            data: points.map((item) => item.raw_price),
+            data: refPoints.map((item) => item.close),
             fill: false,
             tension: 0.25,
             pointRadius: 0,
@@ -582,6 +590,137 @@
       borderWidth: 1,
     };
     priceChart.update("none");
+  }
+
+  // Candlestick view (§ Trade page toggle). There's no intraday tick feed
+  // to build real OHLC bars from (see the TODO(real market data) note
+  // above), so this fabricates a plausible-looking candle sequence — seeded
+  // from the stock's own symbol so each stock gets a distinct, stable shape
+  // instead of identical noise, and anchored to its current MockFolio price
+  // so the scale matches the rest of the page. Drawn on a plain 2D canvas
+  // rather than as a Chart.js dataset: Chart.js has no built-in candlestick
+  // type without pulling in the chartjs-chart-financial plugin (and a date
+  // adapter alongside it), which is more moving parts than a ~40-line
+  // manual renderer needs.
+  function generateCandles(stock, count = 30) {
+    const next = seededRandom(`${stock.symbol || stock.instrument_id}-candles`);
+    const base = Number(stock.adjusted_price) || Number(stock.raw_price) || 100;
+    const volatility = Math.min(0.03, Math.max(0.004, Number(stock.daily_sigma) || 0.012));
+    let close = base;
+    const candles = [];
+    for (let i = 0; i < count; i++) {
+      const open = close;
+      const drift = (next() - 0.5) * open * volatility * 2;
+      close = Math.max(open * 0.5, open + drift);
+      const wickUp = next() * open * volatility * 1.4;
+      const wickDown = next() * open * volatility * 1.4;
+      const high = Math.max(open, close) + wickUp;
+      const low = Math.max(0.05, Math.min(open, close) - wickDown);
+      candles.push({ open, high, low, close });
+    }
+    return candles;
+  }
+
+  function drawCandleChart(candles) {
+    const canvas = $("#candle-chart");
+    if (!canvas || !candles.length) return;
+    const cssWidth = canvas.clientWidth || canvas.parentElement?.clientWidth || 320;
+    const cssHeight = canvas.clientHeight || 310;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(cssWidth * dpr));
+    canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    const styles = getComputedStyle(document.documentElement);
+    const positive = styles.getPropertyValue("--positive").trim();
+    const negative = styles.getPropertyValue("--negative").trim();
+    const text = styles.getPropertyValue("--muted").trim();
+    const grid = styles.getPropertyValue("--border").trim();
+
+    const padding = { top: 12, right: 66, bottom: 8, left: 4 };
+    const plotWidth = Math.max(1, cssWidth - padding.left - padding.right);
+    const plotHeight = Math.max(1, cssHeight - padding.top - padding.bottom);
+    const high = Math.max(...candles.map((c) => c.high));
+    const low = Math.min(...candles.map((c) => c.low));
+    const span = Math.max(high - low, high * 0.001, 0.01);
+    const yFor = (price) => padding.top + (1 - (price - low) / span) * plotHeight;
+    const slot = plotWidth / candles.length;
+    const bodyWidth = Math.max(2, Math.min(18, slot * 0.6));
+
+    ctx.font = "11px Inter, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    const ticks = 4;
+    for (let t = 0; t <= ticks; t++) {
+      const price = low + (span * t) / ticks;
+      const y = yFor(price);
+      ctx.strokeStyle = grid;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(cssWidth - padding.right, y);
+      ctx.stroke();
+      ctx.fillStyle = text;
+      ctx.fillText(money(price), cssWidth - padding.right + 8, y);
+    }
+
+    candles.forEach((candle, i) => {
+      const x = padding.left + slot * i + slot / 2;
+      const up = candle.close >= candle.open;
+      const color = up ? positive : negative;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, yFor(candle.high));
+      ctx.lineTo(x, yFor(candle.low));
+      ctx.stroke();
+      const yOpen = yFor(candle.open);
+      const yClose = yFor(candle.close);
+      const bodyTop = Math.min(yOpen, yClose);
+      const bodyHeight = Math.max(1.5, Math.abs(yClose - yOpen));
+      ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+    });
+  }
+
+  const CHART_CAPTIONS = {
+    line: "Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.",
+    candles: "Simulated OHLC candles for illustration — MockFolio has no live intraday tick feed yet.",
+  };
+  function initChartViewToggle(candles) {
+    const buttons = $$(".chart-view-toggle button");
+    const lineCanvas = $("#price-chart");
+    const candleCanvas = $("#candle-chart");
+    const caption = $("#chart-caption");
+    if (!buttons.length || !lineCanvas || !candleCanvas) return;
+    let currentView = "line";
+    redrawCandleChart = () => {
+      if (currentView === "candles") drawCandleChart(candles);
+    };
+    buttons.forEach((button) => {
+      button.onclick = () => {
+        const view = button.dataset.chartView;
+        if (view === currentView) return;
+        currentView = view;
+        buttons.forEach((b) => b.classList.toggle("active", b === button));
+        lineCanvas.classList.toggle("hidden", view === "candles");
+        candleCanvas.classList.toggle("hidden", view === "line");
+        if (caption) caption.textContent = CHART_CAPTIONS[view];
+        redrawCandleChart();
+      };
+    });
+    if (candleResizeHandler) window.removeEventListener("resize", candleResizeHandler);
+    let resizeFrame = null;
+    candleResizeHandler = () => {
+      if (resizeFrame) return;
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        redrawCandleChart();
+      });
+    };
+    window.addEventListener("resize", candleResizeHandler);
   }
 
   const reducedMotion = () =>
@@ -925,21 +1064,27 @@
   async function loadStock() {
     const id = new URLSearchParams(location.search).get("id");
     try {
-      const [stockData, history, watchlistData] = await Promise.all([
-        api.stock(id),
-        api.history(id),
-        api.watchlist(),
-      ]);
+      const [stockData, adjustedHistory, referenceHistory, watchlistData] =
+        await Promise.all([
+          api.stock(id),
+          api.history(id, 1),
+          api.history(id, 0),
+          api.watchlist(),
+        ]);
       let stock = stockData;
       watchlist = watchlistData;
       const starred = watchlist.some((item) => item.id === stock.instrument_id);
       const isAdmin = Boolean(currentUser?.is_admin);
+      const chartToggle = adjustedHistory.length
+        ? `<div class="chart-view-toggle" role="group" aria-label="Chart view"><button type="button" class="active" data-chart-view="line">Line</button><button type="button" data-chart-view="candles">Candles</button></div>`
+        : "";
       const tradePanel = isAdmin
         ? `<aside class="panel trade-panel read-only-panel"><span class="eyebrow">DEVELOPER ACCOUNT</span><h2>Trading disabled</h2><p class="helper">Developer accounts can inspect the simulated market but cannot place BUY or SELL orders.</p></aside>`
         : `<aside class="panel trade-panel"><div class="panel-heading"><div><span class="eyebrow">SIMULATED ORDER DESK</span><h2>Trade ${escapeHTML(stock.symbol)}</h2></div><span class="paper-mode-pill">${svgIcon(ICONS.lock)} Paper mode</span></div><div class="segmented"><button class="active" data-side="BUY">${svgIcon(ICONS.plusCircle)}Buy</button><button data-side="SELL">${svgIcon(ICONS.minusCircle)}Sell</button></div><label for="quantity">Quantity (shares)</label><div class="quantity-stepper"><button type="button" id="qty-decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" step="1" value="10" inputmode="numeric" /><button type="button" id="qty-increase" aria-label="Increase quantity">+</button></div><div class="estimate"><div><span>Current price</span><strong id="estimate-price">${money(stock.adjusted_price)}</strong></div><div><span>Estimated amount</span><strong id="estimate-value">${money(stock.adjusted_price * 10)}</strong></div><div><span>Brokerage (0.1%)</span><strong id="estimate-brokerage">${money(stock.adjusted_price * 10 * 0.001)}</strong></div><div class="estimate-total"><span>Estimated total</span><strong id="estimate-total">${money(stock.adjusted_price * 10 * 1.001)}</strong></div></div><button class="primary-button full" id="trade-button">Buy stock</button><div id="trade-feedback" class="trade-feedback hidden"></div><p class="helper">Your fill price is determined by the server. A trade changes the shared simulated market price.</p></aside>`;
       $("#stock-content").innerHTML =
-        `<div class="stock-heading"><div><span class="eyebrow">${escapeHTML(stock.sector)}</span><h1>${escapeHTML(stock.company_name)}</h1><p class="symbol-label">${escapeHTML(stock.symbol)}</p></div><div class="price-block"><div class="price-block-top"><span>MockFolio price</span><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><strong id="stock-price">${money(stock.adjusted_price)}</strong><em id="stock-deviation" class="${tone(stock.deviation)}">${signed(stock.deviation)} (${percent(stock.deviation_percentage)})</em><span class="reference-pill" id="stock-reference">Reference ${money(stock.raw_price)}</span></div></div><div class="stock-grid"><section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">PRICE STORY</span><h2>MockFolio price history</h2></div></div><canvas id="price-chart" aria-label="Line chart comparing the MockFolio price and the reference price over recent history" role="img"></canvas><div id="chart-empty" class="empty-state compact hidden">No price history yet. Your first trade will create a point.</div><p class="chart-caption">Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
-      drawChart(history);
+        `<div class="stock-heading"><div><span class="eyebrow">${escapeHTML(stock.sector)}</span><h1>${escapeHTML(stock.company_name)}</h1><p class="symbol-label">${escapeHTML(stock.symbol)}</p></div><div class="price-block"><div class="price-block-top"><span>MockFolio price</span><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><strong id="stock-price">${money(stock.adjusted_price)}</strong><em id="stock-deviation" class="${tone(stock.deviation)}">${signed(stock.deviation)} (${percent(stock.deviation_percentage)})</em><span class="reference-pill" id="stock-reference">Reference ${money(stock.raw_price)}</span></div></div><div class="stock-grid"><section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">PRICE STORY</span><h2>MockFolio price history</h2></div>${chartToggle}</div><canvas id="price-chart" aria-label="Line chart comparing the MockFolio price and the reference price over recent history" role="img"></canvas><canvas id="candle-chart" class="hidden" aria-label="Candlestick chart of simulated open, high, low and close price data" role="img"></canvas><div id="chart-empty" class="empty-state compact hidden">No price history yet. Your first trade will create a point.</div><p class="chart-caption" id="chart-caption">Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
+      drawChart(adjustedHistory, referenceHistory);
+      if (adjustedHistory.length) initChartViewToggle(generateCandles(stock));
       bindWatchButtons();
       if (!isAdmin) bindTrade(stock);
     } catch (error) {
