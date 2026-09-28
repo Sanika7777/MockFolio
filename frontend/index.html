@@ -10,7 +10,6 @@
     <script src="js/theme.js"></script>
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
   </head>
   <body data-page="market">
     <div id="app">
@@ -28,10 +27,11 @@
           </div>
         </section>
         <section class="stats" id="stats"></section>
+        <section class="movers" id="movers" aria-label="Market movers"></section>
         <section class="toolbar">
           <div>
-            <span class="eyebrow">MARKET</span>
-            <h2>All stocks</h2>
+            <span class="eyebrow">SCREENER</span>
+            <h2>All stocks <small class="screener-count" id="screener-count"></small></h2>
           </div>
           <div class="toolbar-actions">
             <div class="search-field">
@@ -61,24 +61,28 @@
             </select>
           </div>
         </section>
+        <div class="chip-group" id="sector-chips" role="group" aria-label="Filter by sector"></div>
         <div class="table-wrap">
-          <table>
+          <table class="screener">
             <thead>
               <tr>
-                <th>Stock</th>
-                <th>MockFolio price</th>
-                <th>Reference price</th>
-                <th>Deviation</th>
+                <th data-sort="symbol" aria-sort="ascending"><button type="button">Stock</button></th>
+                <th data-sort="price" class="num"><button type="button">Price</button></th>
+                <th data-sort="change" class="num"><button type="button">Day change</button></th>
+                <th>Day range</th>
+                <th class="num">Real price</th>
+                <th data-sort="deviation" class="num"><button type="button">Deviation</button></th>
+                <th data-sort="volume" class="num"><button type="button">Volume</button></th>
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody id="market-table" data-cols="5"></tbody>
+            <tbody id="market-table" data-cols="8"></tbody>
           </table>
         </div>
         <section class="price-explainer">
           <div>
-            <strong>Reference price</strong
-            ><span>Baseline price used by the simulation.</span>
+            <strong>Real price</strong
+            ><span>The market price MockFolio drifts back toward.</span>
           </div>
           <div>
             <strong>MockFolio price</strong

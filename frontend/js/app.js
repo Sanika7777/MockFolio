@@ -8,15 +8,15 @@
 
   let stocks = [];
   let watchlist = [];
-  let priceChart;
-  let allocationChart, investedChart, pnlChart;
-  let lastHoldings, lastCashBalance;
+  let stockChart;
+  let stockPoll;
+  let refreshStock;
   let currentUser;
-  let redrawCandleChart = () => {};
-  let candleResizeHandler;
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const money = api.formatINR;
+  const reducedMotion = () =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const tone = (value) =>
     Number(value || 0) > 0
       ? "positive"
@@ -116,6 +116,8 @@
     warning:
       '<path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 9.5v4.5"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/>',
     lock: '<rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    candles: '<path d="M7 4v3M7 17v3M17 3v4M17 15v6"/><rect x="5" y="7" width="4" height="10" rx="1"/><rect x="15" y="7" width="4" height="8" rx="1"/>',
+    lines: '<path d="M3 17l5-5 4 3 9-8"/><path d="M3 20l6-4 4 2 8-6" opacity=".55"/>',
     plusCircle: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
     minusCircle: '<circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/>',
     check: '<path class="draw-in" pathLength="1" d="M4.5 12.5 9 17l10.5-10.5"/>',
@@ -184,11 +186,6 @@
         dark ? "Switch to light mode" : "Switch to dark mode",
       );
     }
-    if (priceChart) applyChartTheme();
-    redrawCandleChart();
-    if (allocationChart) renderAllocationChart(lastHoldings, lastCashBalance);
-    if (investedChart) renderInvestedVsCurrentChart(lastHoldings);
-    if (pnlChart) renderPnlByHoldingChart(lastHoldings);
   }
 
   function renderStats(items) {
@@ -211,13 +208,14 @@
   // is optional; when omitted the holdings-value stat has no caption.
   function summaryStats(summary, holdingsCount) {
     const pnl = Number(summary.unrealised_pnl || 0);
-    const pnlPercent = (pnl / 100000) * 100;
+    const startingCash = Number(summary.starting_cash) || 1;
+    const pnlPercent = (pnl / startingCash) * 100;
     const arrow = pnl > 0 ? "▲" : pnl < 0 ? "▼" : "–";
     return [
       {
         label: "Total account value",
         value: money(summary.total_account_value),
-        caption: `Initial ${money(100000)}`,
+        caption: `Initial ${money(summary.starting_cash)}`,
       },
       {
         label: "Available cash",
@@ -250,7 +248,7 @@
     const sectorTag = stock.sector
       ? `<span class="sector-tag">${escapeHTML(stock.sector)}</span>`
       : "";
-    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="MockFolio price"><strong class="market-price">${money(stock.adjusted_price)}</strong><small>MockFolio price</small></td><td data-label="Reference price">${money(stock.raw_price)}</td><td data-label="Deviation"><div class="deviation-cell"><div class="deviation-text"><span class="deviation-chip ${tone(deviation)}">${arrow} ${signed(deviation)}</span><small class="${tone(deviation)}">${percent(stock.deviation_percentage)}</small></div><canvas class="sparkline" data-sparkline="${stock.instrument_id}" width="72" height="28" aria-hidden="true"></canvas></div></td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
+    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="MockFolio price"><strong class="market-price">${money(stock.adjusted_price)}</strong><small>MockFolio price</small></td><td data-label="Reference price">${money(stock.raw_price)}</td><td data-label="Deviation"><div class="deviation-cell"><div class="deviation-text"><span class="deviation-chip ${tone(deviation)}">${arrow} ${signed(deviation)}</span><small class="${tone(deviation)}">${percent(stock.deviation_percentage)}</small></div></div></td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
   }
 
   function bindWatchButtons() {
@@ -269,7 +267,6 @@
               toast("Added to watchlist", "success");
             }
             if (page === "watchlist") await loadWatchlist();
-            else if (page === "market") await loadMarket();
             else {
               // Any other page with a star button (e.g. the stock detail
               // page): just update this button, no list to re-render.
@@ -287,6 +284,50 @@
     );
   }
 
+  const SCREENER_SORTS = {
+    symbol: (s) => s.symbol,
+    price: (s) => Number(s.adjusted_price),
+    change: (s) => Number(s.day_change_percentage),
+    deviation: (s) => Number(s.deviation_percentage),
+    volume: (s) => Number(s.day_volume),
+  };
+
+  function dayRange(stock) {
+    const low = Number(stock.day_low);
+    const high = Number(stock.day_high);
+    const at = high > low ? ((Number(stock.adjusted_price) - low) / (high - low)) * 100 : 50;
+    return `<div class="day-range" title="Today's range ${money(low)} – ${money(high)}"><div class="day-range-track"><span style="left:${Math.min(100, Math.max(0, at)).toFixed(1)}%"></span></div><div class="day-range-ends"><small>${money(low)}</small><small>${money(high)}</small></div></div>`;
+  }
+
+  function screenerRow(stock, starred) {
+    const href = `stock.html?id=${stock.instrument_id}`;
+    const change = Number(stock.day_change_percentage);
+    const actionLabel = currentUser?.is_admin ? "View" : "Trade";
+    const sectorTag = stock.sector ? `<span class="sector-tag">${escapeHTML(stock.sector)}</span>` : "";
+    return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="Price" class="num"><strong class="market-price">${money(stock.adjusted_price)}</strong></td><td data-label="Day change" class="num"><span class="change-pill ${tone(change)}">${change > 0 ? "▲" : change < 0 ? "▼" : "–"} ${percent(change)}</span></td><td data-label="Day range">${dayRange(stock)}</td><td data-label="Real price" class="num">${money(stock.raw_price)}</td><td data-label="Deviation" class="num"><span class="${tone(stock.deviation)}">${percent(stock.deviation_percentage)}</span></td><td data-label="Volume" class="num">${Number(stock.day_volume || 0).toLocaleString("en-IN")}</td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
+  }
+
+  function moversCard(title, list, value) {
+    return `<div class="panel mover-card"><span class="eyebrow">${title}</span><ol>${list
+      .map(
+        (s) => `<li><a href="stock.html?id=${s.instrument_id}"><strong>${escapeHTML(s.symbol)}</strong><span>${money(s.adjusted_price)}</span><em class="${tone(value(s))}">${percent(value(s))}</em></a></li>`,
+      )
+      .join("")}</ol></div>`;
+  }
+
+  function renderMovers() {
+    const host = $("#movers");
+    if (!host || !stocks.length) return;
+    const by = (fn, dir) => [...stocks].sort((a, b) => dir * (fn(a) - fn(b))).slice(0, 3);
+    const change = (s) => Number(s.day_change_percentage);
+    const gap = (s) => Number(s.deviation_percentage);
+    host.innerHTML =
+      moversCard("TOP GAINERS TODAY", by(change, -1), change) +
+      moversCard("TOP LOSERS TODAY", by(change, 1), change) +
+      moversCard("FURTHEST FROM REAL PRICE", by((s) => Math.abs(gap(s)), -1), gap);
+  }
+
+  let marketPoll;
   async function loadMarket() {
     loading("#market-table", "Loading market...");
     try {
@@ -298,40 +339,108 @@
       ]);
       stocks = stocksData;
       watchlist = watchlistData;
+      let sortKey = "symbol";
+      let sortDir = 1;
+      let sector = "All";
+      const sectors = ["All", ...new Set(stocks.map((s) => s.sector).filter(Boolean))].sort((a, b) =>
+        a === "All" ? -1 : b === "All" ? 1 : a.localeCompare(b),
+      );
+      $("#sector-chips").innerHTML = sectors
+        .map((name) => `<button type="button" class="chip${name === "All" ? " active" : ""}" data-sector="${escapeHTML(name)}" aria-pressed="${name === "All"}">${escapeHTML(name)}</button>`)
+        .join("");
+
       const render = (animate) => {
         const query = $("#stock-search").value.trim().toLowerCase();
         const watchIds = new Set(watchlist.map((item) => item.id));
         const mode = $("#market-filter").value;
-        const filtered = stocks.filter(
-          (stock) =>
-            `${stock.symbol} ${stock.company_name}`
-              .toLowerCase()
-              .includes(query) &&
-            (mode !== "watchlist" || watchIds.has(stock.instrument_id)),
-        );
+        const key = SCREENER_SORTS[sortKey];
+        const filtered = stocks
+          .filter(
+            (stock) =>
+              `${stock.symbol} ${stock.company_name}`.toLowerCase().includes(query) &&
+              (sector === "All" || stock.sector === sector) &&
+              (mode !== "watchlist" || watchIds.has(stock.instrument_id)),
+          )
+          .sort((a, b) => {
+            const x = key(a);
+            const y = key(b);
+            return sortDir * (typeof x === "string" ? x.localeCompare(y) : x - y);
+          });
         $("#market-table").innerHTML = filtered.length
-          ? filtered
-              .map((stock) => stockRow(stock, watchIds.has(stock.instrument_id)))
-              .join("")
-          : `<tr><td colspan="5"><div class="empty-state compact"><strong>${query ? "No stocks match your search." : mode === "watchlist" ? "No stocks in your watchlist." : "No stocks available."}</strong><span>${query ? "Try a different symbol or company name." : "The simulated market has no active stocks right now."}</span></div></td></tr>`;
+          ? filtered.map((stock) => screenerRow(stock, watchIds.has(stock.instrument_id))).join("")
+          : `<tr><td colspan="8"><div class="empty-state compact"><strong>${query ? "No stocks match your search." : mode === "watchlist" ? "No stocks in your watchlist." : "No stocks available."}</strong><span>${query ? "Try a different symbol or company name." : "Try another sector or filter."}</span></div></td></tr>`;
+        $$("[data-sort]").forEach((th) =>
+          th.setAttribute("aria-sort", th.dataset.sort === sortKey ? (sortDir > 0 ? "ascending" : "descending") : "none"),
+        );
+        $("#screener-count").textContent = `${filtered.length} of ${stocks.length}`;
+        renderMovers();
         bindWatchButtons();
-        initSparklines();
         if (animate) staggerRows("#market-table");
       };
       render(true);
-      $("#market-status-detail").textContent =
-        `${stocks.length} active stocks · Simulation active`;
+      $("#market-status-detail").textContent = `${stocks.length} active stocks · updates every 10s`;
       $("#stock-search").oninput = () => render(false);
       $("#market-filter").onchange = () => render(false);
+      $$("[data-sector]").forEach(
+        (chip) =>
+          (chip.onclick = () => {
+            sector = chip.dataset.sector;
+            $$("[data-sector]").forEach((c) => {
+              c.classList.toggle("active", c === chip);
+              c.setAttribute("aria-pressed", String(c === chip));
+            });
+            render(false);
+          }),
+      );
+      $$("[data-sort] button").forEach(
+        (button) =>
+          (button.onclick = () => {
+            const next = button.parentElement.dataset.sort;
+            // Numbers start high-to-low, names A-Z; a second click flips it.
+            sortDir = next === sortKey ? -sortDir : next === "symbol" ? 1 : -1;
+            sortKey = next;
+            render(false);
+          }),
+      );
       renderStats(summaryStats(summary, holdings.length));
+      clearInterval(marketPoll);
+      marketPoll = setInterval(async () => {
+        if (document.hidden) return;
+        try {
+          stocks = await api.stocks();
+          render(false);
+        } catch {
+          // keep the last good table
+        }
+      }, 10000);
     } catch (error) {
-      $("#market-table").innerHTML =
-        `<tr><td colspan="5"><div class="error-state">${escapeHTML(error.message)}</div></td></tr>`;
+      $("#market-table").innerHTML = `<tr><td colspan="8"><div class="error-state">${escapeHTML(error.message)}</div></td></tr>`;
     }
   }
 
-  function allocationChartCard() {
-    return `<div class="panel donut-card"><div class="panel-heading"><div><span class="eyebrow">ALLOCATION</span><h2>Asset allocation</h2></div></div><div class="donut-wrap"><div class="donut-canvas-wrap"><canvas id="allocation-chart" role="img" aria-label="Doughnut chart of cash and holdings as a share of total account value"></canvas><div class="donut-center"><div class="donut-center-inner"><strong id="allocation-total">₹0</strong><span>Total value</span></div></div></div><ul class="donut-legend" id="allocation-legend"></ul></div></div>`;
+  function valueChartCard() {
+    return `<div class="panel value-card"><div class="panel-heading"><div><span class="eyebrow">PERFORMANCE</span><h2>Portfolio value</h2></div><div class="value-card-figure"><strong id="value-now">₹0</strong><em id="value-change" class="neutral"></em></div></div><div class="value-chart" id="value-chart" role="img" aria-label="Portfolio value over time against your starting cash"></div><p class="chart-caption" id="value-caption">Cash plus holdings at the MockFolio price, replayed from your trades. Green above your starting cash, red below.</p></div>`;
+  }
+
+  async function renderValueChart(summary) {
+    const host = $("#value-chart");
+    if (!host || !window.MockfolioCharts) return;
+    const start = Number(summary.starting_cash) || 0;
+    const now = Number(summary.total_account_value) || 0;
+    $("#value-now").textContent = money(now);
+    const change = $("#value-change");
+    change.className = tone(now - start);
+    change.textContent = `${signed(now - start)} (${percent(start ? ((now - start) / start) * 100 : 0)}) since start`;
+    try {
+      const points = await api.portfolioHistory();
+      if (!points.length) {
+        host.innerHTML = `<div class="empty-state compact"><strong>No trades yet</strong><span>Your value chart starts with your first trade.</span></div>`;
+        return;
+      }
+      window.MockfolioCharts.createValueChart(host, { baseline: start }).setData(points);
+    } catch (error) {
+      host.innerHTML = `<div class="error-state">${escapeHTML(error.message)}</div>`;
+    }
   }
 
   async function loadPortfolio() {
@@ -344,16 +453,8 @@
       renderStats(summaryStats(summary, holdings.length));
       const chartsHost = $("#portfolio-charts");
       if (chartsHost) {
-        chartsHost.innerHTML =
-          allocationChartCard() +
-          (holdings.length
-            ? `<div class="panel chart-card"><div class="panel-heading"><div><span class="eyebrow">DEPLOYMENT</span><h2>Invested vs current</h2></div></div><div class="chart-card-canvas"><canvas id="invested-chart" role="img" aria-label="Bar chart comparing invested capital and current market value"></canvas></div></div><div class="panel chart-card wide"><div class="panel-heading"><div><span class="eyebrow">PERFORMANCE</span><h2>P&L by holding</h2></div></div><div class="chart-card-canvas"><canvas id="pnl-chart" role="img" aria-label="Horizontal bar chart of unrealized profit and loss per holding"></canvas></div></div>`
-            : "");
-        renderAllocationChart(holdings, summary.cash_balance);
-        if (holdings.length) {
-          renderInvestedVsCurrentChart(holdings);
-          renderPnlByHoldingChart(holdings);
-        }
+        chartsHost.innerHTML = valueChartCard();
+        renderValueChart(summary);
       }
       $("#portfolio-table").innerHTML = holdings.length
         ? holdings
@@ -443,7 +544,6 @@
           ? filtered.map((stock) => stockRow(stock, true)).join("")
           : `<tr><td colspan="5"><div class="empty-state compact"><strong>No stocks match.</strong><span>Try a different search or filter.</span></div></td></tr>`;
         bindWatchButtons();
-        initSparklines();
         if (animate) staggerRows("#watchlist-table");
       };
       render(true);
@@ -496,600 +596,121 @@
       const profileRow = (label, value) =>
         `<div><span>${label}</span><strong>${value}</strong></div>`;
       $("#profile-content").innerHTML =
-        `<section class="profile-hero"><div><span class="eyebrow">PROFILE / ACCOUNT</span><h1>Hi, ${escapeHTML(user.name || user.username)}</h1><p>Your paper-trading account.</p></div>${user.is_admin ? '<span class="account-status"><strong>Developer Account</strong><small>Trading disabled</small></span>' : ""}</section><section class="portfolio-summary panel"><span class="eyebrow">PORTFOLIO</span><strong class="portfolio-total">${money(summary.total_account_value)}</strong><span class="summary-label">Total account value</span><div class="summary-metrics"><div><span>Invested</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)} <small>(${percent(pnlPercent)})</small></strong></div></div></section><section class="profile-metrics"><div><span>Available cash</span><strong>${money(summary.cash_balance)}</strong></div><div><span>Invested value</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>Total P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)}</strong></div></section><section class="profile-section">${allocationChartCard()}</section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">YOUR BOOK</span><h2>Your holdings</h2></div></div><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg. price</th><th>Simulated price</th><th>Current value</th><th>P&L</th></tr></thead><tbody>${holdings.length ? holdings.map((item) => `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Qty">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Avg. price">${money(item.avg_price)}</td><td data-label="Simulated price">${money(item.adjusted_price)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong></td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>'}</tbody></table></div></section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent activity</h2></div></div><div class="table-wrap"><table><thead><tr><th>Side</th><th>Stock</th><th>Quantity</th><th>Fill price</th><th>Price impact</th><th>Date</th></tr></thead><tbody>${activity.length ? activity.map((item) => `<tr><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Date">${new Date(item.executed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>No recent activity</strong></div></td></tr>'}</tbody></table></div></section><section class="profile-section account-section"><div class="section-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Account information</h2></div></div><div class="account-grid panel">${profileRow("Username", escapeHTML(user.username))}${profileRow("Email", escapeHTML(user.email))}${profileRow("Account type", user.is_admin ? "Developer · Trading disabled" : "Standard user")}${profileRow("Member since", new Date(user.created_at).toLocaleDateString("en-IN"))}</div></section>`;
-      renderAllocationChart(holdings, summary.cash_balance);
+        `<section class="profile-hero"><div><span class="eyebrow">PROFILE / ACCOUNT</span><h1>Hi, ${escapeHTML(user.name || user.username)}</h1><p>Your paper-trading account.</p></div>${user.is_admin ? '<span class="account-status"><strong>Developer Account</strong><small>Trading disabled</small></span>' : ""}</section><section class="portfolio-summary panel"><span class="eyebrow">PORTFOLIO</span><strong class="portfolio-total">${money(summary.total_account_value)}</strong><span class="summary-label">Total account value</span><div class="summary-metrics"><div><span>Invested</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)} <small>(${percent(pnlPercent)})</small></strong></div></div></section><section class="profile-metrics"><div><span>Available cash</span><strong>${money(summary.cash_balance)}</strong></div><div><span>Invested value</span><strong>${money(invested)}</strong></div><div><span>Current value</span><strong>${money(summary.holdings_value)}</strong></div><div><span>Total P&L</span><strong class="${tone(summary.unrealised_pnl)}">${signed(summary.unrealised_pnl)}</strong></div></section><section class="profile-section">${valueChartCard()}</section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">YOUR BOOK</span><h2>Your holdings</h2></div></div><div class="table-wrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg. price</th><th>Simulated price</th><th>Current value</th><th>P&L</th></tr></thead><tbody>${holdings.length ? holdings.map((item) => `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Qty">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Avg. price">${money(item.avg_price)}</td><td data-label="Simulated price">${money(item.adjusted_price)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong></td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>'}</tbody></table></div></section><section class="profile-section"><div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent activity</h2></div></div><div class="table-wrap"><table><thead><tr><th>Side</th><th>Stock</th><th>Quantity</th><th>Fill price</th><th>Price impact</th><th>Date</th></tr></thead><tbody>${activity.length ? activity.map((item) => `<tr><td data-label="Side"><span class="badge ${item.side.toLowerCase()}">${item.side}</span></td><td data-label="Stock"><strong>${escapeHTML(item.symbol)}</strong></td><td data-label="Quantity">${item.quantity}</td><td data-label="Fill price">${money(item.exec_price)}</td><td data-label="Price impact" class="${tone(item.price_impact)}">${signed(item.price_impact)}</td><td data-label="Date">${new Date(item.executed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td></tr>`).join("") : '<tr><td colspan="6"><div class="empty-state"><strong>No recent activity</strong></div></td></tr>'}</tbody></table></div></section><section class="profile-section account-section"><div class="section-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Account information</h2></div></div><div class="account-grid panel">${profileRow("Username", escapeHTML(user.username))}${profileRow("Email", escapeHTML(user.email))}${profileRow("Account type", user.is_admin ? "Developer · Trading disabled" : "Standard user")}${profileRow("Member since", new Date(user.created_at).toLocaleDateString("en-IN"))}</div></section>`;
+      renderValueChart(summary);
     } catch (error) {
       $("#profile-content").innerHTML =
         `<div class="error-state">${escapeHTML(error.message)}</div>`;
     }
   }
 
-  function drawChart(adjustedHistory, referenceHistory) {
-    if (!adjustedHistory.length) {
-      $("#price-chart").classList.add("hidden");
-      $("#chart-empty").classList.remove("hidden");
-      return;
-    }
-    $("#price-chart").classList.remove("hidden");
-    $("#chart-empty").classList.add("hidden");
-    // /instruments/{id}/candles returns candles already ordered oldest to
-    // newest (see backend main.py), and adjusted/reference candles are
-    // upserted together for the same bucket_start (simulation.py), so the
-    // two series line up 1:1 by index with no reversal needed.
-    const points = adjustedHistory;
-    const refPoints = referenceHistory;
-    priceChart = new Chart($("#price-chart"), {
-      type: "line",
-      data: {
-        labels: points.map((item) =>
-          new Date(item.bucket_start).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        ),
-        datasets: [
-          {
-            label: "MockFolio Price",
-            data: points.map((item) => item.close),
-            fill: true,
-            tension: 0.25,
-            pointRadius: 2,
-          },
-          {
-            label: "Reference Price",
-            data: refPoints.map((item) => item.close),
-            fill: false,
-            tension: 0.25,
-            pointRadius: 0,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        interaction: { mode: "index", intersect: false },
-        plugins: { legend: { display: true, position: "bottom" } },
-        scales: {
-          y: {
-            ticks: { callback: (value) => money(value) },
-            grid: {},
-          },
-          x: { grid: { display: false } },
-        },
-      },
-    });
-    // Colours are never hard-coded: they're read from the theme's CSS
-    // variables here, immediately after creation, so the very first paint
-    // is already themed and the toggle can re-theme it live (Phase 5 §2).
-    applyChartTheme();
-  }
-
-  function applyChartTheme() {
-    if (!priceChart) return;
-    const styles = getComputedStyle(document.documentElement);
-    const text = styles.getPropertyValue("--muted").trim();
-    const grid = styles.getPropertyValue("--border").trim();
-    const primary = styles.getPropertyValue("--primary").trim();
-    const reference = styles.getPropertyValue("--reference").trim();
-    const [priceDataset, referenceDataset] = priceChart.data.datasets;
-    priceDataset.borderColor = primary;
-    priceDataset.backgroundColor = `color-mix(in srgb, ${primary} 12%, transparent)`;
-    priceDataset.pointBackgroundColor = primary;
-    referenceDataset.borderColor = reference;
-    referenceDataset.pointBackgroundColor = reference;
-    referenceDataset.borderDash = [6, 4];
-    priceChart.options.scales.y.ticks.color = text;
-    priceChart.options.scales.x.ticks.color = text;
-    priceChart.options.scales.y.grid.color = grid;
-    priceChart.options.scales.x.grid.color = grid;
-    priceChart.options.plugins.legend.labels = { color: text };
-    priceChart.options.plugins.tooltip = {
-      backgroundColor: styles.getPropertyValue("--surface").trim(),
-      titleColor: styles.getPropertyValue("--text").trim(),
-      bodyColor: text,
-      borderColor: grid,
-      borderWidth: 1,
-    };
-    priceChart.update("none");
-  }
-
-  // Candlestick view (§ Trade page toggle). There's no intraday tick feed
-  // to build real OHLC bars from (see the TODO(real market data) note
-  // above), so this fabricates a plausible-looking candle sequence — seeded
-  // from the stock's own symbol so each stock gets a distinct, stable shape
-  // instead of identical noise, and anchored to its current MockFolio price
-  // so the scale matches the rest of the page. Drawn on a plain 2D canvas
-  // rather than as a Chart.js dataset: Chart.js has no built-in candlestick
-  // type without pulling in the chartjs-chart-financial plugin (and a date
-  // adapter alongside it), which is more moving parts than a ~40-line
-  // manual renderer needs.
-  function generateCandles(stock, count = 30) {
-    const next = seededRandom(`${stock.symbol || stock.instrument_id}-candles`);
-    const base = Number(stock.adjusted_price) || Number(stock.raw_price) || 100;
-    const volatility = Math.min(0.03, Math.max(0.004, Number(stock.daily_sigma) || 0.012));
-    let close = base;
-    const candles = [];
-    for (let i = 0; i < count; i++) {
-      const open = close;
-      const drift = (next() - 0.5) * open * volatility * 2;
-      close = Math.max(open * 0.5, open + drift);
-      const wickUp = next() * open * volatility * 1.4;
-      const wickDown = next() * open * volatility * 1.4;
-      const high = Math.max(open, close) + wickUp;
-      const low = Math.max(0.05, Math.min(open, close) - wickDown);
-      candles.push({ open, high, low, close });
-    }
-    return candles;
-  }
-
-  function drawCandleChart(candles) {
-    const canvas = $("#candle-chart");
-    if (!canvas || !candles.length) return;
-    const cssWidth = canvas.clientWidth || canvas.parentElement?.clientWidth || 320;
-    const cssHeight = canvas.clientHeight || 310;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.round(cssWidth * dpr));
-    canvas.height = Math.max(1, Math.round(cssHeight * dpr));
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cssWidth, cssHeight);
-
-    const styles = getComputedStyle(document.documentElement);
-    const positive = styles.getPropertyValue("--positive").trim();
-    const negative = styles.getPropertyValue("--negative").trim();
-    const text = styles.getPropertyValue("--muted").trim();
-    const grid = styles.getPropertyValue("--border").trim();
-
-    const padding = { top: 12, right: 66, bottom: 8, left: 4 };
-    const plotWidth = Math.max(1, cssWidth - padding.left - padding.right);
-    const plotHeight = Math.max(1, cssHeight - padding.top - padding.bottom);
-    const high = Math.max(...candles.map((c) => c.high));
-    const low = Math.min(...candles.map((c) => c.low));
-    const span = Math.max(high - low, high * 0.001, 0.01);
-    const yFor = (price) => padding.top + (1 - (price - low) / span) * plotHeight;
-    const slot = plotWidth / candles.length;
-    const bodyWidth = Math.max(2, Math.min(18, slot * 0.6));
-
-    ctx.font = "11px Inter, system-ui, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "left";
-    const ticks = 4;
-    for (let t = 0; t <= ticks; t++) {
-      const price = low + (span * t) / ticks;
-      const y = yFor(price);
-      ctx.strokeStyle = grid;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(cssWidth - padding.right, y);
-      ctx.stroke();
-      ctx.fillStyle = text;
-      ctx.fillText(money(price), cssWidth - padding.right + 8, y);
-    }
-
-    candles.forEach((candle, i) => {
-      const x = padding.left + slot * i + slot / 2;
-      const up = candle.close >= candle.open;
-      const color = up ? positive : negative;
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, yFor(candle.high));
-      ctx.lineTo(x, yFor(candle.low));
-      ctx.stroke();
-      const yOpen = yFor(candle.open);
-      const yClose = yFor(candle.close);
-      const bodyTop = Math.min(yOpen, yClose);
-      const bodyHeight = Math.max(1.5, Math.abs(yClose - yOpen));
-      ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-    });
-  }
-
+  const INTERVALS = [
+    { minutes: 1, label: "1m" },
+    { minutes: 5, label: "5m" },
+    { minutes: 15, label: "15m" },
+    { minutes: 60, label: "1h" },
+  ];
   const CHART_CAPTIONS = {
-    line: "Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.",
-    candles: "Simulated OHLC candles for illustration — MockFolio has no live intraday tick feed yet.",
+    candles: "MockFolio price candles. Volume bars are paper-trade shares filled in each bar.",
+    line: "Teal is the MockFolio price; the second line is the real market price it drifts back toward.",
   };
-  function initChartViewToggle(candles) {
-    const buttons = $$(".chart-view-toggle button");
-    const lineCanvas = $("#price-chart");
-    const candleCanvas = $("#candle-chart");
-    const caption = $("#chart-caption");
-    if (!buttons.length || !lineCanvas || !candleCanvas) return;
-    let currentView = "line";
-    redrawCandleChart = () => {
-      if (currentView === "candles") drawCandleChart(candles);
-    };
-    buttons.forEach((button) => {
-      button.onclick = () => {
-        const view = button.dataset.chartView;
-        if (view === currentView) return;
-        currentView = view;
-        buttons.forEach((b) => b.classList.toggle("active", b === button));
-        lineCanvas.classList.toggle("hidden", view === "candles");
-        candleCanvas.classList.toggle("hidden", view === "line");
-        if (caption) caption.textContent = CHART_CAPTIONS[view];
-        redrawCandleChart();
-      };
-    });
-    if (candleResizeHandler) window.removeEventListener("resize", candleResizeHandler);
-    let resizeFrame = null;
-    candleResizeHandler = () => {
-      if (resizeFrame) return;
-      resizeFrame = requestAnimationFrame(() => {
-        resizeFrame = null;
-        redrawCandleChart();
-      });
-    };
-    window.addEventListener("resize", candleResizeHandler);
+
+  function quoteStats(stock) {
+    return `<div><span>Open</span><strong>${money(stock.day_open)}</strong></div><div><span>High</span><strong>${money(stock.day_high)}</strong></div><div><span>Low</span><strong>${money(stock.day_low)}</strong></div><div><span>Volume</span><strong>${Number(stock.day_volume || 0).toLocaleString("en-IN")}</strong></div><div><span>Real price</span><strong id="stock-reference">${money(stock.raw_price)}</strong></div><div><span>Deviation</span><strong id="stock-deviation" class="${tone(stock.deviation)}">${percent(stock.deviation_percentage)}</strong></div>`;
   }
 
-  const reducedMotion = () =>
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // Anchor tooltips above the chart instead of at the hovered point, so a
-  // doughnut's tooltip never lands on top of the centre total (below).
-  if (typeof Chart !== "undefined" && !Chart.Tooltip.positioners.top) {
-    Chart.Tooltip.positioners.top = (items) => {
-      const chart = items[0]?.chart;
-      if (!chart) return false;
-      return {
-        x: chart.chartArea.left + chart.chartArea.width / 2,
-        y: chart.chartArea.top,
-      };
-    };
-  }
-
-  // Allocation donut (§5): Cash + top 4 holdings by current value, any
-  // remainder grouped into "Other". Shared by Portfolio and Profile, which
-  // never render at the same time, so the same element IDs are reused.
-  function renderAllocationChart(holdings, cashBalance) {
-    const canvas = $("#allocation-chart");
-    if (!canvas || typeof Chart === "undefined") return;
-    lastHoldings = holdings;
-    lastCashBalance = cashBalance;
-    const styles = getComputedStyle(document.documentElement);
-    const colors = [1, 2, 3, 4, 5].map((n) =>
-      styles.getPropertyValue(`--chart-${n}`).trim(),
-    );
-    const sorted = holdings
-      .slice()
-      .sort((a, b) => Number(b.market_value) - Number(a.market_value));
-    const top = sorted.slice(0, 4);
-    const otherValue = sorted
-      .slice(4)
-      .reduce((sum, item) => sum + Number(item.market_value || 0), 0);
-    const slices = [
-      { label: "Cash", value: Number(cashBalance) || 0 },
-      ...top.map((item) => ({
-        label: item.symbol,
-        value: Number(item.market_value) || 0,
-      })),
-    ];
-    if (otherValue > 0) slices.push({ label: "Other", value: otherValue });
-    const total = slices.reduce((sum, s) => sum + s.value, 0);
-    if (allocationChart) allocationChart.destroy();
-    allocationChart = new Chart(canvas, {
-      type: "doughnut",
-      data: {
-        labels: slices.map((s) => s.label),
-        datasets: [
-          {
-            data: slices.map((s) => s.value),
-            backgroundColor: slices.map((_, i) => colors[i % colors.length]),
-            borderColor: styles.getPropertyValue("--surface").trim(),
-            borderWidth: 3,
-          },
-        ],
-      },
-      options: {
-        cutout: "68%",
-        // Without these, Chart.js falls back to its default aspect-ratio
-        // sizing, which can size the canvas's internal drawing buffer
-        // differently from the CSS box it's actually rendered at — the
-        // ring is still drawn, but hover hit-testing lands in the wrong
-        // place (or nowhere), so the tooltip never appears. Locking to the
-        // CSS-defined container fixes both hover and the visual size.
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            // Pinned above the chart (see the custom "top" positioner
-            // registered above) so it never sits over the centre total.
-            position: "top",
-            yAlign: "bottom",
-            caretSize: 0,
-            displayColors: false,
-            padding: 8,
-            backgroundColor: styles.getPropertyValue("--surface").trim(),
-            titleColor: styles.getPropertyValue("--text").trim(),
-            bodyColor: styles.getPropertyValue("--muted").trim(),
-            borderColor: styles.getPropertyValue("--border").trim(),
-            borderWidth: 1,
-            callbacks: {
-              label: (ctx) => ` ${ctx.label}: ${money(ctx.parsed)}`,
-            },
-          },
-        },
-        animation: reducedMotion() ? false : { duration: 700, animateRotate: true },
-      },
-    });
-    const totalEl = $("#allocation-total");
-    if (totalEl) totalEl.textContent = money(total);
-    const legend = $("#allocation-legend");
-    if (legend) {
-      legend.innerHTML = slices
-        .map((s, i) => {
-          const pct = total ? ((s.value / total) * 100).toFixed(1) : "0.0";
-          return `<li class="donut-legend-item" data-index="${i}"><span class="swatch" style="background:${colors[i % colors.length]}"></span><span class="name">${escapeHTML(s.label)}</span><span class="pct">${pct}%</span><span class="value">${money(s.value)}</span></li>`;
-        })
-        .join("");
-      $$(".donut-legend-item").forEach(
-        (row) =>
-          (row.onclick = () => {
-            $$(".donut-legend-item").forEach((item) =>
-              item.classList.remove("active"),
-            );
-            row.classList.add("active");
-            allocationChart.setActiveElements([
-              { datasetIndex: 0, index: Number(row.dataset.index) },
-            ]);
-            allocationChart.update();
-          }),
-      );
+  function renderQuote(stock) {
+    const change = Number(stock.adjusted_price) - Number(stock.day_open);
+    const el = $("#stock-change");
+    if (el) {
+      el.className = `tv-change ${tone(change)}`;
+      el.textContent = `${signed(change)} (${percent(stock.day_change_percentage)}) today`;
     }
-  }
-
-  // Invested vs current value (§5), Portfolio page only.
-  function renderInvestedVsCurrentChart(holdings) {
-    const canvas = $("#invested-chart");
-    if (!canvas || typeof Chart === "undefined") return;
-    const styles = getComputedStyle(document.documentElement);
-    const invested = holdings.reduce(
-      (sum, item) => sum + Number(item.invested_value || 0),
-      0,
-    );
-    const current = holdings.reduce(
-      (sum, item) => sum + Number(item.market_value || 0),
-      0,
-    );
-    if (investedChart) investedChart.destroy();
-    investedChart = new Chart(canvas, {
-      type: "bar",
-      data: {
-        labels: ["Invested", "Current"],
-        datasets: [
-          {
-            data: [invested, current],
-            backgroundColor: [
-              styles.getPropertyValue("--reference").trim(),
-              styles.getPropertyValue("--primary").trim(),
-            ],
-            borderRadius: 6,
-            maxBarThickness: 56,
-          },
-        ],
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          y: {
-            ticks: {
-              color: styles.getPropertyValue("--muted").trim(),
-              callback: (value) => money(value),
-            },
-            grid: { color: styles.getPropertyValue("--border").trim() },
-          },
-          x: {
-            ticks: { color: styles.getPropertyValue("--text").trim() },
-            grid: { display: false },
-          },
-        },
-        animation: reducedMotion() ? false : { duration: 700 },
-      },
-    });
-  }
-
-  // P&L by holding (§5), Portfolio page only. Green >= 0, red < 0.
-  function renderPnlByHoldingChart(holdings) {
-    const canvas = $("#pnl-chart");
-    if (!canvas || typeof Chart === "undefined") return;
-    const styles = getComputedStyle(document.documentElement);
-    const positive = styles.getPropertyValue("--positive").trim();
-    const negative = styles.getPropertyValue("--negative").trim();
-    canvas.parentElement.style.height = `${Math.max(140, holdings.length * 40)}px`;
-    if (pnlChart) pnlChart.destroy();
-    pnlChart = new Chart(canvas, {
-      type: "bar",
-      data: {
-        labels: holdings.map((item) => item.symbol),
-        datasets: [
-          {
-            data: holdings.map((item) => Number(item.unrealised_pnl || 0)),
-            backgroundColor: holdings.map((item) =>
-              Number(item.unrealised_pnl) >= 0 ? positive : negative,
-            ),
-            borderRadius: 6,
-            maxBarThickness: 22,
-          },
-        ],
-      },
-      options: {
-        indexAxis: "y",
-        plugins: { legend: { display: false } },
-        scales: {
-          x: {
-            ticks: {
-              color: styles.getPropertyValue("--muted").trim(),
-              callback: (value) => money(value),
-            },
-            grid: { color: styles.getPropertyValue("--border").trim() },
-          },
-          y: {
-            ticks: { color: styles.getPropertyValue("--text").trim() },
-            grid: { display: false },
-          },
-        },
-        animation: reducedMotion() ? false : { duration: 700 },
-      },
-    });
-  }
-
-  // Per-row sparklines on Market/Watchlist (§8: "lazily fetch history(id)
-  // only for rows scrolled into view, with a small in-memory cache" — the
-  // default in the integration guide is to omit these rather than fire a
-  // history() request per row on load; this is that lazy alternative).
-  //
-  // These plot the stock's *actual market* life, not the MockFolio
-  // simulated price — i.e. reference_price, the anchor MockFolio's price
-  // drifts around (see DESIGN.md). history() only gets a row when a trade
-  // or decay tick runs, so a stock nobody has traded yet can have little
-  // or no reference-price history; for those, fetchMarketLifeSeries()
-  // below fills in a placeholder so every row still gets a chart.
-  //
-  // TODO(real market data): fetchMarketLifeSeries() is the one place to
-  // change when a real market-data API is available. Replace its body
-  // with something like:
-  //   const res = await fetch(`https://<provider>/v1/quotes/${stock.symbol}/history?range=1mo`);
-  //   const data = await res.json();
-  //   return data.prices; // closing prices, oldest first
-  // and the fallback branch (and its "fabricated" note) can be deleted.
-  const sparklineCache = new Map();
-  const sparklineCharts = new Map();
-  let sparklineObserver;
-  function initSparklines() {
-    if (typeof Chart === "undefined") return;
-    if (sparklineObserver) sparklineObserver.disconnect();
-    sparklineObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          sparklineObserver.unobserve(entry.target);
-          loadSparkline(entry.target);
-        });
-      },
-      { rootMargin: "200px" },
-    );
-    $$("canvas.sparkline").forEach((canvas) => {
-      const existing = sparklineCharts.get(canvas.dataset.sparkline);
-      if (existing) existing.destroy();
-      sparklineObserver.observe(canvas);
-    });
-  }
-  // A small deterministic PRNG (mulberry-ish LCG) seeded from the symbol,
-  // so the fabricated walk is stable across re-renders/theme toggles
-  // instead of jumping around every time it's redrawn.
-  function seededRandom(seedText) {
-    let state = [...String(seedText)].reduce(
-      (sum, ch) => sum + ch.charCodeAt(0),
-      7,
-    );
-    return () => {
-      state = (state * 9301 + 49297) % 233280;
-      return state / 233280;
-    };
-  }
-  function fabricateMarketSeries(stock, count = 20) {
-    const end =
-      Number(stock.raw_price) || Number(stock.adjusted_price) || 100;
-    const next = seededRandom(stock.symbol || stock.instrument_id);
-    const series = [end];
-    let value = end;
-    for (let i = 1; i < count; i++) {
-      const step = (next() - 0.5) * value * 0.012;
-      value = Math.max(value * 0.85, value - step);
-      series.push(value);
-    }
-    return series.reverse();
-  }
-  async function fetchMarketLifeSeries(stock) {
-    try {
-      const history = await api.history(stock.instrument_id);
-      const real = history
-        .slice()
-        .reverse()
-        .map((item) => Number(item.raw_price))
-        .filter((value) => Number.isFinite(value));
-      if (real.length >= 6) return real;
-    } catch {
-      // fall through to the placeholder below
-    }
-    return fabricateMarketSeries(stock);
-  }
-  async function loadSparkline(canvas) {
-    const id = canvas.dataset.sparkline;
-    try {
-      let points = sparklineCache.get(id);
-      if (!points) {
-        const stock =
-          stocks.find((item) => String(item.id) === id) ||
-          watchlist.find((item) => String(item.id) === id);
-        if (!stock) return;
-        points = await fetchMarketLifeSeries(stock);
-        sparklineCache.set(id, points);
-      }
-      if (points.length < 2 || !canvas.isConnected) return;
-      const up = points[points.length - 1] >= points[0];
-      const styles = getComputedStyle(document.documentElement);
-      const chart = new Chart(canvas, {
-        type: "line",
-        data: {
-          labels: points.map((_, i) => i),
-          datasets: [
-            {
-              data: points,
-              borderColor: styles
-                .getPropertyValue(up ? "--positive" : "--negative")
-                .trim(),
-              borderWidth: 1.5,
-              pointRadius: 0,
-              tension: 0.3,
-              fill: false,
-            },
-          ],
-        },
-        options: {
-          responsive: false,
-          animation: false,
-          scales: { x: { display: false }, y: { display: false } },
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        },
-      });
-      sparklineCharts.set(id, chart);
-    } catch {
-      // No sparkline for this row is a cosmetic miss, not worth a toast.
-    }
+    if ($("#tv-stats")) $("#tv-stats").innerHTML = quoteStats(stock);
   }
 
   async function loadStock() {
     const id = new URLSearchParams(location.search).get("id");
     try {
-      const [stockData, adjustedHistory, referenceHistory, watchlistData] =
-        await Promise.all([
-          api.stock(id),
-          api.history(id, 1),
-          api.history(id, 0),
-          api.watchlist(),
-        ]);
+      const [stockData, watchlistData] = await Promise.all([api.stock(id), api.watchlist()]);
       let stock = stockData;
       watchlist = watchlistData;
       const starred = watchlist.some((item) => item.id === stock.instrument_id);
       const isAdmin = Boolean(currentUser?.is_admin);
-      const chartToggle = adjustedHistory.length
-        ? `<div class="chart-view-toggle" role="group" aria-label="Chart view"><button type="button" class="active" data-chart-view="line">Line</button><button type="button" data-chart-view="candles">Candles</button></div>`
-        : "";
       const tradePanel = isAdmin
         ? `<aside class="panel trade-panel read-only-panel"><span class="eyebrow">DEVELOPER ACCOUNT</span><h2>Trading disabled</h2><p class="helper">Developer accounts can inspect the simulated market but cannot place BUY or SELL orders.</p></aside>`
         : `<aside class="panel trade-panel"><div class="panel-heading"><div><span class="eyebrow">SIMULATED ORDER DESK</span><h2>Trade ${escapeHTML(stock.symbol)}</h2></div><span class="paper-mode-pill">${svgIcon(ICONS.lock)} Paper mode</span></div><div class="segmented"><button class="active" data-side="BUY">${svgIcon(ICONS.plusCircle)}Buy</button><button data-side="SELL">${svgIcon(ICONS.minusCircle)}Sell</button></div><label for="quantity">Quantity (shares)</label><div class="quantity-stepper"><button type="button" id="qty-decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" step="1" value="10" inputmode="numeric" /><button type="button" id="qty-increase" aria-label="Increase quantity">+</button></div><div class="estimate"><div><span>Current price</span><strong id="estimate-price">${money(stock.adjusted_price)}</strong></div><div><span>Estimated amount</span><strong id="estimate-value">${money(stock.adjusted_price * 10)}</strong></div><div><span>Brokerage (0.1%)</span><strong id="estimate-brokerage">${money(stock.adjusted_price * 10 * 0.001)}</strong></div><div class="estimate-total"><span>Estimated total</span><strong id="estimate-total">${money(stock.adjusted_price * 10 * 1.001)}</strong></div></div><button class="primary-button full" id="trade-button">Buy stock</button><div id="trade-feedback" class="trade-feedback hidden"></div><p class="helper">Your fill price is determined by the server. A trade changes the shared simulated market price.</p></aside>`;
+      const intervalButtons = INTERVALS.map(
+        (item, i) => `<button type="button" data-interval="${item.minutes}" class="${i === 0 ? "active" : ""}" aria-pressed="${i === 0}">${item.label}</button>`,
+      ).join("");
       $("#stock-content").innerHTML =
-        `<div class="stock-heading"><div><span class="eyebrow">${escapeHTML(stock.sector)}</span><h1>${escapeHTML(stock.company_name)}</h1><p class="symbol-label">${escapeHTML(stock.symbol)}</p></div><div class="price-block"><div class="price-block-top"><span>MockFolio price</span><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><strong id="stock-price">${money(stock.adjusted_price)}</strong><em id="stock-deviation" class="${tone(stock.deviation)}">${signed(stock.deviation)} (${percent(stock.deviation_percentage)})</em><span class="reference-pill" id="stock-reference">Reference ${money(stock.raw_price)}</span></div></div><div class="stock-grid"><section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">PRICE STORY</span><h2>MockFolio price history</h2></div>${chartToggle}</div><canvas id="price-chart" aria-label="Line chart comparing the MockFolio price and the reference price over recent history" role="img"></canvas><canvas id="candle-chart" class="hidden" aria-label="Candlestick chart of simulated open, high, low and close price data" role="img"></canvas><div id="chart-empty" class="empty-state compact hidden">No price history yet. Your first trade will create a point.</div><p class="chart-caption" id="chart-caption">Solid teal is the MockFolio price; dashed grey is the reference it drifts back toward.</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
-      drawChart(adjustedHistory, referenceHistory);
-      if (adjustedHistory.length) initChartViewToggle(generateCandles(stock));
+        `<header class="tv-header"><div class="tv-symbol"><span class="tv-avatar" aria-hidden="true">${escapeHTML(stock.symbol[0])}</span><div><h1>${escapeHTML(stock.symbol)} <span class="tv-exchange">${escapeHTML(stock.exchange || "NSE")}</span></h1><p>${escapeHTML(stock.company_name)} · ${escapeHTML(stock.sector || "")}</p></div><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button></div><div class="tv-quote"><strong id="stock-price">${money(stock.adjusted_price)}</strong><em id="stock-change"></em><span class="tv-quote-label">MockFolio price · <span class="tv-live-dot"></span> live</span></div><div class="tv-stats" id="tv-stats"></div></header>` +
+        `<div class="stock-grid"><section class="panel tv-chart-panel"><div class="tv-toolbar"><div class="tv-group" role="group" aria-label="Interval">${intervalButtons}</div><span class="tv-divider"></span><div class="tv-group" role="group" aria-label="Chart type"><button type="button" data-chart-view="candles" class="active" aria-pressed="true">${svgIcon(ICONS.candles)}Candles</button><button type="button" data-chart-view="line" aria-pressed="false">${svgIcon(ICONS.lines)}MockFolio vs Real</button></div></div><div class="tv-chart-wrap"><div id="tv-chart" role="img" aria-label="Price chart for ${escapeHTML(stock.symbol)}"></div><div class="tv-legend" id="tv-legend"></div><div id="chart-empty" class="tv-empty hidden">No price history yet. Candles appear as the market ticks.</div></div><p class="chart-caption" id="chart-caption">${CHART_CAPTIONS.candles}</p></section>${tradePanel}</div><section id="trade-result" class="trade-result hidden"></section>`;
+      renderQuote(stock);
+
+      let interval = INTERVALS[0];
+      stockChart = window.MockfolioCharts?.createStockChart($("#tv-chart"), {
+        symbol: stock.symbol,
+        legend: $("#tv-legend"),
+      });
+      const loadSeries = async () => {
+        const [adjusted, raw] = await Promise.all([
+          api.history(stock.instrument_id, 1, interval.minutes, 300),
+          api.history(stock.instrument_id, 0, interval.minutes, 300),
+        ]);
+        $("#chart-empty").classList.toggle("hidden", adjusted.length > 0);
+        stockChart?.setData(adjusted, raw, interval.label);
+      };
+      await loadSeries();
+
+      $$("[data-interval]").forEach(
+        (button) =>
+          (button.onclick = async () => {
+            interval = INTERVALS.find((item) => item.minutes === Number(button.dataset.interval));
+            $$("[data-interval]").forEach((b) => {
+              b.classList.toggle("active", b === button);
+              b.setAttribute("aria-pressed", String(b === button));
+            });
+            await loadSeries();
+          }),
+      );
+      $$("[data-chart-view]").forEach(
+        (button) =>
+          (button.onclick = () => {
+            const view = button.dataset.chartView;
+            $$("[data-chart-view]").forEach((b) => {
+              b.classList.toggle("active", b === button);
+              b.setAttribute("aria-pressed", String(b === button));
+            });
+            stockChart?.setMode(view);
+            $("#chart-caption").textContent = CHART_CAPTIONS[view];
+          }),
+      );
+
+      // Live: pull the newest bars and the quote every few seconds.
+      refreshStock = async () => {
+        try {
+          const [fresh, adjTail, rawTail] = await Promise.all([
+            api.stock(stock.instrument_id),
+            api.history(stock.instrument_id, 1, interval.minutes, 2),
+            api.history(stock.instrument_id, 0, interval.minutes, 2),
+          ]);
+          stock = fresh;
+          $("#stock-price").textContent = money(stock.adjusted_price);
+          renderQuote(stock);
+          if (adjTail.length) $("#chart-empty").classList.add("hidden");
+          stockChart?.update(adjTail, rawTail);
+        } catch {
+          // A missed poll is harmless; the next one catches up.
+        }
+      };
+      clearInterval(stockPoll);
+      stockPoll = setInterval(() => document.hidden || refreshStock(), 5000);
+
       bindWatchButtons();
       if (!isAdmin) bindTrade(stock);
     } catch (error) {
-      $("#stock-content").innerHTML =
-        `<div class="error-state">${escapeHTML(error.message)}</div>`;
+      $("#stock-content").innerHTML = `<div class="error-state">${escapeHTML(error.message)}</div>`;
     }
   }
 
@@ -1175,25 +796,7 @@
           priceEl.classList.add(flashClass);
           setTimeout(() => priceEl.classList.remove(flashClass), 650);
         }
-        const deviationEl = $("#stock-deviation");
-        if (deviationEl) {
-          deviationEl.className = tone(stock.deviation);
-          deviationEl.textContent = `${signed(stock.deviation)} (${percent(stock.deviation_percentage)})`;
-        }
-        const referenceEl = $("#stock-reference");
-        if (referenceEl)
-          referenceEl.textContent = `Reference ${money(stock.raw_price)}`;
-        if (priceChart) {
-          priceChart.data.labels.push(
-            new Date().toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          );
-          priceChart.data.datasets[0].data.push(stock.adjusted_price);
-          priceChart.data.datasets[1].data.push(stock.raw_price);
-          priceChart.update();
-        }
+        refreshStock?.();
       } catch (error) {
         const feedback = $("#trade-feedback");
         if (feedback) {

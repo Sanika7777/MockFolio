@@ -1,0 +1,1 @@
+Made MockFolio: a paper-trading desk where your trades actually move the price, then it drifts back toward reality. Buy 100 RELIANCE, watch it tick up 0.56%. Paper trade. Move the market.

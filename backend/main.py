@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -12,6 +13,7 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from . import settings_store
+from .charts import INTERVALS, ist_day_start_utc, portfolio_history, resample
 from .auth import create_access_token, get_user_id, hash_password, verify_password
 from . import database
 from .database import get_db
@@ -197,6 +199,42 @@ def me(user: User = Depends(current_user), account: Account = Depends(current_ac
     }
 
 
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def day_stats(db: Session) -> dict[int, dict]:
+    """Today's (IST) open/high/low/volume per instrument from MockFolio-price candles."""
+    rows = db.execute(
+        text(
+            """
+            SELECT c.instrument_id, f.day_high, f.day_low, c.open_price AS day_open,
+                   COALESCE((SELECT SUM(t.quantity) FROM trades t
+                             WHERE t.instrument_id = c.instrument_id AND t.executed_at >= :s), 0) AS day_volume
+            FROM (SELECT instrument_id, MIN(bucket_start) AS first_bucket, MAX(high_price) AS day_high,
+                         MIN(low_price) AS day_low
+                  FROM candles_1m WHERE is_adjusted = 1 AND bucket_start >= :s GROUP BY instrument_id) f
+            JOIN candles_1m c ON c.instrument_id = f.instrument_id AND c.is_adjusted = 1 AND c.bucket_start = f.first_bucket
+            """
+        ),
+        {"s": ist_day_start_utc(utcnow())},
+    ).mappings().all()
+    return {r["instrument_id"]: dict(r) for r in rows}
+
+
+def with_day_stats(item: dict, stats: dict | None) -> dict:
+    price = item["adjusted_price"]
+    day_open = stats["day_open"] if stats else price
+    item.update(
+        day_open=day_open,
+        day_high=max(stats["day_high"], price) if stats else price,
+        day_low=min(stats["day_low"], price) if stats else price,
+        day_volume=stats["day_volume"] if stats else 0,
+        day_change_percentage=(price - day_open) / day_open * 100 if day_open else 0,
+    )
+    return item
+
+
 @app.get("/instruments")
 def instruments(db: Session = Depends(get_db)):
     rows = db.execute(
@@ -205,7 +243,8 @@ def instruments(db: Session = Depends(get_db)):
         .where(Instrument.is_active == 1)
         .order_by(Instrument.symbol)
     ).all()
-    return [instrument_json(i, p) for i, p in rows]
+    stats = day_stats(db)
+    return [with_day_stats(instrument_json(i, p), stats.get(i.instrument_id)) for i, p in rows]
 
 
 @app.get("/instruments/{instrument_id}")
@@ -218,7 +257,7 @@ def instrument_detail(instrument_id: int, db: Session = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail="Instrument not found")
     i, p = row
-    return dict(instrument_json(i, p), daily_sigma=i.daily_sigma)
+    return with_day_stats(dict(instrument_json(i, p), daily_sigma=i.daily_sigma), day_stats(db).get(i.instrument_id))
 
 
 @app.get("/instruments/{instrument_id}/candles")
@@ -227,24 +266,35 @@ def candles(
     is_adjusted: int = Query(1, ge=0, le=1),
     db: Session = Depends(get_db),
     limit: int = Query(200, ge=1, le=1000),
+    interval: int = Query(1, description="Bucket width in minutes: 1, 5, 15 or 60"),
 ):
+    if interval not in INTERVALS:
+        raise HTTPException(status_code=422, detail=f"interval must be one of {INTERVALS}")
     rows = db.scalars(
         select(Candle)
         .where(Candle.instrument_id == instrument_id, Candle.is_adjusted == is_adjusted)
         .order_by(Candle.bucket_start.desc())
-        .limit(limit)
+        .limit(limit * interval)
     ).all()
-    return [
+    # Candle volume is never written by the trade path, so traded shares are summed from trades instead.
+    volume = dict(db.execute(
+        text(
+            "SELECT DATE_FORMAT(executed_at, '%Y-%m-%d %H:%i:00') AS m, SUM(quantity) FROM trades "
+            "WHERE instrument_id = :i AND executed_at >= :s GROUP BY m"
+        ),
+        {"i": instrument_id, "s": rows[-1].bucket_start if rows else utcnow()},
+    ).all())
+    return resample([
         {
             "bucket_start": c.bucket_start,
             "open": c.open_price,
             "high": c.high_price,
             "low": c.low_price,
             "close": c.close_price,
-            "volume": c.volume,
+            "volume": int(volume.get(c.bucket_start.strftime("%Y-%m-%d %H:%M:00"), 0)),
         }
         for c in reversed(rows)
-    ]
+    ], interval)[-limit:]
 
 
 @app.post("/trades/{side}", response_model=TradeResponse)
@@ -276,6 +326,28 @@ def portfolio_summary(account: Account = Depends(current_account), db: Session =
     if not row:
         raise HTTPException(status_code=404, detail="Account not found")
     return dict(row)
+
+
+@app.get("/portfolio/history")
+def portfolio_value_history(account: Account = Depends(current_account), db: Session = Depends(get_db)):
+    trades = [
+        {"instrument_id": t.instrument_id, "side": t.side, "quantity": t.quantity, "exec_price": t.exec_price,
+         "brokerage": t.brokerage, "executed_at": t.executed_at}
+        for t in db.scalars(select(Trade).where(Trade.account_id == account.account_id).order_by(Trade.executed_at, Trade.trade_id))
+    ]
+    if not trades:
+        return []
+    ids = sorted({t["instrument_id"] for t in trades})
+    closes: dict[int, list] = {i: [] for i in ids}
+    for c in db.scalars(
+        select(Candle)
+        .where(Candle.instrument_id.in_(ids), Candle.is_adjusted == 1,
+               Candle.bucket_start >= trades[0]["executed_at"] - timedelta(minutes=1))
+        .order_by(Candle.instrument_id, Candle.bucket_start)
+    ):
+        closes[c.instrument_id].append((c.bucket_start, c.close_price))
+    live = {p.instrument_id: p.adjusted_price for p in db.scalars(select(PriceState).where(PriceState.instrument_id.in_(ids)))}
+    return portfolio_history(account.starting_cash, trades, closes, utcnow(), live)
 
 
 @app.get("/orders")

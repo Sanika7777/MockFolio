@@ -79,8 +79,9 @@
     me: () => request("/auth/me"),
     stocks: () => request("/instruments"),
     stock: (id) => request(`/instruments/${id}`),
-    history: (id, isAdjusted = 1) =>
-      request(`/instruments/${id}/candles?is_adjusted=${isAdjusted}`),
+    history: (id, isAdjusted = 1, interval = 1, limit = 300) =>
+      request(`/instruments/${id}/candles?is_adjusted=${isAdjusted}&interval=${interval}&limit=${limit}`),
+    portfolioHistory: () => request("/portfolio/history"),
     portfolio: () => request("/portfolio"),
     summary: () => request("/portfolio/summary"),
     orders: () => request("/orders"),

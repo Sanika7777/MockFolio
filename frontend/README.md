@@ -1,6 +1,6 @@
 # MockFolio frontend
 
-Plain HTML + CSS + vanilla JS + Chart.js. No build step, no framework, no bundler.
+Plain HTML + CSS + vanilla JS + TradingView Lightweight Charts. No build step, no framework, no bundler.
 
 ## Running it
 
@@ -27,8 +27,12 @@ frontend/
 ├── js/
 │   ├── api.js             the only file that talks to the backend. Don't replace it.
 │   ├── app.js             all page logic: the shell (top bar + mobile nav),
-│   │                      every page's load*()/render*() functions, the
-│   │                      Chart.js wrappers, and the shared icon set.
+│   │                      every page's load*()/render*() functions and the
+│   │                      shared icon set.
+│   ├── charts.js          Lightweight Charts wrappers: the stock chart
+│   │                      (TradingView-default candles + volume, or MockFolio
+│   │                      vs real price lines) and the portfolio value chart.
+│   │                      Re-themes itself on light/dark toggle.
 │   ├── auth.js            login/register form submission
 │   ├── auth-motion.js     decorative motion for the auth pages only (password
 │   │                      toggles, strength meter, count-up, hero chart)
@@ -74,11 +78,11 @@ Dark mode is a tuned palette, not an inversion — see the values already in
    helper uses that to show a shape-matched skeleton instead of a spinner.
 5. Add the page's `load*()` function to `app.js` and call it from `start()`'s
    `if (page === "yourpage") await loadYourPage();` chain.
-6. If the page draws a chart, add the pinned Chart.js script tag
-   (`chart.js@4.5.1/dist/chart.umd.min.js` — match the version already used
-   elsewhere) and read colours from `getComputedStyle` rather than
-   hard-coding them, the same way `applyChartTheme()` does for the stock
-   chart. A page with no chart shouldn't load Chart.js at all.
+6. If the page draws a chart, add the pinned Lightweight Charts script tag
+   (`lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js`)
+   followed by `js/charts.js`, and build the chart through
+   `window.MockfolioCharts`. Line colours come from the CSS tokens there, so
+   they follow the theme. A page with no chart shouldn't load either script.
 7. Table rows: build them as `<tr>`/`<td data-label="Column name">…` (not
    `<div>` grids) so the existing `@media (max-width: 767px)` rule can turn
    them into stacked cards on phones with no separate markup.

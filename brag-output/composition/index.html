@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>MockFolio — Paper trade. Move the market.</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: Inter;
+        font-style: normal;
+        font-weight: 400 700;
+        src: url("assets/fonts/inter-latin.woff2") format("woff2");
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+          U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: Inter;
+        font-style: normal;
+        font-weight: 400 700;
+        src: url("assets/fonts/inter-latin-ext.woff2") format("woff2");
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20C0,
+          U+2C60-2C7F, U+A720-A7FF;
+      }
+      :root {
+        --bg: #101719;
+        --surface: #172124;
+        --surface-soft: #1d2a2d;
+        --border: #2b3b3f;
+        --text: #eef5f3;
+        --muted: #9aadae;
+        --primary: #58c7b8;
+        --on-primary: #101719;
+        --tint: #173d3a;
+        --negative: #f07b78;
+        --reference: #7c8e93;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      /* persistent atmosphere */
+      .glow {
+        position: absolute;
+        width: 1500px;
+        height: 1500px;
+        left: 900px;
+        top: -520px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(88, 199, 184, 0.28) 0%, rgba(88, 199, 184, 0.08) 38%, rgba(16, 23, 25, 0) 68%);
+        opacity: 0.7;
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(154, 173, 174, 0.07) 2px, transparent 2px),
+          linear-gradient(90deg, rgba(154, 173, 174, 0.07) 2px, transparent 2px);
+        background-size: 120px 120px;
+      }
+      .meta {
+        position: absolute;
+        top: 56px;
+        left: 120px;
+        right: 120px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 22px;
+        letter-spacing: 3px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .meta b {
+        color: var(--primary);
+        font-weight: 600;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+      .inner {
+        position: absolute;
+        inset: 0;
+      }
+      .eyebrow {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 5px;
+        color: var(--primary);
+        text-transform: uppercase;
+      }
+      .card {
+        background: var(--surface);
+        border: 3px solid var(--border);
+        border-radius: 28px;
+        box-shadow: 0 40px 90px rgba(0, 0, 0, 0.35);
+      }
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-weight: 700;
+      }
+
+      /* scene 1 */
+      #s1-line {
+        position: absolute;
+        left: 0;
+        top: 610px;
+        width: 1920px;
+        height: 360px;
+      }
+      #s1-head {
+        position: absolute;
+        left: 120px;
+        top: 250px;
+        width: 1500px;
+        margin: 0;
+        font-size: 118px;
+        line-height: 1.04;
+        font-weight: 700;
+        letter-spacing: -4px;
+      }
+      .strike-word {
+        position: relative;
+        display: inline-block;
+        color: var(--text);
+      }
+      #s1-strike {
+        position: absolute;
+        left: -8px;
+        right: -8px;
+        top: 52%;
+        height: 14px;
+        border-radius: 7px;
+        background: var(--primary);
+        transform-origin: left center;
+      }
+
+      /* scene 2 */
+      #s2-card {
+        position: absolute;
+        left: 120px;
+        top: 250px;
+        width: 1000px;
+        padding: 64px 72px;
+      }
+      .label {
+        font-size: 28px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      #s2-cash {
+        font-size: 150px;
+        font-weight: 700;
+        letter-spacing: -5px;
+        margin-top: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .s2-sub {
+        font-size: 28px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      #s2-chips {
+        position: absolute;
+        left: 1200px;
+        top: 270px;
+        width: 600px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 30px 36px;
+        background: var(--surface-soft);
+        border: 3px solid var(--border);
+        border-radius: 22px;
+      }
+      .chip i {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--primary);
+        flex: none;
+      }
+      .chip b {
+        display: block;
+        font-size: 34px;
+        font-weight: 600;
+      }
+      .chip span {
+        display: block;
+        font-size: 24px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      /* scene 3 */
+      #s3-stock {
+        position: absolute;
+        left: 120px;
+        top: 180px;
+        width: 900px;
+        padding: 56px 64px;
+      }
+      .sym {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+      .sym .tag {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        color: var(--muted);
+        border: 2px solid var(--border);
+        padding: 6px 14px;
+        border-radius: 10px;
+      }
+      .sym h2 {
+        margin: 0;
+        font-size: 64px;
+        letter-spacing: -2px;
+      }
+      .company {
+        font-size: 30px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      #s3-price {
+        font-size: 132px;
+        font-weight: 700;
+        letter-spacing: -4px;
+        margin-top: 36px;
+        font-variant-numeric: tabular-nums;
+      }
+      .price-row {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        margin-top: 8px;
+      }
+      #s3-impact {
+        font-size: 30px;
+        font-weight: 600;
+        color: var(--primary);
+        background: var(--tint);
+        padding: 10px 20px;
+        border-radius: 12px;
+      }
+      .ref {
+        font-size: 28px;
+        color: var(--muted);
+      }
+      .ref b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      #s3-ticket {
+        position: absolute;
+        left: 1080px;
+        top: 180px;
+        width: 720px;
+        padding: 52px 56px;
+      }
+      .field {
+        margin-top: 22px;
+        height: 96px;
+        border: 3px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface-soft);
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        font-size: 48px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .field.focus {
+        border-color: var(--primary);
+      }
+      #s3-caret {
+        width: 4px;
+        height: 52px;
+        background: var(--primary);
+        margin-left: 6px;
+      }
+      .rows {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 30px;
+        color: var(--muted);
+      }
+      .row b {
+        color: var(--text);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      #s3-buy {
+        margin-top: 36px;
+        height: 104px;
+        border-radius: 18px;
+        background: var(--primary);
+        color: var(--on-primary);
+        display: grid;
+        place-items: center;
+        font-size: 40px;
+        font-weight: 700;
+      }
+      #s3-toast {
+        position: absolute;
+        left: 120px;
+        top: 830px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 30px 40px;
+        background: var(--tint);
+        border: 3px solid #286a62;
+        border-radius: 22px;
+        font-size: 36px;
+        font-weight: 600;
+      }
+      #s3-toast .tick {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--on-primary);
+        display: grid;
+        place-items: center;
+        font-size: 32px;
+        font-weight: 700;
+      }
+      #s3-cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 56px;
+        height: 56px;
+      }
+
+      /* scene 4 */
+      #s4-copy {
+        position: absolute;
+        left: 120px;
+        top: 150px;
+      }
+      #s4-head {
+        margin: 18px 0 0;
+        font-size: 104px;
+        font-weight: 700;
+        letter-spacing: -3.5px;
+      }
+      #s4-chart {
+        position: absolute;
+        left: 120px;
+        top: 440px;
+        width: 1680px;
+        height: 520px;
+        padding: 0;
+      }
+      #s4-svg {
+        position: absolute;
+        left: 40px;
+        top: 40px;
+        width: 1600px;
+        height: 440px;
+      }
+      .legend {
+        position: absolute;
+        right: 60px;
+        top: 44px;
+        display: flex;
+        gap: 40px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .legend span {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .legend i {
+        width: 36px;
+        height: 6px;
+        border-radius: 3px;
+      }
+      #s4-dev {
+        position: absolute;
+        left: 1170px;
+        top: 100px;
+        text-align: right;
+        width: 460px;
+      }
+      #s4-dev .label {
+        font-size: 26px;
+      }
+      #s4-devval {
+        font-size: 84px;
+        font-weight: 700;
+        color: var(--primary);
+        letter-spacing: -2px;
+        font-variant-numeric: tabular-nums;
+      }
+      #s4-buytag {
+        position: absolute;
+        left: 470px;
+        top: 150px;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--on-primary);
+        background: var(--primary);
+        padding: 8px 16px;
+        border-radius: 10px;
+        letter-spacing: 2px;
+      }
+
+      /* scene 5 */
+      #s5-lockup {
+        position: absolute;
+        left: 120px;
+        top: 300px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+      }
+      #s5-mark {
+        width: 132px;
+        height: 132px;
+        border-radius: 36px;
+        font-size: 76px;
+      }
+      #s5-word {
+        font-size: 96px;
+        font-weight: 700;
+        letter-spacing: -3.5px;
+      }
+      #s5-head {
+        margin: 56px 0 0;
+        font-size: 136px;
+        font-weight: 700;
+        line-height: 1.02;
+        letter-spacing: -5px;
+        width: 1600px;
+      }
+      #s5-head em {
+        font-style: normal;
+        white-space: nowrap;
+        color: var(--primary);
+      }
+      #s5-sub {
+        margin-top: 40px;
+        font-size: 34px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="21.4"
+    >
+      <!-- persistent background -->
+      <div class="grid"></div>
+      <div id="glow" class="glow"></div>
+      <div class="meta"><span><b>mockfolio</b> · paper trading desk</span><span>NSE · simulated market</span></div>
+
+      <!-- Scene 1: hook -->
+      <section id="s1" class="clip" data-start="0" data-duration="3.4" data-track-index="1">
+        <div class="inner" id="s1-inner">
+          <svg id="s1-line" viewBox="0 0 1920 360" preserveAspectRatio="none">
+            <path
+              id="s1-path"
+              pathLength="1"
+              d="M0 250 C 200 240, 330 262, 480 236 S 760 214, 920 228 S 1240 198, 1420 212 S 1760 188, 1920 196"
+              fill="none"
+              stroke="#7c8e93"
+              stroke-width="6"
+              stroke-linecap="round"
+            />
+          </svg>
+          <h1 id="s1-head">
+            <span class="w">Your</span> <span class="w">paper</span> <span class="w">trades</span>
+            <span class="w strike-word">don’t<span id="s1-strike"></span></span> <span class="w">move</span>
+            <span class="w">the</span> <span class="w">market.</span>
+          </h1>
+        </div>
+      </section>
+
+      <!-- Scene 2: virtual cash -->
+      <section id="s2" class="clip" data-start="3.4" data-duration="3.8" data-track-index="1">
+        <div class="inner" id="s2-inner">
+          <div id="s2-card" class="card">
+            <div class="label">Available cash</div>
+            <div id="s2-cash">₹0</div>
+            <div class="s2-sub">Credited on registration · virtual money</div>
+          </div>
+          <div id="s2-chips">
+            <div class="chip"><i></i><div><b>Virtual money only</b><span>Zero risk to real capital</span></div></div>
+            <div class="chip"><i></i><div><b>Simulated pricing</b><span>Moves with sandbox trades</span></div></div>
+            <div class="chip"><i></i><div><b>Practice, not prediction</b><span>Built for learning, not live trading</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 3: the trade -->
+      <section id="s3" class="clip" data-start="7.2" data-duration="5.4" data-track-index="1">
+        <div class="inner" id="s3-inner">
+          <div id="s3-stock" class="card">
+            <div class="sym"><h2>RELIANCE</h2><span class="tag">NSE</span></div>
+            <div class="company">Reliance Industries · Energy</div>
+            <div class="label" style="margin-top: 40px">MockFolio price</div>
+            <div id="s3-price">₹1,197.60</div>
+            <div class="price-row">
+              <span id="s3-impact">▲ +0.56% price impact</span>
+              <span class="ref">Reference price <b>₹1,197.60</b></span>
+            </div>
+          </div>
+          <div id="s3-ticket" class="card">
+            <div class="eyebrow">Buy stock</div>
+            <div class="label" style="margin-top: 26px">Quantity</div>
+            <div class="field" id="s3-field"><span id="s3-qty"></span><span id="s3-caret"></span></div>
+            <div class="rows">
+              <div class="row">Estimated amount <b id="s3-est">₹0.00</b></div>
+              <div class="row" id="s3-fillrow">Fill price <b>₹1,204.31</b></div>
+              <div class="row" id="s3-brokrow">Brokerage <b>₹35.93</b></div>
+            </div>
+            <div id="s3-buy">Buy stock</div>
+          </div>
+          <div id="s3-toast"><span class="tick">✓</span>Trade executed successfully · 100 RELIANCE</div>
+          <svg id="s3-cursor" viewBox="0 0 24 24">
+            <path d="M4 2 L4 19 L8.5 14.8 L11.6 21.5 L14.4 20.2 L11.4 13.6 L17.5 13.6 Z" fill="#eef5f3" stroke="#101719" stroke-width="1.4" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- Scene 4: two prices, one lesson -->
+      <section id="s4" class="clip" data-start="12.6" data-duration="4.8" data-track-index="1">
+        <div class="inner" id="s4-inner">
+          <div id="s4-copy">
+            <div class="eyebrow">How prices move</div>
+            <h2 id="s4-head">Two prices, one lesson.</h2>
+          </div>
+          <div id="s4-chart" class="card">
+            <svg id="s4-svg" viewBox="0 0 1600 440" preserveAspectRatio="none">
+              <path id="s4-fill" fill="rgba(88,199,184,0.14)" d="" />
+              <path id="s4-ref" pathLength="1" fill="none" stroke="#7c8e93" stroke-width="5" stroke-dasharray="14 12" d="" />
+              <path id="s4-mf" pathLength="1" fill="none" stroke="#58c7b8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="" />
+              <circle id="s4-dot" r="13" fill="#58c7b8" cx="0" cy="0" />
+            </svg>
+            <div class="legend">
+              <span><i style="background: #58c7b8"></i>MockFolio price</span>
+              <span><i style="background: #7c8e93"></i>Reference price</span>
+            </div>
+            <div id="s4-buytag">BUY 100</div>
+            <div id="s4-dev">
+              <div class="label">Deviation</div>
+              <div id="s4-devval">+0.56%</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 5: outro -->
+      <section id="s5" class="clip" data-start="17.4" data-duration="4" data-track-index="1">
+        <div class="inner" id="s5-inner">
+          <div id="s5-lockup">
+            <div class="brand">
+              <div id="s5-mark" class="brand-mark">M</div>
+              <div id="s5-word">mockfolio</div>
+            </div>
+            <h2 id="s5-head">Paper trade. <em>Move the market.</em></h2>
+            <div id="s5-sub">Virtual money only · Zero risk to real capital</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Voiceover (Kokoro af_heart) -->
+      <audio id="vo1" src="assets/vo/vo1.wav" data-start="0.4" data-duration="2.37" data-track-index="3" data-volume="1"></audio>
+      <audio id="vo2" src="assets/vo/vo2.wav" data-start="3.5" data-duration="3.55" data-track-index="4" data-volume="1"></audio>
+      <audio id="vo3" src="assets/vo/vo3.wav" data-start="7.35" data-duration="2.42" data-track-index="3" data-volume="1"></audio>
+      <audio id="vo4" src="assets/vo/vo4.wav" data-start="12.8" data-duration="3.52" data-track-index="4" data-volume="1"></audio>
+      <audio id="vo5" src="assets/vo/vo5.wav" data-start="17.6" data-duration="2.56" data-track-index="3" data-volume="1"></audio>
+
+      <!-- Music bed: in, ducked under voice, lifts after last line, fades out -->
+      <audio
+        id="music"
+        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="21.4"
+        data-track-index="10"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.35,"v":0.14},{"t":20.1,"v":0.14},{"t":20.4,"v":0.3},{"t":20.5,"v":0.3},{"t":21.4,"v":0}]}]}'
+      ></audio>
+
+      <!-- SFX -->
+      <audio id="sfx-strike" src="assets/sfx/switch_002.ogg" data-start="2.3" data-duration="0.4" data-track-index="11" data-volume="0.7"></audio>
+      <audio id="sfx-count" src="assets/sfx/drop_001.ogg" data-start="4.45" data-duration="0.11" data-track-index="12" data-volume="0.6"></audio>
+      <audio id="sfx-k1" src="assets/sfx/keypress-004.wav" data-start="8.0" data-duration="0.2" data-track-index="13" data-volume="0.7"></audio>
+      <audio id="sfx-k2" src="assets/sfx/keypress-011.wav" data-start="8.14" data-duration="0.2" data-track-index="14" data-volume="0.7"></audio>
+      <audio id="sfx-k3" src="assets/sfx/keypress-019.wav" data-start="8.28" data-duration="0.2" data-track-index="15" data-volume="0.7"></audio>
+      <audio id="sfx-click" src="assets/sfx/mouseclick1.ogg" data-start="9.2" data-duration="0.06" data-track-index="16" data-volume="0.8"></audio>
+      <audio id="sfx-ok" src="assets/sfx/bong_001.ogg" data-start="9.45" data-duration="0.12" data-track-index="17" data-volume="0.6"></audio>
+      <audio id="sfx-buy" src="assets/sfx/drop_001.ogg" data-start="13.82" data-duration="0.11" data-track-index="18" data-volume="0.55"></audio>
+      <audio id="sfx-mark" src="assets/sfx/impactSoft_medium_001.ogg" data-start="17.5" data-duration="0.18" data-track-index="19" data-volume="0.75"></audio>
+    </div>
+
+    <script src="assets/audio-data.js"></script>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const inr = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const inr0 = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+
+        // ---- chart geometry for scene 4 (computed once, deterministic) ----
+        const W = 1600, H = 440, BUY_X = 520;
+        const refY = (x) => 300 - x * 0.04;
+        const mfY = (x) => {
+          const base = refY(x) + Math.sin(x / 55) * 6;
+          if (x < BUY_X) return base;
+          const k = Math.exp(-(x - BUY_X) / 330); // decay back toward reference
+          return base - 150 * k;
+        };
+        const pts = (fn) => {
+          const out = [];
+          for (let x = 0; x <= W; x += 10) out.push([x, fn(x)]);
+          return out;
+        };
+        const toD = (p) => p.map((q, i) => (i ? "L" : "M") + q[0] + " " + q[1].toFixed(1)).join(" ");
+        const mfPts = pts(mfY);
+        document.getElementById("s4-ref").setAttribute("d", toD(pts(refY)));
+        document.getElementById("s4-mf").setAttribute("d", toD(mfPts));
+        document.getElementById("s4-fill").setAttribute("d", toD(mfPts) + " L" + W + " " + H + " L0 " + H + " Z");
+
+        // ================= Scene 1: hook (0 – 3.4) =================
+        tl.fromTo("#s1-line", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 2.6, ease: "power2.inOut" }, 0);
+        tl.fromTo("#s1-head .w", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", stagger: 0.06 }, 0.15);
+        tl.fromTo("#s1-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.28, ease: "power4.out" }, 2.3);
+        tl.to(".strike-word", { color: "#9aadae", duration: 0.25 }, 2.35);
+        tl.to("#s1-inner", { opacity: 0, x: -60, duration: 0.3, ease: "power2.in" }, 3.1);
+
+        // ================= Scene 2: virtual cash (3.4 – 7.2) =================
+        tl.fromTo("#s2-card", { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 3.4);
+        const cash = { v: 0 };
+        tl.to(cash, {
+          v: 500000,
+          duration: 1.0,
+          ease: "power2.out",
+          onUpdate: () => (document.getElementById("s2-cash").textContent = "₹" + inr0.format(Math.round(cash.v))),
+        }, 3.55);
+        // beat-grid: chips at 4.53, 5.03, 5.53 (vol-1 preset), then hold ≥1.6s
+        tl.fromTo("#s2-chips .chip", { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "back.out(1.6)", stagger: 0.5 }, 4.53);
+        tl.to("#s2-inner", { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 6.9);
+
+        // ================= Scene 3: the trade (7.2 – 12.6) =================
+        tl.fromTo("#s3-stock", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 7.2);
+        tl.fromTo("#s3-ticket", { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "expo.out" }, 7.32);
+        tl.set("#s3-impact", { opacity: 0 }, 7.2);
+        tl.set(["#s3-fillrow", "#s3-brokrow"], { opacity: 0 }, 7.2);
+        tl.set("#s3-toast", { opacity: 0 }, 7.2);
+        tl.set("#s3-field", { className: "field focus" }, 7.85);
+        tl.fromTo("#s3-caret", { opacity: 1 }, { opacity: 0.15, duration: 0.25, repeat: 3, yoyo: true }, 7.85);
+        [["1", 8.0], ["10", 8.14], ["100", 8.28]].forEach(([q, t]) => tl.set("#s3-qty", { textContent: q }, t));
+        tl.set("#s3-est", { textContent: "₹1,19,760.00" }, 8.35);
+        // cursor travels to Buy stock and clicks
+        tl.fromTo("#s3-cursor", { x: 1560, y: 1020, opacity: 0 }, { x: 1500, y: 900, opacity: 1, duration: 0.2 }, 8.45);
+        tl.to("#s3-cursor", { x: 1440, y: 690, duration: 0.55, ease: "power2.inOut" }, 8.65);
+        tl.to("#s3-buy", { scale: 0.95, duration: 0.08 }, 9.2);
+        tl.to("#s3-buy", { scale: 1, duration: 0.2, ease: "back.out(3)" }, 9.28);
+        tl.to("#s3-cursor", { scale: 0.85, duration: 0.08, transformOrigin: "0% 0%" }, 9.2);
+        tl.to("#s3-cursor", { scale: 1, duration: 0.15 }, 9.28);
+        tl.fromTo("#s3-toast", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.8)" }, 9.45);
+        const px = { v: 1197.6 };
+        tl.to(px, {
+          v: 1204.31,
+          duration: 0.8,
+          ease: "power3.out",
+          onUpdate: () => (document.getElementById("s3-price").textContent = "₹" + inr.format(px.v)),
+        }, 9.5);
+        tl.to("#s3-price", { color: "#58c7b8", duration: 0.2 }, 9.5);
+        tl.fromTo("#s3-impact", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.9);
+        tl.fromTo(["#s3-fillrow", "#s3-brokrow"], { opacity: 0 }, { opacity: 1, duration: 0.3, stagger: 0.12 }, 10.1);
+        tl.to("#s3-cursor", { opacity: 0, duration: 0.3 }, 10.2);
+        tl.to("#s3-inner", { opacity: 0, duration: 0.3, ease: "power1.in" }, 12.3);
+
+        // ================= Scene 4: two prices (12.6 – 17.4) =================
+        tl.fromTo("#s4-copy", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 12.65);
+        tl.fromTo("#s4-chart", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "expo.out" }, 12.75);
+                        tl.fromTo("#s4-buytag", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 13.85);
+        // dot rides the MockFolio line as it draws
+        const dotState = { i: 0 };
+        const placeDot = () => {
+          const n = Math.max(1, Math.min(mfPts.length - 1, Math.round(dotState.i)));
+          const part = mfPts.slice(0, n + 1);
+          document.getElementById("s4-mf").setAttribute("d", toD(part));
+          document.getElementById("s4-fill").setAttribute("d", toD(part) + " L" + part[n][0] + " " + H + " L0 " + H + " Z");
+          const p = mfPts[n];
+          const d = document.getElementById("s4-dot");
+          d.setAttribute("cx", p[0]);
+          d.setAttribute("cy", p[1]);
+        };
+        placeDot();
+        tl.to(dotState, { i: mfPts.length - 1, duration: 2.6, ease: "none", onUpdate: placeDot }, 13.0);
+        tl.fromTo("#s4-dev", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 13.95);
+        const dev = { v: 0.56 };
+        tl.to(dev, {
+          v: 0.12,
+          duration: 1.9,
+          ease: "power2.out",
+          onUpdate: () => (document.getElementById("s4-devval").textContent = "+" + dev.v.toFixed(2) + "%"),
+        }, 14.2);
+        tl.to("#s4-inner", { opacity: 0, duration: 0.3 }, 17.1);
+
+        // ================= Scene 5: outro (17.4 – 21.4) =================
+        // beat-locked: 17.52s strong cue (vol-1 preset) on the mark
+        tl.fromTo("#s5-mark", { scale: 0.4, opacity: 0, rotation: -12 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.55, ease: "back.out(2)" }, 17.5);
+        tl.fromTo("#s5-word", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 17.7);
+        tl.fromTo("#s5-head", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "expo.out" }, 18.0);
+        tl.fromTo("#s5-sub", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 18.7);
+
+        // ---- audio-reactive: music bass breathes the teal glow ----
+        const AD = window.AUDIO_DATA;
+        if (AD && AD.frames && AD.frames.length) {
+          const glow = document.getElementById("glow");
+          const n = Math.min(AD.frames.length, Math.round(21.4 * AD.fps));
+          for (let f = 0; f < n; f++) {
+            const b = AD.frames[f].bands;
+            const bass = (b[0] + b[1]) / 2;
+            tl.call(
+              (function (v) {
+                return function () {
+                  glow.style.opacity = (0.55 + 0.35 * v).toFixed(3);
+                };
+              })(bass),
+              [],
+              f / AD.fps,
+            );
+          }
+        } else {
+          tl.fromTo("#glow", { opacity: 0.55 }, { opacity: 0.8, duration: 10.7, yoyo: true, repeat: 1, ease: "sine.inOut" }, 0);
+        }
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>
