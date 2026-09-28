@@ -21,6 +21,10 @@ from .simulation import run_decay_tx, start_worker, stop_worker
 from .trading import IdempotencyConflict, TradingError, execute_trade_tx
 from .transactions import get_metrics
 
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 logger = logging.getLogger("mockfolio.api")
 
 REJECTION_CODES = {

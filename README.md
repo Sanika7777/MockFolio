@@ -14,14 +14,27 @@ MockFolio is a small DBMS mini-project for multi-user paper trading. It uses vir
 1. Install MySQL 8 and create a user, then run these commands in MySQL Workbench or the MySQL client:
 
 ```sql
-CREATE USER 'mockfolio'@'localhost' IDENTIFIED BY 'mockfolio';
-GRANT ALL PRIVILEGES ON mockfolio.* TO 'mockfolio'@'localhost';
-SOURCE sql/schema.sql;
-SOURCE sql/triggers.sql;
-SOURCE sql/views.sql;
-SOURCE sql/procedures.sql;
-SOURCE sql/seed.sql;
+CREATE DATABASE mockfolio CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE USER 'mf_app'@'%' IDENTIFIED BY 'change-me';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON mockfolio.* TO 'mf_app'@'%';
+CREATE USER 'mf_migrate'@'%' IDENTIFIED BY 'change-me-too';
+GRANT ALL PRIVILEGES ON mockfolio.* TO 'mf_migrate'@'%';
+SET PERSIST log_bin_trust_function_creators = 1;
 ```
+
+The last line is needed to create triggers when binary logging is on; without
+it `sql/triggers.sql` fails with `ERROR 1419`. Then load the schema in order
+(the files carry no `USE`, so the database name goes on the command line):
+
+```bash
+for f in schema triggers views procedures seed; do
+  mysql -u mf_migrate -p mockfolio < "sql/$f.sql"
+done
+```
+
+`scripts/reset_db.sh <database>` does all of the above in one command and
+prints the row counts. It refuses to touch `DB_NAME` without `--force`,
+because that is the database holding your demo data.
 
 2. Install Python dependencies:
 
@@ -34,17 +47,20 @@ Copy-Item .env.example .env
 
 Set `DATABASE_URL` and `JWT_SECRET` in `.env`. The default URL matches the sample MySQL user. `JWT_SECRET` must be a real value — the app refuses to start if it's unset or left as one of the placeholder strings from `.env.example`.
 
-To provision the local developer account, also set `DEV_USERNAME`, `DEV_EMAIL`, and `DEV_PASSWORD`. The backend creates the account on startup if it does not exist and marks it `is_admin`; the password is never returned by an API or placed in frontend code.
+To provision the local developer account, also set `DEV_USERNAME`, `DEV_EMAIL`, and `DEV_PASSWORD`. The backend creates the account on startup if it does not exist and marks it `ADMIN`; the password is never returned by an API or placed in frontend code.
 
-Optional environment variables (all have working defaults): `CORS_ORIGINS` (comma-separated allowed origins, defaults to the two localhost dev URLs), `LOCK_WAIT_TIMEOUT` (seconds, default 5), `TX_ISOLATION` (`READ COMMITTED` / `REPEATABLE READ` [default] / `SERIALIZABLE` — anything else refuses to start), `MOCKFOLIO_LOCKING` and `MOCKFOLIO_ORDERING` (`on` [default] / `off`, used only by `scripts/concurrency_report.py`'s demos — never set `off` outside that script), and `TEST_DATABASE_URL` (a separate, disposable MySQL database — required only for `pytest tests/concurrency` and the `scripts/*.py` demos, and must not equal `DATABASE_URL`, since those tests truncate tables).
+Optional environment variables (all have working defaults): `CORS_ORIGINS` (comma-separated allowed origins; empty by default because the API serves the frontend on the same origin — only needed if you host the frontend separately), `LOCK_WAIT_TIMEOUT` (seconds, default 5), `TX_ISOLATION` (`READ COMMITTED` / `REPEATABLE READ` [default] / `SERIALIZABLE` — anything else refuses to start), `MOCKFOLIO_LOCKING` and `MOCKFOLIO_ORDERING` (`on` [default] / `off`, used only by `scripts/concurrency_report.py`'s demos — never set `off` outside that script), and `TEST_DATABASE_URL` (a separate, disposable MySQL database — required only for `pytest tests/concurrency` and the `scripts/*.py` demos, and must not equal `DATABASE_URL`, since those tests truncate tables).
 
-3. Run the API from the project root:
+3. Run the app from the project root:
 
-```powershell
+```bash
 uvicorn backend.main:app --reload
 ```
 
-4. Serve the frontend with `python -m http.server 5500 -d frontend` and visit `http://127.0.0.1:5500/login.html`. The frontend uses a centralized API client in `frontend/js/api.js` and talks to `http://127.0.0.1:8000`.
+4. Visit `http://127.0.0.1:8000/login.html`. One process serves both the API
+and the frontend: `backend/main.py` mounts `frontend/` at `/`, so the browser
+and the API share an origin and `frontend/js/api.js` uses a relative
+`API_BASE`. There is no separate static server and no CORS configuration.
 
 5. Run the unit checks:
 
@@ -53,6 +69,8 @@ pytest
 ```
 
 The interactive API documentation is at `http://localhost:8000/docs`.
+
+For hosting, see `docs/RAILWAY_DEPLOYMENT.md`.
 
 ## Price impact
 
