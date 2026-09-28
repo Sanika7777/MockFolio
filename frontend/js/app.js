@@ -449,12 +449,12 @@
         const first = pageIndex * PAGE_SIZE;
         const shown = filtered.slice(first, first + PAGE_SIZE);
         $("#screener-pager").innerHTML = filtered.length > PAGE_SIZE
-          ? `<span>${first + 1}–${first + shown.length} of ${filtered.length}</span><button type="button" class="ghost-button" data-page="-1" ${pageIndex === 0 ? "disabled" : ""}>← Previous</button><button type="button" class="ghost-button" data-page="1" ${pageIndex >= pages - 1 ? "disabled" : ""}>Next →</button>`
+          ? `<span>${first + 1}–${first + shown.length} of ${filtered.length}</span><button type="button" class="ghost-button" data-page-step="-1" ${pageIndex === 0 ? "disabled" : ""}>← Previous</button><button type="button" class="ghost-button" data-page-step="1" ${pageIndex >= pages - 1 ? "disabled" : ""}>Next →</button>`
           : "";
-        $$("[data-page]").forEach(
+        $$("[data-page-step]").forEach(
           (button) =>
             (button.onclick = () => {
-              pageIndex += Number(button.dataset.page);
+              pageIndex += Number(button.dataset.pageStep);
               render(false);
               $("#mockfolio-screener").scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth" });
             }),
