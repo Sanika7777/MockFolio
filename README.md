@@ -60,7 +60,9 @@ uvicorn backend.main:app --reload
 4. Visit `http://127.0.0.1:8000/login.html`. One process serves both the API
 and the frontend: `backend/main.py` mounts `frontend/` at `/`, so the browser
 and the API share an origin and `frontend/js/api.js` uses a relative
-`API_BASE`. There is no separate static server and no CORS configuration.
+`API_BASE`. If you prefer a standalone frontend server, run
+`python -m http.server 5500 -d frontend`; the API client automatically targets
+port 8000 in that mode.
 
 5. Run the unit checks:
 

@@ -42,12 +42,22 @@ REJECTION_CODES = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("checking database connection")
+    try:
+        database.check_connection()
+        database.initialize_database()
+    except RuntimeError:
+        logger.exception("database startup check failed")
+        raise
     settings_store.refresh()
     provision_developer_account()
     if os.getenv("ENABLE_TICK_WORKER", "1").strip().lower() not in ("0", "off", "false"):
         start_worker()
+    logger.info("MockFolio API started")
     yield
     stop_worker()
+    database.engine.dispose()
+    logger.info("MockFolio API stopped")
 
 
 app = FastAPI(title="MockFolio API", lifespan=lifespan)
