@@ -126,7 +126,13 @@ On the **web** service. Use reference variables so nothing is copy-pasted:
 | `TX_ISOLATION` | `REPEATABLE READ` |
 | `LOCK_WAIT_TIMEOUT` | `5` |
 | `LOG_LEVEL` | `INFO` |
-| `MARKET_DATA_SOURCE` | `simulated` (switch to `angelone` in phase 7.1) |
+| `MARKET_DATA_SOURCE` | `simulated`, or `yahoo` for real NSE prices (free, no key), or `angelone` (needs a static IP) |
+| `YAHOO_REFRESH_S` | `60` — only with `yahoo`; how often Yahoo is called |
+
+`yahoo` uses Yahoo Finance's unofficial chart endpoint with each instrument's
+`yf_ticker` (`.NS` = NSE, `.BO` = BSE). It needs no key and no IP allowlist, but
+it can rate-limit or change without notice; a failed fetch just holds the last
+price. Real prices only move during NSE hours (09:15–15:30 IST, Mon–Fri).
 | `ENABLE_TICK_WORKER` | `1` |
 | `TZ` | `Asia/Kolkata` |
 | `CORS_ORIGINS` | leave **unset** — frontend and API are same-origin |

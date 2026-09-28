@@ -26,7 +26,7 @@ INSERT INTO instruments
   ('KOTAKBANK',  'NSE', 'KOTAKBANK.NS',  'Kotak Mahindra Bank',       'Banking',       3500000,  0.014000),
   ('MARUTI',     'NSE', 'MARUTI.NS',     'Maruti Suzuki',             'Automobile',     900000,  0.014500),
   ('SUNPHARMA',  'NSE', 'SUNPHARMA.NS',  'Sun Pharmaceutical',        'Pharma',        3000000,  0.013000),
-  ('TATAMOTORS', 'NSE', 'TATAMOTORS.NS', 'Tata Motors',               'Automobile',   18000000,  0.020000),
+  ('TATAMOTORS', 'NSE', 'TMPV.NS',       'Tata Motors',               'Automobile',   18000000,  0.020000),
   ('WIPRO',      'NSE', 'WIPRO.NS',      'Wipro',                     'IT',            9000000,  0.016000),
   ('HINDUNILVR', 'NSE', 'HINDUNILVR.NS', 'Hindustan Unilever',        'FMCG',          2000000,  0.011500),
   ('BAJFINANCE', 'NSE', 'BAJFINANCE.NS', 'Bajaj Finance',             'Finance',       2200000,  0.018000),
