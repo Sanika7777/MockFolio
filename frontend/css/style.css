@@ -2552,6 +2552,11 @@ select,
 }
 
 @media (max-width: 850px) {
+  /* Must come after the desktop .stock-grid rule above, or the order desk keeps
+     its 300px column and squeezes the chart to a sliver on phones. */
+  .stock-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .tv-header {
     grid-template-columns: 1fr auto;
   }
@@ -2566,9 +2571,45 @@ select,
 @media (max-width: 620px) {
   .tv-header {
     grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 16px 0 14px;
+  }
+  .tv-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+  }
+  .tv-symbol h1 {
+    font-size: 24px;
+  }
+  .tv-quote strong {
+    font-size: 28px;
+  }
+  .tv-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 12px;
+  }
+  .tv-stats strong {
+    font-size: 13px;
+  }
+  .tv-toolbar {
+    padding: 6px;
+    gap: 4px;
+  }
+  .tv-group button {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .tv-divider {
+    display: none;
   }
   .tv-chart-wrap {
     height: 380px;
+  }
+  .tv-legend {
+    font-size: 11px;
+    max-width: calc(100% - 70px);
   }
 }
 
@@ -3148,9 +3189,84 @@ table:has(#orders-table) td {
     grid-template-columns: 1fr;
   }
 }
+@media (max-width: 620px) {
+  .chart-tabs {
+    padding: 0 4px;
+  }
+  .chart-tabs button {
+    flex: 1;
+    font-size: 13px;
+    padding: 11px 6px;
+  }
+  .range-more-toggle {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .tv-advanced {
+    height: clamp(380px, 60vh, 480px);
+  }
+  .tv-financials,
+  .tv-profile {
+    height: 480px;
+  }
+  .tv-widget-panel {
+    padding: 14px 12px 6px;
+  }
+}
 
 .screener .sector-tag {
   max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ---------- Market page: compact phone layout ---------- */
+.filter-selects {
+  display: flex;
+  gap: 10px;
+}
+.movers .mover-tabs {
+  display: none;
+}
+@media (max-width: 850px) {
+  .filter-selects select {
+    flex: 1;
+    min-width: 0;
+  }
+  /* The three mover cards merge into one box with a tab per list. */
+  .movers {
+    gap: 0;
+    margin: -16px 0 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .movers .mover-tabs {
+    display: flex;
+    padding: 0 4px;
+  }
+  .movers .mover-tabs button {
+    flex: 1;
+    font-size: 13px;
+    padding: 11px 4px;
+  }
+  .mover-card {
+    display: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 4px 16px 8px;
+  }
+  .mover-card.active {
+    display: block;
+  }
+  .mover-card .eyebrow {
+    display: none;
+  }
+  .mover-card ol {
+    margin: 0;
+  }
 }
