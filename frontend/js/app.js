@@ -328,13 +328,22 @@
     return `<tr><td data-label="Stock"><a class="stock-name" href="${href}"><span class="stock-name-top"><strong>${escapeHTML(stock.symbol)}</strong>${sectorTag}</span><small>${escapeHTML(stock.company_name)}</small></a></td><td data-label="Price" class="num"><strong class="market-price">${money(stock.adjusted_price)}</strong></td><td data-label="Day change" class="num"><span class="change-pill ${tone(change)}">${change > 0 ? "▲" : change < 0 ? "▼" : "–"} ${percent(change)}</span></td><td data-label="Day range">${dayRange(stock)}</td><td data-label="Real price" class="num">${money(stock.raw_price)}</td><td data-label="Deviation" class="num"><span class="${tone(stock.deviation)}">${percent(stock.deviation_percentage)}</span></td><td data-label="Volume" class="num">${Number(stock.day_volume || 0).toLocaleString("en-IN")}</td><td data-label="Action"><div class="row-actions"><button class="table-action${starred ? " is-watched" : ""}" data-watch="${stock.instrument_id}" title="${starred ? "Remove from watchlist" : "Add to watchlist"}" aria-pressed="${starred}">${svgIcon(ICONS.watchlist)}</button><a class="trade-link" href="${href}">${actionLabel}</a></div></td></tr>`;
   }
 
-  function moversCard(title, list, value) {
-    return `<div class="panel mover-card"><span class="eyebrow">${title}</span><ol>${list
+  function moversCard(key, title, list, value) {
+    const active = key === moverView;
+    return `<div class="panel mover-card${active ? " active" : ""}" id="mover-${key}" role="tabpanel" data-mover-card="${key}"><span class="eyebrow">${title}</span><ol>${list
       .map(
         (s) => `<li><a href="stock.html?id=${s.instrument_id}"><strong>${escapeHTML(s.symbol)}</strong><span>${money(s.adjusted_price)}</span><em class="${tone(value(s))}">${percent(value(s))}</em></a></li>`,
       )
       .join("")}</ol></div>`;
   }
+
+  // Desktop shows the three mover cards side by side; phones show one at a time behind these tabs.
+  const MOVER_TABS = [
+    { key: "gainers", label: "Top gainers" },
+    { key: "losers", label: "Top losers" },
+    { key: "gap", label: "Off real price" },
+  ];
+  let moverView = "gainers";
 
   function renderMovers() {
     const host = $("#movers");
@@ -342,10 +351,25 @@
     const by = (fn, dir) => [...stocks].sort((a, b) => dir * (fn(a) - fn(b))).slice(0, 3);
     const change = (s) => Number(s.day_change_percentage);
     const gap = (s) => Number(s.deviation_percentage);
+    const tabs = MOVER_TABS.map(
+      (t) => `<button type="button" role="tab" data-mover-tab="${t.key}" aria-controls="mover-${t.key}" aria-selected="${t.key === moverView}" class="${t.key === moverView ? "active" : ""}">${t.label}</button>`,
+    ).join("");
     host.innerHTML =
-      moversCard("TOP GAINERS TODAY", by(change, -1), change) +
-      moversCard("TOP LOSERS TODAY", by(change, 1), change) +
-      moversCard("FURTHEST FROM REAL PRICE", by((s) => Math.abs(gap(s)), -1), gap);
+      `<div class="chart-tabs mover-tabs" role="tablist" aria-label="Market movers">${tabs}</div>` +
+      moversCard("gainers", "TOP GAINERS TODAY", by(change, -1), change) +
+      moversCard("losers", "TOP LOSERS TODAY", by(change, 1), change) +
+      moversCard("gap", "FURTHEST FROM REAL PRICE", by((s) => Math.abs(gap(s)), -1), gap);
+    $$("[data-mover-tab]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          moverView = button.dataset.moverTab;
+          $$("[data-mover-tab]").forEach((b) => {
+            b.classList.toggle("active", b === button);
+            b.setAttribute("aria-selected", String(b === button));
+          });
+          $$("[data-mover-card]").forEach((card) => card.classList.toggle("active", card.dataset.moverCard === moverView));
+        }),
+    );
   }
 
   const TV = window.MockfolioTV;
@@ -423,8 +447,8 @@
       const sectors = ["All", ...new Set(stocks.map((s) => s.sector).filter(Boolean))].sort((a, b) =>
         a === "All" ? -1 : b === "All" ? 1 : a.localeCompare(b),
       );
-      $("#sector-chips").innerHTML = sectors
-        .map((name) => `<button type="button" class="chip${name === "All" ? " active" : ""}" data-sector="${escapeHTML(name)}" aria-pressed="${name === "All"}">${escapeHTML(name)}</button>`)
+      $("#sector-filter").innerHTML = sectors
+        .map((name) => `<option value="${escapeHTML(name)}">${name === "All" ? "All sectors" : escapeHTML(name)}</option>`)
         .join("");
 
       const render = (animate) => {
@@ -478,18 +502,10 @@
       };
       $("#stock-search").oninput = refilter;
       $("#market-filter").onchange = refilter;
-      $$("[data-sector]").forEach(
-        (chip) =>
-          (chip.onclick = () => {
-            sector = chip.dataset.sector;
-            pageIndex = 0;
-            $$("[data-sector]").forEach((c) => {
-              c.classList.toggle("active", c === chip);
-              c.setAttribute("aria-pressed", String(c === chip));
-            });
-            render(false);
-          }),
-      );
+      $("#sector-filter").onchange = (event) => {
+        sector = event.target.value;
+        refilter();
+      };
       $$("[data-sort] button").forEach(
         (button) =>
           (button.onclick = () => {
@@ -813,7 +829,8 @@
         style: "1",
         locale: "en",
         allow_symbol_change: false,
-        hide_side_toolbar: false,
+        // On phones the drawing toolbar eats a big slice of the chart width.
+        hide_side_toolbar: window.matchMedia("(max-width: 620px)").matches,
         withdateranges: false,
         save_image: true,
         calendar: false,
