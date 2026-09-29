@@ -65,13 +65,15 @@
                 aria-label="Search stocks"
               />
             </div>
-            <select id="market-filter" aria-label="Market filter">
-              <option value="all">All stocks</option>
-              <option value="watchlist">Watchlist</option>
-            </select>
+            <div class="filter-selects">
+              <select id="market-filter" aria-label="Market filter">
+                <option value="all">All stocks</option>
+                <option value="watchlist">Watchlist</option>
+              </select>
+              <select id="sector-filter" aria-label="Filter by sector"></select>
+            </div>
           </div>
         </section>
-        <div class="chip-group" id="sector-chips" role="group" aria-label="Filter by sector"></div>
         <div class="table-wrap">
           <table class="screener">
             <thead>
