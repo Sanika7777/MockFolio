@@ -1,104 +1,96 @@
 # Brag Plan: MockFolio
 
 ## What is this app?
-A multi-user paper-trading desk for NSE stocks where your virtual trades actually move the (simulated) price — and the price then drifts back toward the real reference price.
+A multi-user paper-trading sandbox for Indian stocks: you get ₹5,00,000 of virtual cash, trade the NIFTY 500, and your own BUYs and SELLs actually push the simulated price, which then drifts back toward the real reference price. It's a DBMS project too: ACID transactions, row-level locking and deadlock retry.
 
 ## The angle
-Every other paper-trading app pretends you're invisible. In MockFolio, buying 100 RELIANCE nudges the price up +0.56%, and you watch it happen. The product's own line is the thesis: **"Paper trade. Move the market."** The second idea — "Two prices, one lesson." — is the payoff: the MockFolio price vs the reference price, and the gap closing over time.
+In the real market your trade is a rounding error. In MockFolio *you are the order flow*. The video is a launch film about a market that notices you: the money is fake, but the moves you make on the chart are real. Then comes the flex: this "toy" runs on serious database machinery.
 
-## Hook (first 2-3 seconds)
-A calm NSE-style price line, then big type: **"Your paper trades don't move the market."** Beat. The word "don't" gets struck through. The strike is the hook.
+Site motto ("Paper trade. Move the market." / "Two prices, one lesson.") is **not** used, per the user.
+
+## Hook (0–~3s)
+Black-green void. White type: "You've never moved a stock price." Beat. A tiny teal "Not once." drops in underneath. VO says it deadpan. Tension: an itch the viewer recognises.
 
 ## Key moments (the middle)
-- ₹5,00,000 virtual cash counting up on a clean MockFolio account card ("Virtual money only").
-- The trade ticket for RELIANCE: quantity types in "100", cursor clicks **Buy stock**, toast "Trade executed successfully", price jumps ₹1,197.60 → ₹1,204.31, "Price impact +0.56%".
-- The two-line chart: teal MockFolio price above the grey reference line, then easing back toward it. Label: "Two prices, one lesson."
+- **₹5,00,000 counter** spins up from 0 in tabular figures next to the MockFolio "M" mark, with a "VIRTUAL CASH" eyebrow. It's a lot of money, and none of it is real.
+- **The trade.** The real Simulated Order Desk: BUY (Long) tab, RELIANCE, quantity 5 stepping up, a cursor clicks "Buy 5 Shares of RELIANCE". The solid teal MockFolio price line kicks upward away from the dashed Reference line, and the price ticks ₹2,944.80 → ₹2,945.10 (the real before/after from the design's execution card).
+- **The drift.** A SELL nudges it down, then the teal line eases back and settles on the dashed reference: the signature two-price idea, shown rather than told.
+- **The flex.** Four chips slam in on the beat: ACID transactions · Row-level locks · Deadlock retry · NIFTY 500.
 
 ## Outro / punchline
-M brand mark + "mockfolio" wordmark, headline **"Paper trade. Move the market."**, small line "Virtual money only · Zero risk to real capital".
+Wordmark "mockfolio" + line **"Fake money. Real moves."** + URL mockfolioo.up.railway.app. Lands on a strong music cue.
 
 ## User flow worth showing
-Account with virtual cash → open RELIANCE, enter quantity, click Buy → trade executes, price moves, then drifts back to reference.
+Entry: account loads with ₹5,00,000 virtual cash → Key action: BUY 5 × RELIANCE on the order desk → Result: MockFolio price line moves off the reference, then drifts back.
 
 ## Tone
-- Preset: default
-- Creative direction: confident little fintech explainer with a wink — "your trade moves the market"
-- Interpretation: warm, clean, 4-5 scenes, crossfades/slides; humor only from the struck-through hook, the rest lets the mechanic impress.
+- Preset: cinematic (pacing) with `default` energy
+- Creative direction: "slick, confident fintech launch film in dark mode, clever and upbeat, lots of motion"
+- Interpretation: fast motion, camera push-ins and whip transitions between scenes, big type, but every line holds long enough to read; the VO sets the pace.
 
 ## Format: landscape — 1920x1080
-## Duration: 21s
+## Duration: ~22s (flexes to the generated voiceover)
 
-## Visual identity (from the project, `frontend/css/tokens.css`)
-- Background: #101719 (dark theme) for hook/outro; product cards on #172124 surfaces with #2b3b3f borders
-- Accent: #58c7b8 (dark primary) / #0b756d (light primary)
-- Text: #eef5f3, muted #9aadae
-- Negative: #f07b78; reference line: #7c8e93
-- Display font: Inter 800, tight letter-spacing (-0.6px scaled)
-- Body font: Inter 400-600
-- Strongest visual element: the hero chart from login/register — teal "MockFolio price" line over a grey "Reference price" line with a soft fill; and the "M" rounded-square brand mark.
+## Visual identity (from the project, dark theme tokens in frontend/css/tokens.css)
+- Background: #101719 · Surface: #172124 · Surface-soft: #1D2A2D · Border: #2B3B3F
+- Accent / MockFolio price: #58C7B8 (text on teal fills = #101719)
+- Reference line: #7C8E93 dashed · Negative: #F07B78 · Warning/sand: #E0AA5A
+- Text: #EEF5F3 · Muted: #9AADAE
+- Display + body font: Inter (tabular figures on every number)
+- Strongest visual: the two-line chart (solid teal vs dashed grey reference) and the Simulated Order Desk.
+- DESIGN.md says "nothing glows": keep glow very subtle, depth from surface steps.
 
 ## Share copy (draft)
-I built a paper-trading app where your trades actually move the price — then it drifts back to reality. Two prices, one lesson.
+You've never moved a stock price. MockFolio hands you ₹5,00,000 of fake money and a NIFTY 500 market that actually reacts to your trades, backed by real ACID transactions underneath.
 
 ## Audio direction
-- Role: warm bed under a narrator
-- Music: happy-beats-business-moves-vol-1 (120 BPM, most energetic), ducked under voice
-- Music treatment: start at 0, bed ~0.2 under voice, lift to ~0.35 for the outro, fade out over the last 1.2s
-- Music cue guidance: preset read (`happy-beats-business-moves-vol-1-by-ende-dot-app.music-cues.json`, 120.19 BPM). Strong cues: 16.02s, 17.02s, 20.02s. Lock the outro wordmark near 17.0s or the headline near 18.0s if it doesn't fight the voice. Beat grid every ~0.5s from 3.02s — use for the account card's stat arrivals.
-- Audio-reactive treatment: subtle; bass may make the chart line's glow and the outro mark breathe. No visualizer bars.
-- SFX posture: moderate, motion-matched (≈5 cues)
-- Audio-coupled moments: strike-through on "don't"; keypresses as "100" types; mouse click on Buy; soft success accent on the toast; soft reveal on outro mark
-- Restraint rule: SFX never over the narrator's key words; nothing harsh; no bell spam.
+- Role: dense rhythmic bed under narration
+- Music: happy-beats-business-moves-vol-1 (most energetic, 120 BPM)
+- Music treatment: fade in 0–0.6s, duck to ~0.14 under VO, rise between lines and full on the outro, fade out last 1s.
+- Music cue guidance: preset cues/happy-beats-business-moves-vol-1-by-ende-dot-app.music-cues.json; 120.19 BPM, beats every ~0.5s from 3.02s. Strong cues at 16.02, 17.02, 18.02, 20.02, 21.01, 23.02s: lock the flex chips and the outro wordmark to these. Chips (text) snap to every other beat (~1s apart) to stay readable.
+- Audio-reactive treatment: subtle; bass drives the background teal haze and chart-card presence. No waveform visuals.
+- SFX posture: moderate, motion-matched: key ticks on hook, chip-stack on the cash counter, mouse click on BUY, card-place on flex chips, one bell on the logo.
+- Restraint rule: no SFX over VO consonants at volume; nothing harsh; repeated ticks stay quiet.
 
-## Voiceover script (Kokoro, voice af_heart)
-Complements the visuals rather than reading them:
-1. (0.3s) "Most paper trading apps treat you like a ghost."
-2. (3.6s) "MockFolio hands you five lakh rupees of pretend money…"
-3. (7.2s) "…and when you buy, the price actually moves."
-4. (12.4s) "Then it drifts back toward reality. Two prices, one lesson."
-5. (17.4s) "MockFolio. Paper trade. Move the market."
+## Voiceover script
+(Kokoro af_heart; one clip per scene so scene lengths follow the voice)
+1. "You've never moved a stock price. Not once."
+2. "So here's five lakh rupees. Fake money, real market."
+3. "Hit buy, and the price climbs. That was you."
+4. "Sell, it slides. Then it drifts home, toward the real price."
+5. "Underneath: ACID transactions, row-level locks, deadlock retries. Across the NIFTY five hundred."
+6. "MockFolio. Fake money. Real moves."
 
 ## Storyboard
 
-### Scene 1 — Hook — 3.4s
-Dark #101719. A thin grey price line draws across. Big Inter 800: "Your paper trades don't move the market." (hold ≥2.1s settled). At ~2.4s a teal strike slashes through "don't".
-Sequential/interaction: line draws, then headline, then strike.
-Audio intent: curious, a little cheeky.
-Audio-coupled idea: soft whoosh/drop on headline, crisp switch/click on the strike.
-Music: starts under.
-Transition mood: clean → Scene 2
+### Scene 1 — Hook — ~3.0s
+Dark void, faint grid. "You've never moved a stock price." types in word by word, big; "Not once." in teal pops under it.
+Sequential/interaction: yes, words arrive one by one.
+Audio intent: intrigue; music starts soft. Audio-coupled: soft key ticks per word.
+Transition mood: dramatic → whip/zoom into the M mark.
 
-### Scene 2 — Virtual cash — 3.6s
-Recreated MockFolio account card (surface #172124, 12px radius): "Available cash" ₹0 → ₹5,00,000 count-up in Indian digit grouping; below, three chips arrive one by one: "Virtual money only", "Simulated pricing", "Practice, not prediction". Hold the full set ≥1.2s.
-Sequential/interaction: count-up, then 3 chips on every other beat.
-Audio intent: warm, reassuring.
-Audio-coupled idea: light chip/drop ticks on the count-up end and first chip only.
-Transition mood: slide → Scene 3
+### Scene 2 — Reveal: the bankroll — ~3.4s
+MockFolio "M" brand mark lands, eyebrow "VIRTUAL CASH", ₹0 → ₹5,00,000.00 counter; caption "Zero risk to real capital".
+Sequential/interaction: counter tween.
+Audio: chips-stack under the count. Transition: push → Scene 3.
 
-### Scene 3 — The trade — 5.4s
-Recreated stock detail: "RELIANCE · Reliance Industries · NSE", "MockFolio price ₹1,197.60", reference price ₹1,197.60. Trade ticket: Quantity field types "100", estimated amount ₹1,19,760, cursor moves to teal **Buy stock** and clicks. Toast: "Trade executed successfully". Price rolls to ₹1,204.31 with a green "+0.56%" "Price impact" chip; Fill price ₹1,204.31; Brokerage ₹35.93.
-Sequential/interaction: type → click → toast → price move (each held ≥0.8s).
-Audio intent: tactile, satisfying.
-Audio-coupled idea: 3 keypresses, mouse click, soft success accent on the toast.
-Transition mood: clean crossfade → Scene 4
+### Scene 3 — The trade — ~3.6s
+Order desk card (BUY (Long) active, RELIANCE · NSE, quantity 5) beside the two-price chart. Cursor clicks "Buy 5 Shares of RELIANCE"; button press; teal line kicks up; price ₹2,944.80 → ₹2,945.10; toast "Simulated execution filled".
+Sequential/interaction: yes, simulated cursor click.
+Audio: mouse click + soft drop on the toast. Transition: continuous (same chart) → Scene 4.
 
-### Scene 4 — Two prices, one lesson — 4.8s
-Full-width chart: teal "MockFolio price" line spikes above grey "Reference price" after a BUY marker, then eases back toward it; a "Deviation +0.56%" label shrinks toward "+0.12%". Eyebrow "HOW PRICES MOVE", headline "Two prices, one lesson." held ≥1.5s.
-Sequential/interaction: marker lands, spike, decay.
-Audio intent: explanatory, calm.
-Audio-coupled idea: one soft drop at the BUY marker; otherwise let narration carry.
-Transition mood: soft → Scene 5
+### Scene 4 — The drift — ~4.0s
+Same chart. SELL tab lights red-ish, line dips, then eases onto the dashed reference; legend "MockFolio price" / "Reference price" labels land.
+Audio: switch on SELL; gentle whoosh-free glide. Transition: hard beat cut → Scene 5.
 
-### Scene 5 — Outro — 3.8s
-M brand mark scales in, "mockfolio" wordmark, headline "Paper trade. Move the market." (held ≥1.8s), sub-line "Virtual money only · Zero risk to real capital".
-Audio intent: confident landing.
-Audio-coupled idea: one soft impact on the mark, near the 17.0s strong cue.
-Transition mood: end, music fades.
+### Scene 5 — The flex — ~5s
+Four chips slam in on beats (≈1s apart): ACID transactions · Row-level locks · Deadlock retry · NIFTY 500. Faint mono SQL texture behind (`SELECT … FOR UPDATE`).
+Audio: card-place per chip, beat-locked.
+Transition: zoom out → Scene 6.
 
-Total: 3.4 + 3.6 + 5.4 + 4.8 + 3.8 = 21.0s
+### Scene 6 — Outro — ~3.5s
+Wordmark "mockfolio" with M mark; "Fake money. Real moves." ; URL chip mockfolioo.up.railway.app. Wordmark beat-locked to a strong cue.
+Audio: bell hit, music swells then fades.
 
-**Music mood for this video:** upbeat, ducked
-**Audio summary:** a light upbeat bed sits under a warm narrator, with a handful of tactile UI sounds on the trade, lifting for the outro and fading out.
-
-## Data note
-All numbers are fictional-but-plausible, computed from the real price engine (`backend/price_engine.py`, kappa 120, RELIANCE ADV 9M, σ 1.4%). No real user names, emails, hosts or passwords appear.
+**Music mood for this video:** upbeat
+**Audio summary:** a punchy 120 BPM bed that ducks under a confident voice, snaps the flex chips onto the beat, and swells into the logo.

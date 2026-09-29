@@ -1,1 +1,1 @@
-Made MockFolio: a paper-trading desk where your trades actually move the price, then it drifts back toward reality. Buy 100 RELIANCE, watch it tick up 0.56%. Paper trade. Move the market.
+You've never moved a stock price. On MockFolio you get ₹5,00,000 of fake money, the whole NIFTY 500, and a market where your BUY actually pushes the price, with real ACID transactions and row-level locks underneath. Fake money, real moves: mockfolioo.up.railway.app

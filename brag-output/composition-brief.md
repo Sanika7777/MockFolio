@@ -1,52 +1,46 @@
 # Hyperframes Composition Brief: MockFolio
 
 ## Objective
-Create a short launch-style brag video for MockFolio.
+Create a short launch-style brag video for MockFolio with narration.
 
 ## Output
 - Composition directory: `brag-output/composition/`
 - Rendered video: `brag-output/brag.mp4`
-- Format: landscape — 1920x1080
-- Duration: 21.4 seconds (flexed to the generated voiceover)
+- Format: landscape — 1920x1080, 30fps
+- Duration: 24.2s (set by the six voiceover clips)
 
 ## Source Material
-- Project root: `/home/sanika/projects/mockfolio`
-- Primary files read: `frontend/login.html`, `frontend/register.html`, `frontend/css/tokens.css`, `frontend/css/style.css`, `frontend/js/app.js` (UI copy), `frontend/README.md`, `backend/price_engine.py`, `backend/settings_store.py`, `sql/seed.sql`
-- Product name: MockFolio (wordmark renders lowercase "mockfolio" beside a teal "M" rounded-square mark)
-- Tagline / strongest claim: "Paper trade. Move the market."
-- Key UI to recreate: the RELIANCE stock detail + trade ticket (Quantity, Estimated amount, Buy stock, "Trade executed successfully", Price impact, Fill price, Brokerage) and the login page's two-line hero chart ("MockFolio price" vs "Reference price").
-- Copy that must appear verbatim:
-  - Paper trade. Move the market.
-  - Two prices, one lesson.
-  - HOW PRICES MOVE
-  - Virtual money only / Simulated pricing / Practice, not prediction
-  - Trade executed successfully
-  - MockFolio price / Reference price / Price impact / Buy stock / Available cash
+- Project root: /home/sanika/projects/mockfolio
+- Primary files read: README.md, DESIGN.md, frontend/css/tokens.css, frontend/index.html, frontend/register.html, frontend/login.html, design/screenshots/stock_details_desktop.png, market_home_desktop.png, backend/settings_store.py (starting_cash = 500000), scripts/import_nifty500.py
+- Product name: MockFolio (wordmark "mockfolio", brand mark "M")
+- Strongest claim: your BUY moves the simulated price up, SELL moves it down, it drifts back toward the reference price.
+- Key UI to recreate: Simulated Order Desk (BUY (Long) / SELL (Short), quantity stepper, "Buy 5 Shares of RELIANCE") + two-price chart (solid teal MockFolio price, dashed grey reference).
+- Real copy used: "VIRTUAL CASH", "Zero risk to real capital", "RELIANCE · NSE", "Buy 5 Shares of RELIANCE", "Simulated execution filled", "MockFolio price", "Reference price", ₹2,944.80 → ₹2,945.10.
+- Site motto deliberately NOT used (user request).
 
 ## Creative Direction
-- Tone preset: default
-- Creative direction: confident little fintech explainer with a wink — "your trade moves the market"
-- Interpretation: warm, clean, crossfades/slides; the only joke is the struck-through "don't" in the hook.
-- Hook: "Your paper trades don't move the market." — "don't" gets struck through in teal.
-- Outro / punchline: M mark + "mockfolio" + "Paper trade. Move the market."
-- Avoid: generic SaaS language, abstract filler, redesigning the product.
+- Tone preset: cinematic pacing, default energy. Direction: slick dark-mode fintech launch film, clever, upbeat, lots of motion.
+- Angle: in the real market your trade is invisible; in MockFolio the market reacts to you. Then flex the database engineering.
+- Hook: "You've never moved a stock price." / "Not once."
+- Outro: "Fake money. Real moves." + mockfolioo.up.railway.app
+- Avoid: generic SaaS language, abstract filler, neon/heavy glow (DESIGN.md: nothing glows).
 
-## Visual Identity (MockFolio dark theme tokens)
-- Background: #101719; surfaces #172124 / #1d2a2d; border #2b3b3f
-- Text: #eef5f3; muted #9aadae
-- Accent: #58c7b8 (primary), tint #173d3a; negative #f07b78; reference line #7c8e93
-- Display/body font: Inter (self-hosted woff2 copied from `frontend/assets/fonts/`, weights 400–700)
+## Visual Identity
+- Background #101719, surface #172124, surface-soft #1D2A2D, border #2B3B3F
+- Text #EEF5F3, muted #9AADAE, accent #58C7B8 (on-accent #101719), reference #7C8E93, negative #F07B78, sand #E0AA5A
+- Inter 400–800 (local @font-face, latin + latin-ext for ₹), tabular-nums on figures
 
-## Storyboard (see brag-plan.md)
-1. Hook — 0.0–3.4s — grey line draws; headline; strike on "don't"
-2. Virtual cash — 3.4–7.2s — Available cash ₹0 → ₹5,00,000; three chips
-3. The trade — 7.2–12.6s — type 100, click Buy stock, toast, ₹1,197.60 → ₹1,204.31, +0.56% impact, brokerage ₹35.93
-4. Two prices, one lesson — 12.6–17.4s — spike above reference, decay back; deviation +0.56% → +0.12%
-5. Outro — 17.4–21.4s — mark, wordmark, tagline, "Virtual money only · Zero risk to real capital"
+## Storyboard
+1. Hook — 0–3.2s — word-by-word hook line, "Not once."
+2. Bankroll — 3.2–7.0s — M mark, VIRTUAL CASH, ₹0 → ₹5,00,000.00
+3. Trade — 7.0–10.0s — order desk + chart, cursor clicks Buy, line kicks up, price ticks
+4. Drift — 10.0–13.7s — SELL, dip, glide onto the reference line
+5. Flex — 13.7–20.4s — 4 chips beat-locked (15.02, 16.02, 17.02, 18.52)
+6. Outro — 20.4–24.2s — wordmark, tagline, URL
 
 ## Audio
-- Role: warm bed under narrator (Kokoro af_heart, 5 lines, `assets/vo/vo1-5.wav`, placed per scene)
-- Music: `assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3`; fade in, sit ~0.14 under voice, lift after the last line, fade out over the last 1.2s (volume lane)
-- Music cue guidance: bundled preset `happy-beats-business-moves-vol-1-by-ende-dot-app.music-cues.json` (120.19 BPM). Beat-lock outro mark to 17.52s strong cue; chips on beat grid 4.53 / 5.03 / 5.53 then hold ≥1.6s.
-- Audio-reactive: subtle — music bass drives a teal background glow's opacity; no visualizer graphics. Requires ffmpeg for extraction; skipped if unavailable.
-- SFX: low-HF-risk picks from `sfx-analysis.md`: switch on the strike, keypresses on "100", mouse click on Buy, soft success on the toast, drop on the BUY marker, soft impact on the outro mark.
+- Music: assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3 at 0.34 base, volume lane ducks to ~0.14 under each VO clip, fade out last 1.2s
+- VO: assets/vo/vo1–6.wav (Kokoro af_heart), one per scene, own tracks
+- Cues: bundled preset; 120.19 BPM. Beat-locks on flex chips and outro wordmark.
+- Audio-reactive: bass (assets/bass.js, 30fps) drives background teal haze opacity/scale subtly.
+- SFX: key ticks (hook), chips-stack (counter), mouseclick (buy), drop (toast), switch (sell), card-place ×4 (chips), bell (logo), soft impact (scene 2 land). 0.35–0.7 volume.

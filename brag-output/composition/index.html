@@ -3,771 +3,415 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1920, height=1080" />
-    <title>MockFolio — Paper trade. Move the market.</title>
-    <script src="assets/vendor/gsap.min.js"></script>
+    <title>MockFolio — brag</title>
+    <script src="assets/gsap.min.js"></script>
+    <script src="assets/bass.js"></script>
     <style>
-      @font-face {
-        font-family: Inter;
-        font-style: normal;
-        font-weight: 400 700;
-        src: url("assets/fonts/inter-latin.woff2") format("woff2");
-        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-          U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-      }
-      @font-face {
-        font-family: Inter;
-        font-style: normal;
-        font-weight: 400 700;
-        src: url("assets/fonts/inter-latin-ext.woff2") format("woff2");
-        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20C0,
-          U+2C60-2C7F, U+A720-A7FF;
-      }
+      @font-face { font-family: "Inter"; font-weight: 400; src: url(assets/fonts/inter-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+2122, U+2190-2199; }
+      @font-face { font-family: "Inter"; font-weight: 500; src: url(assets/fonts/inter-latin-500-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+2122, U+2190-2199; }
+      @font-face { font-family: "Inter"; font-weight: 600; src: url(assets/fonts/inter-latin-600-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+2122, U+2190-2199; }
+      @font-face { font-family: "Inter"; font-weight: 700; src: url(assets/fonts/inter-latin-700-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+2122, U+2190-2199; }
+      @font-face { font-family: "Inter"; font-weight: 800; src: url(assets/fonts/inter-latin-800-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+2122, U+2190-2199; }
+      @font-face { font-family: "Inter"; font-weight: 400; src: url(assets/fonts/inter-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+20A0-20C0; }
+      @font-face { font-family: "Inter"; font-weight: 500; src: url(assets/fonts/inter-latin-ext-500-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+20A0-20C0; }
+      @font-face { font-family: "Inter"; font-weight: 600; src: url(assets/fonts/inter-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+20A0-20C0; }
+      @font-face { font-family: "Inter"; font-weight: 700; src: url(assets/fonts/inter-latin-ext-700-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+20A0-20C0; }
+      @font-face { font-family: "Inter"; font-weight: 800; src: url(assets/fonts/inter-latin-ext-800-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+20A0-20C0; }
+
       :root {
-        --bg: #101719;
-        --surface: #172124;
-        --surface-soft: #1d2a2d;
-        --border: #2b3b3f;
-        --text: #eef5f3;
-        --muted: #9aadae;
-        --primary: #58c7b8;
-        --on-primary: #101719;
-        --tint: #173d3a;
-        --negative: #f07b78;
-        --reference: #7c8e93;
+        --bg: #101719; --surface: #172124; --surface-soft: #1d2a2d; --border: #2b3b3f;
+        --text: #eef5f3; --muted: #9aadae; --primary: #58c7b8; --on-primary: #101719;
+        --negative: #f07b78; --reference: #7c8e93; --sand: #e0aa5a; --tint: #173d3a;
       }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: Inter, system-ui, sans-serif;
-      }
-      #root {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: var(--bg);
-      }
-      /* persistent atmosphere */
-      .glow {
-        position: absolute;
-        width: 1500px;
-        height: 1500px;
-        left: 900px;
-        top: -520px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(88, 199, 184, 0.28) 0%, rgba(88, 199, 184, 0.08) 38%, rgba(16, 23, 25, 0) 68%);
-        opacity: 0.7;
-      }
-      .grid {
-        position: absolute;
-        inset: 0;
-        background-image: linear-gradient(rgba(154, 173, 174, 0.07) 2px, transparent 2px),
-          linear-gradient(90deg, rgba(154, 173, 174, 0.07) 2px, transparent 2px);
-        background-size: 120px 120px;
-      }
-      .meta {
-        position: absolute;
-        top: 56px;
-        left: 120px;
-        right: 120px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 22px;
-        letter-spacing: 3px;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-      .meta b {
-        color: var(--primary);
-        font-weight: 600;
-      }
-      .clip {
-        position: absolute;
-        inset: 0;
-      }
-      .inner {
-        position: absolute;
-        inset: 0;
-      }
-      .eyebrow {
-        font-size: 24px;
-        font-weight: 600;
-        letter-spacing: 5px;
-        color: var(--primary);
-        text-transform: uppercase;
-      }
-      .card {
-        background: var(--surface);
-        border: 3px solid var(--border);
-        border-radius: 28px;
-        box-shadow: 0 40px 90px rgba(0, 0, 0, 0.35);
-      }
-      .brand-mark {
-        display: grid;
-        place-items: center;
-        background: var(--primary);
-        color: var(--on-primary);
-        font-weight: 700;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font-family: "Inter", sans-serif; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+      .num { font-variant-numeric: tabular-nums; }
+      .eyebrow { font-size: 22px; font-weight: 600; letter-spacing: 0.16em; color: var(--primary); text-transform: uppercase; }
 
-      /* scene 1 */
-      #s1-line {
-        position: absolute;
-        left: 0;
-        top: 610px;
-        width: 1920px;
-        height: 360px;
-      }
-      #s1-head {
-        position: absolute;
-        left: 120px;
-        top: 250px;
-        width: 1500px;
-        margin: 0;
-        font-size: 118px;
-        line-height: 1.04;
-        font-weight: 700;
-        letter-spacing: -4px;
-      }
-      .strike-word {
-        position: relative;
-        display: inline-block;
-        color: var(--text);
-      }
-      #s1-strike {
-        position: absolute;
-        left: -8px;
-        right: -8px;
-        top: 52%;
-        height: 14px;
-        border-radius: 7px;
-        background: var(--primary);
-        transform-origin: left center;
-      }
+      /* ---------- persistent backdrop ---------- */
+      #bg { position: absolute; inset: 0; }
+      #grid { position: absolute; inset: -80px; opacity: 0.5;
+        background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 80px 80px;
+        -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 20%, transparent 75%);
+                mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 20%, transparent 75%); }
+      #haze { position: absolute; left: 50%; top: 50%; width: 1500px; height: 1100px; margin: -550px 0 0 -750px; border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(88,199,184,0.20), rgba(88,199,184,0.05) 60%, transparent); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(6,10,11,0.75)); }
 
-      /* scene 2 */
-      #s2-card {
-        position: absolute;
-        left: 120px;
-        top: 250px;
-        width: 1000px;
-        padding: 64px 72px;
-      }
-      .label {
-        font-size: 28px;
-        color: var(--muted);
-        font-weight: 500;
-      }
-      #s2-cash {
-        font-size: 150px;
-        font-weight: 700;
-        letter-spacing: -5px;
-        margin-top: 12px;
-        font-variant-numeric: tabular-nums;
-      }
-      .s2-sub {
-        font-size: 28px;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-      #s2-chips {
-        position: absolute;
-        left: 1200px;
-        top: 270px;
-        width: 600px;
-        display: flex;
-        flex-direction: column;
-        gap: 28px;
-      }
-      .chip {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-        padding: 30px 36px;
-        background: var(--surface-soft);
-        border: 3px solid var(--border);
-        border-radius: 22px;
-      }
-      .chip i {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: var(--primary);
-        flex: none;
-      }
-      .chip b {
-        display: block;
-        font-size: 34px;
-        font-weight: 600;
-      }
-      .chip span {
-        display: block;
-        font-size: 24px;
-        color: var(--muted);
-        margin-top: 4px;
-      }
+      .scene { position: absolute; inset: 0; }
+      .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 
-      /* scene 3 */
-      #s3-stock {
-        position: absolute;
-        left: 120px;
-        top: 180px;
-        width: 900px;
-        padding: 56px 64px;
-      }
-      .sym {
-        display: flex;
-        align-items: center;
-        gap: 22px;
-      }
-      .sym .tag {
-        font-size: 22px;
-        font-weight: 600;
-        letter-spacing: 2px;
-        color: var(--muted);
-        border: 2px solid var(--border);
-        padding: 6px 14px;
-        border-radius: 10px;
-      }
-      .sym h2 {
-        margin: 0;
-        font-size: 64px;
-        letter-spacing: -2px;
-      }
-      .company {
-        font-size: 30px;
-        color: var(--muted);
-        margin-top: 8px;
-      }
-      #s3-price {
-        font-size: 132px;
-        font-weight: 700;
-        letter-spacing: -4px;
-        margin-top: 36px;
-        font-variant-numeric: tabular-nums;
-      }
-      .price-row {
-        display: flex;
-        align-items: center;
-        gap: 22px;
-        margin-top: 8px;
-      }
-      #s3-impact {
-        font-size: 30px;
-        font-weight: 600;
-        color: var(--primary);
-        background: var(--tint);
-        padding: 10px 20px;
-        border-radius: 12px;
-      }
-      .ref {
-        font-size: 28px;
-        color: var(--muted);
-      }
-      .ref b {
-        color: var(--text);
-        font-weight: 600;
-      }
-      #s3-ticket {
-        position: absolute;
-        left: 1080px;
-        top: 180px;
-        width: 720px;
-        padding: 52px 56px;
-      }
-      .field {
-        margin-top: 22px;
-        height: 96px;
-        border: 3px solid var(--border);
-        border-radius: 18px;
-        background: var(--surface-soft);
-        display: flex;
-        align-items: center;
-        padding: 0 30px;
-        font-size: 48px;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-      }
-      .field.focus {
-        border-color: var(--primary);
-      }
-      #s3-caret {
-        width: 4px;
-        height: 52px;
-        background: var(--primary);
-        margin-left: 6px;
-      }
-      .rows {
-        margin-top: 30px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 30px;
-        color: var(--muted);
-      }
-      .row b {
-        color: var(--text);
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-      }
-      #s3-buy {
-        margin-top: 36px;
-        height: 104px;
-        border-radius: 18px;
-        background: var(--primary);
-        color: var(--on-primary);
-        display: grid;
-        place-items: center;
-        font-size: 40px;
-        font-weight: 700;
-      }
-      #s3-toast {
-        position: absolute;
-        left: 120px;
-        top: 830px;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 22px;
-        padding: 30px 40px;
-        background: var(--tint);
-        border: 3px solid #286a62;
-        border-radius: 22px;
-        font-size: 36px;
-        font-weight: 600;
-      }
-      #s3-toast .tick {
-        width: 52px;
-        height: 52px;
-        border-radius: 50%;
-        background: var(--primary);
-        color: var(--on-primary);
-        display: grid;
-        place-items: center;
-        font-size: 32px;
-        font-weight: 700;
-      }
-      #s3-cursor {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 56px;
-        height: 56px;
-      }
+      /* ---------- ticker tape ---------- */
+      #tape { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; border-top: 1px solid var(--border); background: rgba(23,33,36,0.85); overflow: hidden; }
+      #tape-row { position: absolute; top: 0; left: 0; height: 64px; display: flex; align-items: center; gap: 56px; white-space: nowrap; font-size: 21px; color: var(--muted); }
+      #tape-row b { color: var(--text); font-weight: 600; margin-right: 12px; }
+      #tape-row .up { color: var(--primary); } #tape-row .dn { color: var(--negative); }
 
-      /* scene 4 */
-      #s4-copy {
-        position: absolute;
-        left: 120px;
-        top: 150px;
-      }
-      #s4-head {
-        margin: 18px 0 0;
-        font-size: 104px;
-        font-weight: 700;
-        letter-spacing: -3.5px;
-      }
-      #s4-chart {
-        position: absolute;
-        left: 120px;
-        top: 440px;
-        width: 1680px;
-        height: 520px;
-        padding: 0;
-      }
-      #s4-svg {
-        position: absolute;
-        left: 40px;
-        top: 40px;
-        width: 1600px;
-        height: 440px;
-      }
-      .legend {
-        position: absolute;
-        right: 60px;
-        top: 44px;
-        display: flex;
-        gap: 40px;
-        font-size: 26px;
-        color: var(--muted);
-      }
-      .legend span {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .legend i {
-        width: 36px;
-        height: 6px;
-        border-radius: 3px;
-      }
-      #s4-dev {
-        position: absolute;
-        left: 1170px;
-        top: 100px;
-        text-align: right;
-        width: 460px;
-      }
-      #s4-dev .label {
-        font-size: 26px;
-      }
-      #s4-devval {
-        font-size: 84px;
-        font-weight: 700;
-        color: var(--primary);
-        letter-spacing: -2px;
-        font-variant-numeric: tabular-nums;
-      }
-      #s4-buytag {
-        position: absolute;
-        left: 470px;
-        top: 150px;
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--on-primary);
-        background: var(--primary);
-        padding: 8px 16px;
-        border-radius: 10px;
-        letter-spacing: 2px;
-      }
+      /* ---------- scene 1: hook ---------- */
+      #hook-line { font-size: 108px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.08; max-width: 1150px; }
+      #hook-line span { display: inline-block; margin: 0 0.12em; }
+      #hook-sub { margin-top: 36px; font-size: 76px; font-weight: 700; color: var(--primary); letter-spacing: -0.03em; }
 
-      /* scene 5 */
-      #s5-lockup {
-        position: absolute;
-        left: 120px;
-        top: 300px;
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 32px;
-      }
-      #s5-mark {
-        width: 132px;
-        height: 132px;
-        border-radius: 36px;
-        font-size: 76px;
-      }
-      #s5-word {
-        font-size: 96px;
-        font-weight: 700;
-        letter-spacing: -3.5px;
-      }
-      #s5-head {
-        margin: 56px 0 0;
-        font-size: 136px;
-        font-weight: 700;
-        line-height: 1.02;
-        letter-spacing: -5px;
-        width: 1600px;
-      }
-      #s5-head em {
-        font-style: normal;
-        white-space: nowrap;
-        color: var(--primary);
-      }
-      #s5-sub {
-        margin-top: 40px;
-        font-size: 34px;
-        color: var(--muted);
-      }
+      /* ---------- scene 2: bankroll ---------- */
+      .mark { width: 150px; height: 150px; border-radius: 36px; background: var(--primary); color: var(--on-primary);
+        display: flex; align-items: center; justify-content: center; font-size: 96px; font-weight: 800; letter-spacing: -0.04em; }
+      #cash-eyebrow { margin-top: 56px; }
+      #cash { margin-top: 18px; font-size: 200px; font-weight: 700; letter-spacing: -0.045em; line-height: 1; }
+      #cash-sub { margin-top: 34px; display: flex; gap: 20px; }
+      .pill { padding: 14px 28px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 30px; font-weight: 500; color: var(--muted); }
+      .pill strong { color: var(--text); font-weight: 600; }
+
+      /* ---------- scene 3/4: desk ---------- */
+      #desk-stage { position: absolute; inset: 0; padding: 110px 110px 150px; display: flex; gap: 40px; align-items: stretch; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 28px; }
+      #chart-card { flex: 1; padding: 44px 48px; display: flex; flex-direction: column; }
+      #chart-head { display: flex; justify-content: space-between; align-items: flex-end; }
+      #stock-name { font-size: 46px; font-weight: 700; letter-spacing: -0.02em; margin-top: 10px; }
+      .tag { display: inline-block; margin-left: 16px; padding: 6px 14px; border-radius: 10px; background: var(--surface-soft); font-size: 20px; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; vertical-align: middle; }
+      #price-wrap { text-align: right; }
+      #price { font-size: 74px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+      #delta { display: inline-block; margin-top: 12px; padding: 8px 18px; border-radius: 999px; background: var(--tint); color: var(--primary); font-size: 24px; font-weight: 600; }
+      #chart-box { position: relative; flex: 1; margin-top: 28px; }
+      #chart { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+      #legend { display: flex; gap: 40px; margin-top: 18px; font-size: 24px; color: var(--muted); }
+      #legend span { display: inline-flex; align-items: center; gap: 14px; }
+      .sw { display: block; width: 44px; height: 0; border-top: 5px solid var(--primary); border-radius: 3px; }
+      .sw.ref { border-top: 4px dashed var(--reference); }
+      #drift-pill { margin-left: auto; color: var(--primary); font-weight: 600; opacity: 0; }
+
+      #desk { width: 560px; padding: 40px 40px; display: flex; flex-direction: column; gap: 24px; }
+      #desk-title { font-size: 36px; font-weight: 700; letter-spacing: -0.02em; margin-top: 8px; }
+      .paper { float: right; font-size: 18px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; margin-top: -30px; }
+      #tabs { display: flex; padding: 6px; border-radius: 16px; background: var(--surface-soft); }
+      .tabbtn { flex: 1; height: 72px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: var(--muted); position: relative; }
+      .tabbtn small { font-weight: 500; margin-left: 8px; font-size: 20px; }
+      #tab-buy { background: var(--primary); color: var(--on-primary); }
+      #tab-sell-fill { position: absolute; inset: 0; border-radius: 12px; background: var(--negative); opacity: 0; }
+      #tab-sell-label { position: relative; }
+      .row { display: flex; justify-content: space-between; align-items: center; font-size: 26px; color: var(--muted); }
+      .row b { color: var(--text); font-weight: 600; }
+      #qty { display: flex; gap: 12px; }
+      #qty div { height: 76px; border-radius: 14px; background: var(--surface-soft); display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 600; }
+      #qty .st { width: 76px; color: var(--muted); } #qty .val { flex: 1; }
+      #est { border-top: 1px solid var(--border); padding-top: 22px; }
+      #est b { font-size: 36px; }
+      #go { position: relative; height: 92px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; color: var(--on-primary); overflow: hidden; }
+      #go-buy, #go-sell { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+      #go-buy { background: var(--primary); }
+      #go-sell { background: var(--negative); opacity: 0; }
+      #toast { position: absolute; right: 110px; top: 34px; padding: 18px 28px; border-radius: 16px; background: var(--tint); border: 1px solid #286a62; color: var(--text); font-size: 26px; font-weight: 500; display: flex; gap: 14px; align-items: center; opacity: 0; }
+      #toast i { font-style: normal; color: var(--primary); font-weight: 700; }
+      #cursor { position: absolute; left: 0; top: 0; width: 54px; height: 54px; opacity: 0; }
+
+      /* ---------- scene 5: flex ---------- */
+      #flex-wrap { position: absolute; inset: 0; padding: 120px 170px 170px; display: flex; flex-direction: column; }
+      #flex-title { font-size: 84px; font-weight: 700; letter-spacing: -0.035em; margin-top: 14px; }
+      #chips { margin-top: 56px; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+      .chip { position: relative; padding: 40px 48px; border-radius: 28px; background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+      .chip h3 { margin: 0; font-size: 64px; font-weight: 700; letter-spacing: -0.03em; }
+      .chip p { margin: 14px 0 0; font-size: 28px; color: var(--muted); }
+      .chip .k { position: absolute; top: 34px; right: 40px; font: 600 22px ui-monospace, "DejaVu Sans Mono", monospace; color: var(--primary); }
+      .chip.hl { border-color: #286a62; background: var(--tint); }
+
+      /* ---------- scene 6: outro ---------- */
+      #lockup { display: flex; align-items: center; gap: 40px; }
+      #lockup .mark { width: 170px; height: 170px; font-size: 110px; border-radius: 40px; }
+      #word { font-size: 170px; font-weight: 800; letter-spacing: -0.055em; line-height: 1; }
+      #tagline { margin-top: 54px; font-size: 80px; font-weight: 700; letter-spacing: -0.035em; display: flex; gap: 28px; }
+      #tagline .a { color: var(--muted); } #tagline .b { color: var(--primary); }
+      #url { margin-top: 56px; padding: 20px 40px; border-radius: 999px; border: 1px solid #286a62; background: var(--tint); font-size: 38px; font-weight: 600; color: var(--text); }
     </style>
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="main"
-      data-start="0"
-      data-width="1920"
-      data-height="1080"
-      data-duration="21.4"
-    >
-      <!-- persistent background -->
-      <div class="grid"></div>
-      <div id="glow" class="glow"></div>
-      <div class="meta"><span><b>mockfolio</b> · paper trading desk</span><span>NSE · simulated market</span></div>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="24.6">
+      <!-- backdrop (whole film) -->
+      <div id="bg" class="clip" data-start="0" data-duration="24.6" data-track-index="0">
+        <div id="grid"></div>
+        <div id="haze"></div>
+        <div id="vignette"></div>
+      </div>
 
-      <!-- Scene 1: hook -->
-      <section id="s1" class="clip" data-start="0" data-duration="3.4" data-track-index="1">
-        <div class="inner" id="s1-inner">
-          <svg id="s1-line" viewBox="0 0 1920 360" preserveAspectRatio="none">
-            <path
-              id="s1-path"
-              pathLength="1"
-              d="M0 250 C 200 240, 330 262, 480 236 S 760 214, 920 228 S 1240 198, 1420 212 S 1760 188, 1920 196"
-              fill="none"
-              stroke="#7c8e93"
-              stroke-width="6"
-              stroke-linecap="round"
-            />
-          </svg>
-          <h1 id="s1-head">
-            <span class="w">Your</span> <span class="w">paper</span> <span class="w">trades</span>
-            <span class="w strike-word">don’t<span id="s1-strike"></span></span> <span class="w">move</span>
-            <span class="w">the</span> <span class="w">market.</span>
-          </h1>
+      <!-- Scene 1 — hook -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.2" data-track-index="1">
+        <div id="s1-in" class="scene center">
+          <div id="hook-line"><span>You've</span><span>never</span><span>moved</span><span>a</span><span>stock</span><span>price.</span></div>
+          <div id="hook-sub">Not once.</div>
         </div>
       </section>
 
-      <!-- Scene 2: virtual cash -->
-      <section id="s2" class="clip" data-start="3.4" data-duration="3.8" data-track-index="1">
-        <div class="inner" id="s2-inner">
-          <div id="s2-card" class="card">
-            <div class="label">Available cash</div>
-            <div id="s2-cash">₹0</div>
-            <div class="s2-sub">Credited on registration · virtual money</div>
-          </div>
-          <div id="s2-chips">
-            <div class="chip"><i></i><div><b>Virtual money only</b><span>Zero risk to real capital</span></div></div>
-            <div class="chip"><i></i><div><b>Simulated pricing</b><span>Moves with sandbox trades</span></div></div>
-            <div class="chip"><i></i><div><b>Practice, not prediction</b><span>Built for learning, not live trading</span></div></div>
+      <!-- Scene 2 — bankroll -->
+      <section id="s2" class="scene clip" data-start="3.2" data-duration="3.8" data-track-index="1">
+        <div id="s2-in" class="scene center">
+          <div id="s2-mark" class="mark">M</div>
+          <div id="cash-eyebrow" class="eyebrow">Virtual cash</div>
+          <div id="cash" class="num">₹0.00</div>
+          <div id="cash-sub">
+            <div class="pill" id="p1"><strong>Fake</strong> money</div>
+            <div class="pill" id="p2"><strong>Real</strong> market</div>
+            <div class="pill" id="p3">Zero risk to real capital</div>
           </div>
         </div>
       </section>
 
-      <!-- Scene 3: the trade -->
-      <section id="s3" class="clip" data-start="7.2" data-duration="5.4" data-track-index="1">
-        <div class="inner" id="s3-inner">
-          <div id="s3-stock" class="card">
-            <div class="sym"><h2>RELIANCE</h2><span class="tag">NSE</span></div>
-            <div class="company">Reliance Industries · Energy</div>
-            <div class="label" style="margin-top: 40px">MockFolio price</div>
-            <div id="s3-price">₹1,197.60</div>
-            <div class="price-row">
-              <span id="s3-impact">▲ +0.56% price impact</span>
-              <span class="ref">Reference price <b>₹1,197.60</b></span>
+      <!-- Scenes 3+4 — the trade and the drift (one continuous desk) -->
+      <section id="s3" class="scene clip" data-start="7.0" data-duration="6.7" data-track-index="1">
+        <div id="desk-stage">
+          <div id="chart-card" class="card">
+            <div id="chart-head">
+              <div>
+                <div class="eyebrow">Simulated market · NSE</div>
+                <div id="stock-name">Reliance Industries <span class="tag">RELIANCE · NSE</span></div>
+              </div>
+              <div id="price-wrap">
+                <div id="price" class="num">₹2,944.80</div>
+                <div id="delta" class="num">▲ +₹14.20 vs reference</div>
+              </div>
+            </div>
+            <div id="chart-box">
+              <svg id="chart" viewBox="0 0 1000 400" preserveAspectRatio="none">
+                <defs><clipPath id="reveal"><rect id="reveal-rect" x="-20" y="-60" width="0" height="520" /></clipPath></defs>
+                <g stroke="#2b3b3f" stroke-width="1"><line x1="0" x2="1000" y1="80" y2="80" /><line x1="0" x2="1000" y1="200" y2="200" /><line x1="0" x2="1000" y1="320" y2="320" /></g>
+                <g clip-path="url(#reveal)">
+                  <path id="spread" fill="rgba(88,199,184,0.13)" />
+                  <path id="ref-line" fill="none" stroke="#7c8e93" stroke-width="4" stroke-dasharray="12 12" stroke-linecap="round" />
+                  <path id="mf-line" fill="none" stroke="#58c7b8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+                  <circle id="dot" r="12" fill="#58c7b8" stroke="#101719" stroke-width="5" />
+                </g>
+              </svg>
+              <div id="you-tag" style="position:absolute; opacity:0; padding:10px 20px; border-radius:12px; background:#eef5f3; color:#101719; font-size:26px; font-weight:700; white-space:nowrap;">← that was you</div>
+            </div>
+            <div id="legend">
+              <span id="lg1"><i class="sw"></i>MockFolio price</span>
+              <span id="lg2"><i class="sw ref"></i>Reference price</span>
+              <span id="drift-pill">● drifting back to reference</span>
             </div>
           </div>
-          <div id="s3-ticket" class="card">
-            <div class="eyebrow">Buy stock</div>
-            <div class="label" style="margin-top: 26px">Quantity</div>
-            <div class="field" id="s3-field"><span id="s3-qty"></span><span id="s3-caret"></span></div>
-            <div class="rows">
-              <div class="row">Estimated amount <b id="s3-est">₹0.00</b></div>
-              <div class="row" id="s3-fillrow">Fill price <b>₹1,204.31</b></div>
-              <div class="row" id="s3-brokrow">Brokerage <b>₹35.93</b></div>
+          <div id="desk" class="card">
+            <div>
+              <div class="eyebrow">Risk-free sandbox</div>
+              <div id="desk-title">Simulated Order Desk</div>
             </div>
-            <div id="s3-buy">Buy stock</div>
-          </div>
-          <div id="s3-toast"><span class="tick">✓</span>Trade executed successfully · 100 RELIANCE</div>
-          <svg id="s3-cursor" viewBox="0 0 24 24">
-            <path d="M4 2 L4 19 L8.5 14.8 L11.6 21.5 L14.4 20.2 L11.4 13.6 L17.5 13.6 Z" fill="#eef5f3" stroke="#101719" stroke-width="1.4" stroke-linejoin="round" />
-          </svg>
-        </div>
-      </section>
-
-      <!-- Scene 4: two prices, one lesson -->
-      <section id="s4" class="clip" data-start="12.6" data-duration="4.8" data-track-index="1">
-        <div class="inner" id="s4-inner">
-          <div id="s4-copy">
-            <div class="eyebrow">How prices move</div>
-            <h2 id="s4-head">Two prices, one lesson.</h2>
-          </div>
-          <div id="s4-chart" class="card">
-            <svg id="s4-svg" viewBox="0 0 1600 440" preserveAspectRatio="none">
-              <path id="s4-fill" fill="rgba(88,199,184,0.14)" d="" />
-              <path id="s4-ref" pathLength="1" fill="none" stroke="#7c8e93" stroke-width="5" stroke-dasharray="14 12" d="" />
-              <path id="s4-mf" pathLength="1" fill="none" stroke="#58c7b8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="" />
-              <circle id="s4-dot" r="13" fill="#58c7b8" cx="0" cy="0" />
-            </svg>
-            <div class="legend">
-              <span><i style="background: #58c7b8"></i>MockFolio price</span>
-              <span><i style="background: #7c8e93"></i>Reference price</span>
+            <div id="tabs">
+              <div class="tabbtn" id="tab-buy">BUY <small>(Long)</small></div>
+              <div class="tabbtn" id="tab-sell"><div id="tab-sell-fill"></div><span id="tab-sell-label">SELL <small>(Short)</small></span></div>
             </div>
-            <div id="s4-buytag">BUY 100</div>
-            <div id="s4-dev">
-              <div class="label">Deviation</div>
-              <div id="s4-devval">+0.56%</div>
-            </div>
+            <div class="row"><span>Stock</span><b>RELIANCE</b></div>
+            <div id="qty"><div class="st">−</div><div class="val num">5</div><div class="st">+</div></div>
+            <div class="row" id="est"><span>Estimated capital</span><b class="num">₹14,724.00</b></div>
+            <div id="go"><div id="go-buy">Buy 5 Shares of RELIANCE</div><div id="go-sell" data-layout-allow-overlap>Sell 5 Shares of RELIANCE</div></div>
           </div>
         </div>
+        <div id="toast"><i>✓</i> Simulated execution filled · 5 × RELIANCE</div>
+        <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2.5 L4 19 L8.6 14.8 L11.6 21.4 L14.6 20 L11.7 13.6 L18 13.4 Z" fill="#eef5f3" stroke="#101719" stroke-width="1.4" stroke-linejoin="round" /></svg>
       </section>
 
-      <!-- Scene 5: outro -->
-      <section id="s5" class="clip" data-start="17.4" data-duration="4" data-track-index="1">
-        <div class="inner" id="s5-inner">
-          <div id="s5-lockup">
-            <div class="brand">
-              <div id="s5-mark" class="brand-mark">M</div>
-              <div id="s5-word">mockfolio</div>
-            </div>
-            <h2 id="s5-head">Paper trade. <em>Move the market.</em></h2>
-            <div id="s5-sub">Virtual money only · Zero risk to real capital</div>
+      <!-- Scene 5 — the flex -->
+      <section id="s5" class="scene clip" data-start="13.7" data-duration="6.7" data-track-index="1">
+        <div id="flex-wrap">
+          <div class="eyebrow" id="flex-eyebrow">Under the hood</div>
+          <div id="flex-title">It's a toy. With a real engine.</div>
+          <div id="chips">
+            <div class="chip" id="c1"><span class="k">BEGIN … COMMIT</span><h3>ACID transactions</h3><p>Rollbacks and savepoints on every fill</p></div>
+            <div class="chip" id="c2"><span class="k">FOR UPDATE</span><h3>Row-level locks</h3><p>One canonical lock order</p></div>
+            <div class="chip" id="c3"><span class="k">retry × 3</span><h3>Deadlock retry</h3><p>Jittered exponential backoff</p></div>
+            <div class="chip hl" id="c4"><span class="k">NSE</span><h3>NIFTY 500</h3><p>The whole index, tradable</p></div>
           </div>
         </div>
       </section>
 
-      <!-- Voiceover (Kokoro af_heart) -->
-      <audio id="vo1" src="assets/vo/vo1.wav" data-start="0.4" data-duration="2.37" data-track-index="3" data-volume="1"></audio>
-      <audio id="vo2" src="assets/vo/vo2.wav" data-start="3.5" data-duration="3.55" data-track-index="4" data-volume="1"></audio>
-      <audio id="vo3" src="assets/vo/vo3.wav" data-start="7.35" data-duration="2.42" data-track-index="3" data-volume="1"></audio>
-      <audio id="vo4" src="assets/vo/vo4.wav" data-start="12.8" data-duration="3.52" data-track-index="4" data-volume="1"></audio>
-      <audio id="vo5" src="assets/vo/vo5.wav" data-start="17.6" data-duration="2.56" data-track-index="3" data-volume="1"></audio>
+      <!-- Scene 6 — outro -->
+      <section id="s6" class="scene clip" data-start="20.4" data-duration="4.2" data-track-index="1">
+        <div id="s6-in" class="scene center">
+          <div id="lockup"><div class="mark" id="o-mark">M</div><div id="word">mockfolio</div></div>
+          <div id="tagline"><span class="a" id="t1">Fake money.</span><span class="b" id="t2">Real moves.</span></div>
+          <div id="url">mockfolioo.up.railway.app</div>
+        </div>
+      </section>
 
-      <!-- Music bed: in, ducked under voice, lifts after last line, fades out -->
-      <audio
-        id="music"
-        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
-        data-start="0"
-        data-duration="21.4"
-        data-track-index="10"
-        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.35,"v":0.14},{"t":20.1,"v":0.14},{"t":20.4,"v":0.3},{"t":20.5,"v":0.3},{"t":21.4,"v":0}]}]}'
-      ></audio>
+      <!-- ticker tape (texture, scenes 2–4) -->
+      <div id="tape" class="clip" data-start="3.2" data-duration="10.5" data-track-index="2">
+        <div id="tape-row">
+          <span><b>RELIANCE</b><span class="up">▲ 0.48%</span></span><span><b>TCS</b><span class="up">▲ 0.17%</span></span><span><b>HDFCBANK</b><span class="dn">▼ 0.25%</span></span><span><b>INFY</b><span class="up">▲ 1.25%</span></span><span><b>ICICIBANK</b><span class="dn">▼ 0.17%</span></span><span><b>BHARTIARTL</b><span class="up">▲ 0.54%</span></span><span><b>LT</b><span class="dn">▼ 0.16%</span></span>
+          <span><b>RELIANCE</b><span class="up">▲ 0.48%</span></span><span><b>TCS</b><span class="up">▲ 0.17%</span></span><span><b>HDFCBANK</b><span class="dn">▼ 0.25%</span></span><span><b>INFY</b><span class="up">▲ 1.25%</span></span><span><b>ICICIBANK</b><span class="dn">▼ 0.17%</span></span><span><b>BHARTIARTL</b><span class="up">▲ 0.54%</span></span><span><b>LT</b><span class="dn">▼ 0.16%</span></span>
+        </div>
+      </div>
 
-      <!-- SFX -->
-      <audio id="sfx-strike" src="assets/sfx/switch_002.ogg" data-start="2.3" data-duration="0.4" data-track-index="11" data-volume="0.7"></audio>
-      <audio id="sfx-count" src="assets/sfx/drop_001.ogg" data-start="4.45" data-duration="0.11" data-track-index="12" data-volume="0.6"></audio>
-      <audio id="sfx-k1" src="assets/sfx/keypress-004.wav" data-start="8.0" data-duration="0.2" data-track-index="13" data-volume="0.7"></audio>
-      <audio id="sfx-k2" src="assets/sfx/keypress-011.wav" data-start="8.14" data-duration="0.2" data-track-index="14" data-volume="0.7"></audio>
-      <audio id="sfx-k3" src="assets/sfx/keypress-019.wav" data-start="8.28" data-duration="0.2" data-track-index="15" data-volume="0.7"></audio>
-      <audio id="sfx-click" src="assets/sfx/mouseclick1.ogg" data-start="9.2" data-duration="0.06" data-track-index="16" data-volume="0.8"></audio>
-      <audio id="sfx-ok" src="assets/sfx/bong_001.ogg" data-start="9.45" data-duration="0.12" data-track-index="17" data-volume="0.6"></audio>
-      <audio id="sfx-buy" src="assets/sfx/drop_001.ogg" data-start="13.82" data-duration="0.11" data-track-index="18" data-volume="0.55"></audio>
-      <audio id="sfx-mark" src="assets/sfx/impactSoft_medium_001.ogg" data-start="17.5" data-duration="0.18" data-track-index="19" data-volume="0.75"></audio>
+      <!-- ===== audio ===== -->
+      <audio id="music" src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3" data-start="0" data-duration="24.6" data-track-index="10" data-volume="1"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.5,"v":0.2},{"t":23.2,"v":0.2},{"t":23.45,"v":0.38},{"t":23.8,"v":0.38},{"t":24.6,"v":0}]}]}'></audio>
+      <audio id="vo1" src="assets/vo/vo1.wav" data-start="0.35" data-duration="2.61" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo2" src="assets/vo/vo2.wav" data-start="3.3" data-duration="3.57" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo3" src="assets/vo/vo3.wav" data-start="7.1" data-duration="2.59" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo4" src="assets/vo/vo4.wav" data-start="10.1" data-duration="3.48" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo5" src="assets/vo/vo5.wav" data-start="13.8" data-duration="6.45" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo6" src="assets/vo/vo6.wav" data-start="20.6" data-duration="2.63" data-track-index="11" data-volume="1"></audio>
+
+      <audio id="k1" src="assets/sfx/keypress-004.wav" data-start="0.35" data-duration="0.3" data-track-index="12" data-volume="0.28"></audio>
+      <audio id="k2" src="assets/sfx/keypress-011.wav" data-start="0.53" data-duration="0.3" data-track-index="13" data-volume="0.24"></audio>
+      <audio id="k3" src="assets/sfx/keypress-019.wav" data-start="0.71" data-duration="0.3" data-track-index="12" data-volume="0.26"></audio>
+      <audio id="k4" src="assets/sfx/keypress-026.wav" data-start="0.89" data-duration="0.3" data-track-index="13" data-volume="0.22"></audio>
+      <audio id="k5" src="assets/sfx/keypress-011.wav" data-start="1.07" data-duration="0.3" data-track-index="12" data-volume="0.24"></audio>
+      <audio id="k6" src="assets/sfx/keypress-004.wav" data-start="1.25" data-duration="0.3" data-track-index="13" data-volume="0.28"></audio>
+      <audio id="sx-notonce" src="assets/sfx/impactSoft_medium_001.ogg" data-start="1.95" data-duration="0.8" data-track-index="14" data-volume="0.45"></audio>
+      <audio id="sx-mark" src="assets/sfx/impactSoft_medium_001.ogg" data-start="3.25" data-duration="0.8" data-track-index="14" data-volume="0.55"></audio>
+      <audio id="sx-chips" src="assets/sfx/chips-stack-3.ogg" data-start="3.75" data-duration="1.2" data-track-index="15" data-volume="0.45"></audio>
+      <audio id="sx-click" src="assets/sfx/mouseclick1.ogg" data-start="7.62" data-duration="0.5" data-track-index="14" data-volume="0.6"></audio>
+      <audio id="sx-toast" src="assets/sfx/drop_002.ogg" data-start="8.4" data-duration="0.6" data-track-index="15" data-volume="0.4"></audio>
+      <audio id="sx-sell" src="assets/sfx/switch_004.ogg" data-start="10.2" data-duration="0.5" data-track-index="14" data-volume="0.45"></audio>
+      <audio id="sx-c1" src="assets/sfx/card-place-1.ogg" data-start="14.97" data-duration="0.6" data-track-index="15" data-volume="0.55"></audio>
+      <audio id="sx-c2" src="assets/sfx/card-place-2.ogg" data-start="15.97" data-duration="0.6" data-track-index="14" data-volume="0.55"></audio>
+      <audio id="sx-c3" src="assets/sfx/card-place-3.ogg" data-start="16.97" data-duration="0.6" data-track-index="15" data-volume="0.55"></audio>
+      <audio id="sx-c4" src="assets/sfx/card-place-4.ogg" data-start="18.47" data-duration="0.6" data-track-index="14" data-volume="0.6"></audio>
+      <audio id="sx-bell" src="assets/sfx/impactBell_heavy_000.ogg" data-start="20.47" data-duration="2.5" data-track-index="16" data-volume="0.5"></audio>
     </div>
 
-    <script src="assets/audio-data.js"></script>
     <script>
       (function () {
         const tl = gsap.timeline({ paused: true });
-        const inr = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const inr0 = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+        const FPS = 30;
 
-        // ---- chart geometry for scene 4 (computed once, deterministic) ----
-        const W = 1600, H = 440, BUY_X = 520;
-        const refY = (x) => 300 - x * 0.04;
-        const mfY = (x) => {
-          const base = refY(x) + Math.sin(x / 55) * 6;
-          if (x < BUY_X) return base;
-          const k = Math.exp(-(x - BUY_X) / 330); // decay back toward reference
-          return base - 150 * k;
-        };
-        const pts = (fn) => {
-          const out = [];
-          for (let x = 0; x <= W; x += 10) out.push([x, fn(x)]);
-          return out;
-        };
-        const toD = (p) => p.map((q, i) => (i ? "L" : "M") + q[0] + " " + q[1].toFixed(1)).join(" ");
-        const mfPts = pts(mfY);
-        document.getElementById("s4-ref").setAttribute("d", toD(pts(refY)));
-        document.getElementById("s4-mf").setAttribute("d", toD(mfPts));
-        document.getElementById("s4-fill").setAttribute("d", toD(mfPts) + " L" + W + " " + H + " L0 " + H + " Z");
-
-        // ================= Scene 1: hook (0 – 3.4) =================
-        tl.fromTo("#s1-line", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 2.6, ease: "power2.inOut" }, 0);
-        tl.fromTo("#s1-head .w", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", stagger: 0.06 }, 0.15);
-        tl.fromTo("#s1-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.28, ease: "power4.out" }, 2.3);
-        tl.to(".strike-word", { color: "#9aadae", duration: 0.25 }, 2.35);
-        tl.to("#s1-inner", { opacity: 0, x: -60, duration: 0.3, ease: "power2.in" }, 3.1);
-
-        // ================= Scene 2: virtual cash (3.4 – 7.2) =================
-        tl.fromTo("#s2-card", { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 3.4);
-        const cash = { v: 0 };
-        tl.to(cash, {
-          v: 500000,
-          duration: 1.0,
-          ease: "power2.out",
-          onUpdate: () => (document.getElementById("s2-cash").textContent = "₹" + inr0.format(Math.round(cash.v))),
-        }, 3.55);
-        // beat-grid: chips at 4.53, 5.03, 5.53 (vol-1 preset), then hold ≥1.6s
-        tl.fromTo("#s2-chips .chip", { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "back.out(1.6)", stagger: 0.5 }, 4.53);
-        tl.to("#s2-inner", { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 6.9);
-
-        // ================= Scene 3: the trade (7.2 – 12.6) =================
-        tl.fromTo("#s3-stock", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 7.2);
-        tl.fromTo("#s3-ticket", { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "expo.out" }, 7.32);
-        tl.set("#s3-impact", { opacity: 0 }, 7.2);
-        tl.set(["#s3-fillrow", "#s3-brokrow"], { opacity: 0 }, 7.2);
-        tl.set("#s3-toast", { opacity: 0 }, 7.2);
-        tl.set("#s3-field", { className: "field focus" }, 7.85);
-        tl.fromTo("#s3-caret", { opacity: 1 }, { opacity: 0.15, duration: 0.25, repeat: 3, yoyo: true }, 7.85);
-        [["1", 8.0], ["10", 8.14], ["100", 8.28]].forEach(([q, t]) => tl.set("#s3-qty", { textContent: q }, t));
-        tl.set("#s3-est", { textContent: "₹1,19,760.00" }, 8.35);
-        // cursor travels to Buy stock and clicks
-        tl.fromTo("#s3-cursor", { x: 1560, y: 1020, opacity: 0 }, { x: 1500, y: 900, opacity: 1, duration: 0.2 }, 8.45);
-        tl.to("#s3-cursor", { x: 1440, y: 690, duration: 0.55, ease: "power2.inOut" }, 8.65);
-        tl.to("#s3-buy", { scale: 0.95, duration: 0.08 }, 9.2);
-        tl.to("#s3-buy", { scale: 1, duration: 0.2, ease: "back.out(3)" }, 9.28);
-        tl.to("#s3-cursor", { scale: 0.85, duration: 0.08, transformOrigin: "0% 0%" }, 9.2);
-        tl.to("#s3-cursor", { scale: 1, duration: 0.15 }, 9.28);
-        tl.fromTo("#s3-toast", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.8)" }, 9.45);
-        const px = { v: 1197.6 };
-        tl.to(px, {
-          v: 1204.31,
-          duration: 0.8,
-          ease: "power3.out",
-          onUpdate: () => (document.getElementById("s3-price").textContent = "₹" + inr.format(px.v)),
-        }, 9.5);
-        tl.to("#s3-price", { color: "#58c7b8", duration: 0.2 }, 9.5);
-        tl.fromTo("#s3-impact", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.9);
-        tl.fromTo(["#s3-fillrow", "#s3-brokrow"], { opacity: 0 }, { opacity: 1, duration: 0.3, stagger: 0.12 }, 10.1);
-        tl.to("#s3-cursor", { opacity: 0, duration: 0.3 }, 10.2);
-        tl.to("#s3-inner", { opacity: 0, duration: 0.3, ease: "power1.in" }, 12.3);
-
-        // ================= Scene 4: two prices (12.6 – 17.4) =================
-        tl.fromTo("#s4-copy", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 12.65);
-        tl.fromTo("#s4-chart", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "expo.out" }, 12.75);
-                        tl.fromTo("#s4-buytag", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 13.85);
-        // dot rides the MockFolio line as it draws
-        const dotState = { i: 0 };
-        const placeDot = () => {
-          const n = Math.max(1, Math.min(mfPts.length - 1, Math.round(dotState.i)));
-          const part = mfPts.slice(0, n + 1);
-          document.getElementById("s4-mf").setAttribute("d", toD(part));
-          document.getElementById("s4-fill").setAttribute("d", toD(part) + " L" + part[n][0] + " " + H + " L0 " + H + " Z");
-          const p = mfPts[n];
-          const d = document.getElementById("s4-dot");
-          d.setAttribute("cx", p[0]);
-          d.setAttribute("cy", p[1]);
-        };
-        placeDot();
-        tl.to(dotState, { i: mfPts.length - 1, duration: 2.6, ease: "none", onUpdate: placeDot }, 13.0);
-        tl.fromTo("#s4-dev", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 13.95);
-        const dev = { v: 0.56 };
-        tl.to(dev, {
-          v: 0.12,
-          duration: 1.9,
-          ease: "power2.out",
-          onUpdate: () => (document.getElementById("s4-devval").textContent = "+" + dev.v.toFixed(2) + "%"),
-        }, 14.2);
-        tl.to("#s4-inner", { opacity: 0, duration: 0.3 }, 17.1);
-
-        // ================= Scene 5: outro (17.4 – 21.4) =================
-        // beat-locked: 17.52s strong cue (vol-1 preset) on the mark
-        tl.fromTo("#s5-mark", { scale: 0.4, opacity: 0, rotation: -12 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.55, ease: "back.out(2)" }, 17.5);
-        tl.fromTo("#s5-word", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 17.7);
-        tl.fromTo("#s5-head", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "expo.out" }, 18.0);
-        tl.fromTo("#s5-sub", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 18.7);
-
-        // ---- audio-reactive: music bass breathes the teal glow ----
-        const AD = window.AUDIO_DATA;
-        if (AD && AD.frames && AD.frames.length) {
-          const glow = document.getElementById("glow");
-          const n = Math.min(AD.frames.length, Math.round(21.4 * AD.fps));
-          for (let f = 0; f < n; f++) {
-            const b = AD.frames[f].bands;
-            const bass = (b[0] + b[1]) / 2;
-            tl.call(
-              (function (v) {
-                return function () {
-                  glow.style.opacity = (0.55 + 0.35 * v).toFixed(3);
-                };
-              })(bass),
-              [],
-              f / AD.fps,
-            );
-          }
-        } else {
-          tl.fromTo("#glow", { opacity: 0.55 }, { opacity: 0.8, duration: 10.7, yoyo: true, repeat: 1, ease: "sine.inOut" }, 0);
+        // ---------- helpers ----------
+        function inr(n) {
+          const [i, d] = Math.abs(n).toFixed(2).split(".");
+          const last3 = i.slice(-3), rest = i.slice(0, -3);
+          const head = rest ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," : "";
+          return "₹" + head + last3 + "." + d;
         }
+
+        // ---------- backdrop: bass-reactive haze ----------
+        const haze = document.getElementById("haze");
+        const BASS = window.BASS || [];
+        const total = Math.min(BASS.length, Math.floor(24.6 * FPS));
+        for (let f = 0; f < total; f++) {
+          tl.call(((b) => () => {
+            haze.style.opacity = (0.55 + 0.45 * b).toFixed(3);
+            haze.style.transform = "scale(" + (1 + 0.07 * b).toFixed(4) + ")";
+          })(BASS[f]), [], f / FPS);
+        }
+        tl.fromTo("#grid", { y: 0 }, { y: 80, duration: 24.6, ease: "none" }, 0);
+
+        // ---------- Scene 1: hook (0–3.2) ----------
+        tl.fromTo("#hook-line span", { y: 70, opacity: 0, filter: "blur(10px)" },
+          { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.45, ease: "power3.out", stagger: 0.18 }, 0.35);
+        tl.fromTo("#hook-sub", { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 1.95);
+        // whip-zoom out of the hook
+        tl.to("#s1-in", { scale: 1.35, opacity: 0, filter: "blur(14px)", duration: 0.28, ease: "power2.in" }, 2.92);
+
+        // ---------- Scene 2: bankroll (3.2–7.0) ----------
+        tl.fromTo("#s2-mark", { scale: 0, rotation: -25 }, { scale: 1, rotation: 0, duration: 0.55, ease: "back.out(2.2)" }, 3.22);
+        tl.fromTo("#cash-eyebrow", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power2.out" }, 3.5);
+        tl.fromTo("#cash", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.6);
+        const cashObj = { v: 0 };
+        const cashEl = document.getElementById("cash");
+        tl.fromTo(cashObj, { v: 0 }, { v: 500000, duration: 1.5, ease: "power2.out",
+          onUpdate: () => { cashEl.textContent = inr(Math.round(cashObj.v)); } }, 3.72);
+        tl.fromTo("#cash-sub .pill", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "back.out(1.6)", stagger: 0.32 }, 5.05);
+        tl.to("#s2-in", { y: -90, opacity: 0, duration: 0.3, ease: "power2.in" }, 6.7);
+
+        // ---------- Scenes 3+4: desk (7.0–13.7) ----------
+        const W = 1000;
+        const N = 90;
+        const refY = (x) => 318 - 175 * x - 22 * Math.sin(x * 7.5) + 10 * Math.sin(x * 19);
+        const w = (x) => { const t = Math.min(1, Math.max(0, (x - 0.45) / 0.55)); return t * t * (3 - 2 * t); };
+        const noise = (x) => 7 * Math.sin(x * 31) + 5 * Math.sin(x * 53 + 1.3);
+        const S = { lift: 58, kick: 0 };   // lift = standing spread, kick = your trade
+        const mfEl = document.getElementById("mf-line"), refEl = document.getElementById("ref-line");
+        const spreadEl = document.getElementById("spread"), dotEl = document.getElementById("dot");
+        function mfY(x) { return refY(x) - w(x) * (S.lift + S.kick) - w(x) * noise(x) * Math.min(1, (S.lift + Math.abs(S.kick)) / 58); }
+        function drawChart() {
+          let mf = "", rf = "", back = "";
+          for (let i = 0; i <= N; i++) {
+            const x = i / N, px = (x * W).toFixed(1);
+            mf += (i ? "L" : "M") + px + "," + mfY(x).toFixed(1);
+            rf += (i ? "L" : "M") + px + "," + refY(x).toFixed(1);
+          }
+          for (let i = N; i >= 0; i--) { const x = i / N; back += "L" + (x * W).toFixed(1) + "," + refY(x).toFixed(1); }
+          mfEl.setAttribute("d", mf); refEl.setAttribute("d", rf);
+          spreadEl.setAttribute("d", mf + back + "Z");
+          dotEl.setAttribute("cx", W); dotEl.setAttribute("cy", mfY(1).toFixed(1));
+        }
+        drawChart();
+        const redraw = { onUpdate: drawChart };
+
+        // enter: cards rise with a little 3D settle
+        tl.fromTo("#chart-card", { y: 120, opacity: 0, rotationX: 14, transformPerspective: 1600 },
+          { y: 0, opacity: 1, rotationX: 0, duration: 0.5, ease: "power3.out" }, 7.0);
+        tl.fromTo("#desk", { x: 160, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 7.08);
+        tl.fromTo("#reveal-rect", { attr: { width: 0 } }, { attr: { width: 1060 }, duration: 0.7, ease: "power2.inOut" }, 7.15);
+        tl.fromTo("#lg1, #lg2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.08 }, 7.4);
+
+        // cursor glides to Buy and clicks
+        tl.fromTo("#cursor", { x: 1900, y: 1000, opacity: 0 }, { x: 1500, y: 640, opacity: 1, duration: 0.45, ease: "power3.out" }, 7.15);
+        tl.to("#go", { scale: 0.95, duration: 0.07, yoyo: true, repeat: 1, ease: "power1.inOut" }, 7.6);
+        tl.to("#cursor", { scale: 0.85, duration: 0.07, yoyo: true, repeat: 1 }, 7.6);
+        // the trade hits the book: price kicks up
+        tl.to(S, { kick: 62, duration: 0.55, ease: "back.out(2.5)", ...redraw }, 7.7);
+        const priceEl = document.getElementById("price"), deltaEl = document.getElementById("delta");
+        const P = { v: 2944.8 };
+        const writePrice = () => {
+          priceEl.textContent = inr(P.v);
+          const d = P.v - 2930.6;
+          deltaEl.textContent = (d >= 0.005 ? "▲ +" : d <= -0.005 ? "▼ −" : "● ") + inr(Math.abs(d)) + " vs reference";
+        };
+        tl.to(P, { v: 2945.1, duration: 0.4, ease: "power2.out", onUpdate: writePrice }, 7.7);
+        tl.fromTo("#price", { color: "#eef5f3" }, { color: "#58c7b8", duration: 0.15, yoyo: true, repeat: 1 }, 7.7);
+        tl.fromTo("#price-wrap", { scale: 1 }, { scale: 1.08, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.out" }, 7.7);
+        tl.fromTo("#toast", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "back.out(1.8)" }, 8.4);
+        // "that was you" tag at the kink (post-kick geometry, computed once)
+        const box = { w: 1000, h: 400 };
+        const tagX = 0.72, tagEl = document.getElementById("you-tag");
+        S.kick = 62; const tagY = mfY(tagX); S.kick = 0; drawChart();
+        tagEl.style.left = "calc(" + (tagX * 100) + "% + 26px)";
+        tagEl.style.top = "calc(" + (tagY / box.h * 100) + "% - 70px)";
+        tl.fromTo(tagEl, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.3, ease: "power2.out" }, 8.85);
+        tl.to("#chart-card", { scale: 1.035, duration: 1.4, ease: "power1.inOut" }, 8.3);
+
+        // Scene 4 phase: SELL, slide, then drift home
+        tl.to(["#toast", tagEl], { opacity: 0, duration: 0.25 }, 9.95);
+        tl.to("#chart-card", { scale: 1, duration: 0.5, ease: "power2.inOut" }, 9.95);
+        tl.to("#cursor", { x: 1625, y: 284, duration: 0.3, ease: "power3.inOut" }, 9.85);
+        tl.to("#cursor", { scale: 0.85, duration: 0.07, yoyo: true, repeat: 1 }, 10.18);
+        tl.to("#tab-sell-fill", { opacity: 1, duration: 0.15 }, 10.2);
+        tl.to("#tab-sell", { color: "#101719", duration: 0.15 }, 10.2);
+        tl.to("#tab-buy", { backgroundColor: "rgba(0,0,0,0)", color: "#9aadae", duration: 0.15 }, 10.2);
+        tl.to("#go-sell", { opacity: 1, duration: 0.15 }, 10.2);
+        tl.to(S, { kick: 22, duration: 0.5, ease: "power3.out", ...redraw }, 10.3);
+        tl.to(P, { v: 2944.5, duration: 0.4, ease: "power2.out", onUpdate: writePrice }, 10.3);
+        tl.fromTo("#price", { color: "#eef5f3" }, { color: "#f07b78", duration: 0.15, yoyo: true, repeat: 1, immediateRender: false }, 10.3);
+        tl.to("#cursor", { x: 1900, y: 1100, opacity: 0, duration: 0.4, ease: "power2.in" }, 10.9);
+        // drift: the whole spread relaxes onto the dashed reference
+        tl.to(S, { kick: 0, lift: 0, duration: 2.0, ease: "power2.inOut", ...redraw }, 11.4);
+        tl.to(P, { v: 2930.6, duration: 2.0, ease: "power2.inOut", onUpdate: writePrice }, 11.4);
+        tl.fromTo("#drift-pill", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.3, immediateRender: false }, 11.45);
+        tl.to("#delta", { backgroundColor: "#1d2a2d", color: "#9aadae", duration: 0.4 }, 12.9);
+        tl.to("#desk-stage", { scale: 0.92, opacity: 0, duration: 0.3, ease: "power2.in" }, 13.4);
+
+        // ---------- Scene 5: flex (13.7–20.4) ----------
+        tl.fromTo("#flex-eyebrow", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 13.75);
+        tl.fromTo("#flex-title", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 13.85);
+        // beat-grid: chips land on 15.02 / 16.02 / 17.02 / 18.52 (strong cues, ~1s apart for readability)
+        [15.02, 16.02, 17.02, 18.52].forEach((t, i) => {
+          tl.fromTo("#c" + (i + 1), { scale: 1.35, opacity: 0, y: -40, rotation: i % 2 ? 3 : -3 },
+            { scale: 1, opacity: 1, y: 0, rotation: 0, duration: 0.38, ease: "back.out(1.9)" }, t - 0.05);
+          tl.fromTo("#chips", { x: 0 }, { x: i % 2 ? -8 : 8, duration: 0.05, yoyo: true, repeat: 3, ease: "none", immediateRender: false }, t + 0.25);
+        });
+        tl.to("#flex-wrap", { scale: 0.86, opacity: 0, duration: 0.3, ease: "power2.in" }, 20.1);
+
+        // ---------- Scene 6: outro (20.4–24.6) ----------
+        // beat-locked: wordmark 20.52s
+        tl.fromTo("#o-mark", { scale: 0, rotation: 90 }, { scale: 1, rotation: 0, duration: 0.5, ease: "back.out(2)" }, 20.45);
+        tl.fromTo("#word", { x: -80, opacity: 0, clipPath: "inset(0 100% 0 0)" }, { x: 0, opacity: 1, clipPath: "inset(0 0% 0 0)", duration: 0.55, ease: "power3.out" }, 20.55);
+        tl.fromTo("#t1", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 21.5);
+        // beat-locked: "Real moves." 22.01s strong cue
+        tl.fromTo("#t2", { scale: 1.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 21.97);
+        tl.fromTo("#url", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 22.55);
+        tl.fromTo("#s6-in", { scale: 1 }, { scale: 1.04, duration: 4.0, ease: "none" }, 20.5);
+        tl.to("#s6-in", { opacity: 0, duration: 0.5 }, 24.1);
+
+        // ---------- ticker tape (texture) ----------
+        tl.fromTo("#tape-row", { x: 0 }, { x: -1400, duration: 10.5, ease: "none" }, 3.2);
 
         window.__timelines["main"] = tl;
       })();
