@@ -2429,6 +2429,327 @@ select,
   height: 320px;
 }
 
+/* ---------- Portfolio overview ---------- */
+.portfolio-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.portfolio-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.portfolio-title h1 {
+  font-size: 40px;
+  letter-spacing: -1.6px;
+  line-height: 1;
+  margin: 0;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+.status-pill:empty {
+  display: none;
+}
+.status-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.portfolio-actions {
+  display: flex;
+  gap: 10px;
+}
+.stats-five {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin-bottom: 20px;
+}
+.stat-foot {
+  display: flex !important;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.stat-foot span {
+  color: var(--muted);
+}
+.stat-foot b {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.insights-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.insights-grid:empty {
+  display: none;
+}
+.insight-card {
+  padding: 22px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.insight-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.insight-head h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+.insight-head p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+.insight-tag {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.insight-card .chart-caption {
+  margin-top: auto;
+  padding-top: 16px;
+}
+.donut-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.donut {
+  position: relative;
+  flex: none;
+  width: 150px;
+  height: 150px;
+}
+.donut svg {
+  width: 100%;
+  height: 100%;
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.donut-center span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.donut-center strong {
+  font-size: 13px;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+.donut-legend li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.donut-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.donut-legend span {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.donut-legend b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.donut-legend small {
+  grid-column: 2 / 4;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.deploy-bar {
+  margin-bottom: 18px;
+}
+.deploy-label,
+.deploy-net {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.deploy-label span,
+.deploy-net span {
+  color: var(--muted);
+}
+.deploy-label b,
+.deploy-net b {
+  font-variant-numeric: tabular-nums;
+}
+.deploy-track,
+.pnl-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.deploy-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--reference);
+}
+.deploy-track span.current {
+  background: var(--primary);
+}
+.deploy-track span.current.negative {
+  background: var(--negative);
+}
+.deploy-net {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.pnl-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.pnl-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.pnl-label span {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pnl-track::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.pnl-track span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--primary);
+}
+.pnl-track span.positive {
+  border-radius: 0 999px 999px 0;
+}
+.pnl-track span.negative {
+  background: var(--negative);
+  border-radius: 999px 0 0 999px;
+}
+.pnl-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ticker-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.table-foot {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 12px 4px 0;
+}
+.table-foot:empty {
+  display: none;
+}
+@media (max-width: 1020px) {
+  .insights-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 620px) {
+  .donut-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .donut {
+    align-self: center;
+  }
+  .portfolio-actions {
+    width: 100%;
+  }
+  .portfolio-actions a {
+    flex: 1;
+  }
+}
+
 /* ---------- Screener ---------- */
 .movers {
   display: grid;

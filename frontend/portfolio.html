@@ -15,15 +15,21 @@
   <body data-page="portfolio">
     <div id="app">
       <main class="page">
-        <section class="page-intro compact-intro">
-          <span class="eyebrow">YOUR BOOK</span>
-          <h1>Portfolio</h1>
-          <p>
-            Track what you own, what it is worth, and how the simulated market
-            is treating you.
-          </p>
+        <section class="portfolio-head">
+          <div>
+            <span class="eyebrow">HOLDINGS OVERVIEW</span>
+            <div class="portfolio-title">
+              <h1>Portfolio</h1>
+              <span class="status-pill" id="positions-pill"></span>
+            </div>
+          </div>
+          <div class="portfolio-actions">
+            <a class="ghost-button" href="orders.html">Order book</a>
+            <a class="primary-button" href="index.html">+ New paper trade</a>
+          </div>
         </section>
-        <section class="stats" id="stats"></section>
+        <section class="stats stats-five" id="stats"></section>
+        <section class="insights-grid" id="portfolio-insights"></section>
         <section class="charts-grid" id="portfolio-charts"></section>
         <div class="section-heading">
           <div>
@@ -42,11 +48,13 @@
                 <th>Invested</th>
                 <th>Current value</th>
                 <th>P&L</th>
+                <th>Action</th>
               </tr>
             </thead>
-            <tbody id="portfolio-table" data-cols="7"></tbody>
+            <tbody id="portfolio-table" data-cols="8"></tbody>
           </table>
         </div>
+        <p class="table-foot" id="portfolio-foot"></p>
       </main>
     </div>
     <div id="toast-region" class="toast-region"></div>

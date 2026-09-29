@@ -213,14 +213,14 @@
     if (!$("#stats")) return;
     $("#stats").innerHTML = items
       .map(
-        ({ label, value, valueTone, caption, chip, chipTone }) =>
+        ({ label, value, valueTone, caption, chip, chipTone, foot }) =>
           `<div class="stat"><span class="stat-label">${label}</span><strong class="stat-value${valueTone ? ` ${valueTone}` : ""}">${value}</strong>${
             chip
               ? `<span class="stat-chip${chipTone ? ` ${chipTone}` : ""}">${chip}</span>`
               : caption
                 ? `<span class="stat-caption">${caption}</span>`
                 : ""
-          }</div>`,
+          }${foot ? `<span class="stat-foot"><span>${foot[0]}</span><b>${foot[1]}</b></span>` : ""}</div>`,
       )
       .join("");
   }
@@ -548,6 +548,90 @@
     }
   }
 
+  const share = (part, whole) => (whole ? (Number(part) / Number(whole)) * 100 : 0);
+  const pctPlain = (value) => `${Number(value || 0).toFixed(1)}%`;
+
+  function portfolioStats(summary, holdings) {
+    const start = Number(summary.starting_cash) || 0;
+    const total = Number(summary.total_account_value) || 0;
+    const cash = Number(summary.cash_balance) || 0;
+    const current = Number(summary.holdings_value) || 0;
+    const pnl = Number(summary.unrealised_pnl) || 0;
+    const invested = holdings.reduce((sum, h) => sum + Number(h.invested_value || 0), 0);
+    const roi = share(pnl, invested);
+    const largest = [...holdings].sort((a, b) => b.market_value - a.market_value)[0];
+    const n = holdings.length;
+    return [
+      { label: "Total account value", value: money(total), chip: `${signed(total - start)} (${percent(share(total - start, start))})`, chipTone: tone(total - start), foot: ["Starting base", money(start)] },
+      { label: "Invested capital", value: money(invested), caption: `${n} equity holding${n === 1 ? "" : "s"}`, foot: ["Capital deployed", pctPlain(share(invested, total))] },
+      { label: "Current value", value: money(current), chip: `${signed(pnl)} unrealized`, chipTone: tone(pnl), foot: ["Top holding", largest ? escapeHTML(largest.symbol) : "—"] },
+      { label: "Available cash", value: money(cash), caption: "Ready to deploy", foot: ["Cash share", pctPlain(share(cash, total))] },
+      { label: "Unrealized ROI", value: percent(roi), valueTone: tone(roi), caption: "On deployed capital", foot: ["Realised P&L", signed(summary.realised_pl)] },
+    ];
+  }
+
+  // Donut capped at five slices (DESIGN.md): Cash, the biggest holdings, one grouped "Other".
+  function allocationPanel(summary, holdings) {
+    const total = Number(summary.total_account_value) || 0;
+    const sorted = [...holdings].sort((a, b) => b.market_value - a.market_value);
+    const top = sorted.length > 4 ? sorted.slice(0, 3) : sorted;
+    const rest = sorted.slice(top.length).reduce((sum, h) => sum + Number(h.market_value), 0);
+    const slices = [
+      { name: "Cash", value: Number(summary.cash_balance) || 0 },
+      ...top.map((h) => ({ name: h.symbol, value: Number(h.market_value) })),
+      ...(rest > 0 ? [{ name: "Other", value: rest }] : []),
+    ].filter((s) => s.value > 0);
+    let offset = 25; // start at 12 o'clock
+    const gap = slices.length > 1 ? 0.8 : 0;
+    const arcs = slices
+      .map((s, i) => {
+        const pct = share(s.value, total);
+        const len = Math.max(pct - gap, 0.01);
+        const arc = `<circle r="15.9155" cx="21" cy="21" fill="none" stroke="var(--chart-${i + 1})" stroke-width="5.5" stroke-dasharray="${len} ${100 - len}" stroke-dashoffset="${offset}"></circle>`;
+        offset -= pct;
+        return arc;
+      })
+      .join("");
+    const legend = slices
+      .map((s, i) => `<li><i style="background:var(--chart-${i + 1})"></i><span>${escapeHTML(s.name)}</span><b>${pctPlain(share(s.value, total))}</b><small>${money(s.value)}</small></li>`)
+      .join("");
+    return `<div class="panel insight-card"><div class="insight-head"><div><h2>Asset allocation</h2><p>Where your ${money(total)} sits right now</p></div><span class="insight-tag">${slices.length} slice${slices.length === 1 ? "" : "s"}</span></div><div class="donut-row"><div class="donut"><svg viewBox="0 0 42 42" role="img" aria-label="Donut chart of cash and holdings as a share of account value">${arcs}</svg><div class="donut-center"><span>Total</span><strong>${money(total)}</strong></div></div><ul class="donut-legend">${legend}</ul></div><p class="chart-caption">Cash is ${pctPlain(share(summary.cash_balance, total))} of your account, the rest is in the market.</p></div>`;
+  }
+
+  function deploymentPanel(summary, holdings) {
+    const invested = holdings.reduce((sum, h) => sum + Number(h.invested_value || 0), 0);
+    const current = Number(summary.holdings_value) || 0;
+    const growth = current - invested;
+    const top = Math.max(invested, current) || 1;
+    const roi = share(growth, invested);
+    const bar = (label, value, cls) =>
+      `<div class="deploy-bar"><div class="deploy-label"><span>${label}</span><b>${money(value)}</b></div><div class="deploy-track"><span class="${cls}" style="width:${share(value, top).toFixed(1)}%"></span></div></div>`;
+    return `<div class="panel insight-card"><div class="insight-head"><div><h2>Deployment</h2><p>What you paid vs what it is worth</p></div><span class="insight-tag ${tone(roi)}">${percent(roi)} ROI</span></div>${bar("Total invested", invested, "invested")}${bar("Current value", current, `current ${tone(growth)}`)}<div class="deploy-net"><span>Net growth</span><b class="${tone(growth)}">${signed(growth)}</b></div><p class="chart-caption">Your holdings are worth ${pctPlain(Math.abs(roi))} ${growth >= 0 ? "more" : "less"} than you paid for them.</p></div>`;
+  }
+
+  function pnlPanel(holdings) {
+    const rows = holdings
+      .map((h) => ({ symbol: h.symbol, pnl: Number(h.unrealised_pnl), pct: share(h.unrealised_pnl, h.invested_value) }))
+      .sort((a, b) => Math.abs(b.pnl) - Math.abs(a.pnl))
+      .slice(0, 6);
+    const maxPct = Math.max(...rows.map((r) => Math.abs(r.pct)), 0.01);
+    const byPct = [...rows].sort((a, b) => b.pct - a.pct);
+    const winner = byPct[0];
+    const loser = byPct[byPct.length - 1];
+    const list = rows
+      .map((r) => {
+        const width = (Math.abs(r.pct) / maxPct) * 50;
+        const side = r.pct >= 0 ? `left:50%` : `right:50%`;
+        return `<li><div class="pnl-label"><strong>${escapeHTML(r.symbol)}</strong><span class="${tone(r.pnl)}">${signed(r.pnl)} (${percent(r.pct)})</span></div><div class="pnl-track"><span class="${tone(r.pnl)}" style="${side};width:${width.toFixed(1)}%"></span></div></li>`;
+      })
+      .join("");
+    const foot = [
+      winner && winner.pct > 0 ? `Winner: ${escapeHTML(winner.symbol)} (${percent(winner.pct)})` : "",
+      loser && loser.pct < 0 ? `Max loss: ${escapeHTML(loser.symbol)} (${percent(loser.pct)})` : "",
+    ].filter(Boolean);
+    return `<div class="panel insight-card"><div class="insight-head"><div><h2>Unrealized P&L</h2><p>How each position is doing</p></div><span class="insight-tag">±${maxPct.toFixed(1)}% scale</span></div><ul class="pnl-bars">${list}</ul>${foot.length ? `<div class="pnl-foot">${foot.map((f) => `<span>${f}</span>`).join("")}</div>` : ""}</div>`;
+  }
+
   async function loadPortfolio(live = false) {
     if (!live) loading("#portfolio-table", "Loading portfolio...");
     try {
@@ -555,7 +639,16 @@
         api.summary(),
         api.portfolio(),
       ]);
-      renderStats(summaryStats(summary, holdings.length));
+      renderStats(portfolioStats(summary, holdings));
+      const n = holdings.length;
+      $("#positions-pill").textContent = `${n} active position${n === 1 ? "" : "s"} · Paper simulator`;
+      $("#portfolio-insights").innerHTML = n
+        ? allocationPanel(summary, holdings) + deploymentPanel(summary, holdings) + pnlPanel(holdings)
+        : "";
+      const invested = holdings.reduce((sum, h) => sum + Number(h.invested_value || 0), 0);
+      $("#portfolio-foot").textContent = n
+        ? `Showing ${n} position${n === 1 ? "" : "s"} · Invested ${money(invested)} · Market value ${money(summary.holdings_value)}`
+        : "";
       const chartsHost = $("#portfolio-charts");
       if (chartsHost) {
         if (!live) chartsHost.innerHTML = valueChartCard();
@@ -565,10 +658,10 @@
         ? holdings
             .map(
               (item) =>
-                `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><strong>${escapeHTML(item.symbol)}</strong></a></td><td data-label="Quantity">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Average buy">${money(item.avg_price)}</td><td data-label="Current price">${money(item.adjusted_price)}</td><td data-label="Invested">${money(item.invested_value)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong><small>${percent((Number(item.unrealised_pnl) / Number(item.invested_value || 1)) * 100)}</small></td></tr>`,
+                `<tr><td data-label="Stock"><a class="stock-name" href="stock.html?id=${item.instrument_id}"><span class="stock-name-top"><span class="ticker-badge" aria-hidden="true">${escapeHTML(item.symbol.slice(0, 2))}</span><strong>${escapeHTML(item.symbol)}</strong></span><small>${escapeHTML(item.company_name || "")}</small></a></td><td data-label="Quantity">${Number(item.quantity).toLocaleString("en-IN")}</td><td data-label="Average buy">${money(item.avg_price)}</td><td data-label="Current price">${money(item.adjusted_price)}</td><td data-label="Invested">${money(item.invested_value)}</td><td data-label="Current value">${money(item.market_value)}</td><td data-label="P&L" class="${tone(item.unrealised_pnl)}"><strong>${signed(item.unrealised_pnl)}</strong><small>${percent((Number(item.unrealised_pnl) / Number(item.invested_value || 1)) * 100)}</small></td><td data-label="Action"><a class="trade-link" href="stock.html?id=${item.instrument_id}">${currentUser?.is_admin ? "View" : "Trade"}</a></td></tr>`,
             )
             .join("")
-        : `<tr><td colspan="7"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>`;
+        : `<tr><td colspan="8"><div class="empty-state"><strong>Your portfolio is empty</strong><span>Start paper trading to build your portfolio.</span><a class="primary-button" href="index.html">Browse stocks</a></div></td></tr>`;
       if (live) return;
       staggerRows("#portfolio-table");
       // Prices tick and pending orders fill in the background, so keep the page current.
@@ -576,7 +669,7 @@
       portfolioPoll = setInterval(() => document.hidden || loadPortfolio(true), 10000);
     } catch (error) {
       $("#portfolio-table").innerHTML =
-        `<tr><td colspan="7"><div class="error-state">${escapeHTML(error.message)}</div></td></tr>`;
+        `<tr><td colspan="8"><div class="error-state">${escapeHTML(error.message)}</div></td></tr>`;
     }
   }
 
